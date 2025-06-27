@@ -63,14 +63,24 @@ export interface PracticeNote {
 }
 
 /**
- * Tin whistle note range (typical range D5 to D7)
- * MIDI note numbers: D5=74, D7=98
- * Expanded for testing to include more notes
+ * Instrument-specific note ranges for practice filtering
  */
-export const TIN_WHISTLE_RANGE = {
-  MIN: 60, // C4 - Expanded for testing
-  MAX: 96  // C7 - Expanded for testing
+export const INSTRUMENT_RANGES = {
+  'tin-whistle': { MIN: 60, MAX: 84 }, // C4 to C6 - typical tin whistle range
+  'full-keyboard': { MIN: 21, MAX: 108 }, // A0 to C8 - full 88-key piano range  
+  'guitar': { MIN: 40, MAX: 88 }, // E2 to E6 - standard guitar range
+  'violin': { MIN: 55, MAX: 96 }, // G3 to C7 - violin range
+  'flute': { MIN: 60, MAX: 96 }, // C4 to C7 - flute range
+  'saxophone': { MIN: 46, MAX: 82 }, // Bb2 to Bb5 - alto sax range
+  'custom': { MIN: 48, MAX: 96 } // C3 to C7 - flexible middle range
 } as const;
+
+export type InstrumentType = keyof typeof INSTRUMENT_RANGES;
+
+/**
+ * Tin whistle note range (backwards compatibility)
+ */
+export const TIN_WHISTLE_RANGE = INSTRUMENT_RANGES['tin-whistle'];
 
 /**
  * MIDI note number to note name conversion
@@ -89,8 +99,16 @@ export function midiNoteToName(noteNumber: MIDINoteNumber): string {
 }
 
 /**
- * Check if a MIDI note is in tin whistle range
+ * Check if a MIDI note is in the specified instrument's practice range
+ */
+export function isInPracticeRange(noteNumber: MIDINoteNumber, instrumentType: InstrumentType = 'tin-whistle'): boolean {
+  const range = INSTRUMENT_RANGES[instrumentType];
+  return noteNumber >= range.MIN && noteNumber <= range.MAX;
+}
+
+/**
+ * Check if a MIDI note is in tin whistle range (backwards compatibility)
  */
 export function isInTinWhistleRange(noteNumber: MIDINoteNumber): boolean {
-  return noteNumber >= TIN_WHISTLE_RANGE.MIN && noteNumber <= TIN_WHISTLE_RANGE.MAX;
+  return isInPracticeRange(noteNumber, 'tin-whistle');
 }

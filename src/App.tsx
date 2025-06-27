@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useMIDI } from './hooks/useMIDI';
 import { NoteVisualizer } from './components/NoteVisualizer';
-import type { MIDIMessage, PracticeNote } from './types/midi';
-import { isInTinWhistleRange, midiNoteToName } from './types/midi';
+import type { MIDIMessage, PracticeNote, InstrumentType } from './types/midi';
+import { isInPracticeRange, midiNoteToName, INSTRUMENT_RANGES } from './types/midi';
 
 function App() {
   const { 
@@ -21,6 +21,7 @@ function App() {
 
   const [practiceNotes, setPracticeNotes] = useState<PracticeNote[]>([]);
   const [lastNote, setLastNote] = useState<MIDIMessage | null>(null);
+  const [selectedInstrument, setSelectedInstrument] = useState<InstrumentType>('tin-whistle');
 
   // Manual MIDI test function
   const testMIDIAccess = async () => {
@@ -81,7 +82,7 @@ function App() {
     const handleMIDIMessage = (message: MIDIMessage) => {
       setLastNote(message);
       
-      console.log(`MIDI message: ${message.type}, note: ${message.note}, in range: ${isInTinWhistleRange(message.note)}`);
+      console.log(`MIDI message: ${message.type}, note: ${message.note}, in range: ${isInPracticeRange(message.note, selectedInstrument)}`);
       
       if (message.type === 'noteoff' && activeNoteStates.has(message.note)) {
         // Note released - remove from active tracking
@@ -90,7 +91,7 @@ function App() {
         return;
       }
       
-      if (message.type === 'noteon' && isInTinWhistleRange(message.note)) {
+      if (message.type === 'noteon' && isInPracticeRange(message.note, selectedInstrument)) {
         // Check if this note is already active (within last 500ms)
         const lastNoteTime = activeNoteStates.get(message.note);
         const timeSinceLastNote = lastNoteTime ? message.timestamp - lastNoteTime : Infinity;
@@ -146,7 +147,7 @@ function App() {
 
     addMessageListener(handleMIDIMessage);
     return () => removeMessageListener(handleMIDIMessage);
-  }, [addMessageListener, removeMessageListener]);
+  }, [addMessageListener, removeMessageListener, selectedInstrument]);
 
   // Cleanup old notes periodically (backup mechanism)
   useEffect(() => {
@@ -179,7 +180,8 @@ function App() {
   return (
     <div className="min-h-screen bg-gray-900 text-white">
       <header className="bg-gray-800 p-4">
-        <h1 className="text-3xl font-bold text-center">🎵 Tooter - Tin Whistle Practice</h1>
+        <h1 className="text-3xl font-bold text-center">🎵 MIDI Practice Assistant</h1>
+        <p className="text-center text-gray-400 mt-2">Practice any instrument with real-time MIDI feedback</p>
       </header>
 
       <main className="container mx-auto p-4">
@@ -193,6 +195,30 @@ function App() {
         {/* MIDI Status */}
         <div className="bg-gray-800 rounded-lg p-4 mb-6">
           <h2 className="text-xl font-semibold mb-3">MIDI Status</h2>
+          
+          {/* Instrument Selection */}
+          <div className="bg-gray-700 p-3 rounded mb-4">
+            <h3 className="font-medium mb-2">Instrument Settings:</h3>
+            <div className="flex flex-wrap gap-2">
+              <label className="text-sm text-gray-300">Select your instrument:</label>
+              <select
+                value={selectedInstrument}
+                onChange={(e) => setSelectedInstrument(e.target.value as InstrumentType)}
+                className="bg-gray-600 text-white px-3 py-1 rounded text-sm"
+              >
+                <option value="tin-whistle">Tin Whistle</option>
+                <option value="flute">Flute</option>
+                <option value="violin">Violin</option>
+                <option value="guitar">Guitar</option>
+                <option value="saxophone">Saxophone</option>
+                <option value="full-keyboard">Piano/Keyboard</option>
+                <option value="custom">Custom Range</option>
+              </select>
+              <span className="text-xs text-gray-400 ml-2">
+                Range: {INSTRUMENT_RANGES[selectedInstrument].MIN}-{INSTRUMENT_RANGES[selectedInstrument].MAX}
+              </span>
+            </div>
+          </div>
           
           {/* Debug Information */}
           <div className="bg-gray-700 p-3 rounded mb-4 text-sm">
@@ -307,7 +333,7 @@ function App() {
                   vel: {lastNote.velocity}
                 </span>
                 <div className="text-xs text-gray-500 mt-1">
-                  In range: {isInTinWhistleRange(lastNote.note) ? 'Yes' : 'No'}
+                  In range: {isInPracticeRange(lastNote.note, selectedInstrument) ? 'Yes' : 'No'}
                 </div>
               </div>
             )}
@@ -321,12 +347,13 @@ function App() {
             notes={practiceNotes}
             className="h-96 rounded border border-gray-600"
             onNoteExit={handleNoteExit}
+            instrumentType={selectedInstrument}
           />
           
           {isReady && connectedDevices.length === 0 && (
             <div className="text-center text-gray-400 mt-4">
               <p>Connect a MIDI device to start practicing!</p>
-              <p className="text-sm">Make sure your Warbl or other MIDI controller is connected.</p>
+              <p className="text-sm">Make sure your MIDI controller or instrument is connected.</p>
             </div>
           )}
         </div>

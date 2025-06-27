@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import type { PracticeNote } from '../types/midi';
-import { midiNoteToName } from '../types/midi';
+import { midiNoteToName, INSTRUMENT_RANGES } from '../types/midi';
 
 interface FallingNoteProps {
   note: PracticeNote;
@@ -85,12 +85,18 @@ interface NoteVisualizerProps {
   notes: PracticeNote[];
   className?: string;
   onNoteExit?: (noteId: string) => void;
+  instrumentType?: 'tin-whistle' | 'full-keyboard' | 'guitar' | 'violin' | 'flute' | 'saxophone' | 'custom';
 }
 
 /**
  * Main note visualizer component showing falling notes Guitar Hero style
  */
-export const NoteVisualizer: React.FC<NoteVisualizerProps> = ({ notes, className = '', onNoteExit }) => {
+export const NoteVisualizer: React.FC<NoteVisualizerProps> = ({ 
+  notes, 
+  className = '', 
+  onNoteExit,
+  instrumentType = 'tin-whistle' 
+}) => {
   const [activeNotes, setActiveNotes] = useState<PracticeNote[]>([]);
   const containerRef = useRef<HTMLDivElement>(null);
   const noteExitTimeoutsRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
@@ -168,27 +174,26 @@ export const NoteVisualizer: React.FC<NoteVisualizerProps> = ({ notes, className
     };
   }, []);
 
-  // Calculate note position based on MIDI note number
+  // Calculate note position based on MIDI note number and instrument range
   const getNotePosition = (note: PracticeNote): { x: number; y: number } => {
     const containerWidth = containerRef.current?.clientWidth || 800;
     
-    // Tin whistle range (more focused)
-    const minNote = 60; // C4 - Lower range for testing
-    const maxNote = 96;  // C7 - Higher range for testing
+    // Get the range for the selected instrument
+    const range = INSTRUMENT_RANGES[instrumentType];
+    const minNote = range.MIN;
+    const maxNote = range.MAX;
     const noteRange = maxNote - minNote;
     
     // Calculate X position based on note pitch (left to right, low to high)
     const noteOffset = Math.max(0, Math.min(noteRange, note.note - minNote));
     const xPosition = (noteOffset / noteRange) * (containerWidth - 100) + 50;
     
-    // Use a stable hash of the note ID for consistent positioning if we need slight variation
-    // But for now, let's keep it perfectly stable
     const position = {
       x: Math.max(10, Math.min(xPosition, containerWidth - 90)),
       y: 0 // Start at the top of the container
     };
     
-    console.log(`Note ${note.id} (MIDI ${note.note}) positioned at:`, position, `noteOffset: ${noteOffset}, xPosition: ${xPosition}, containerWidth: ${containerWidth}`);
+    console.log(`Note ${note.id} (MIDI ${note.note}) positioned at:`, position, `noteOffset: ${noteOffset}, range: ${minNote}-${maxNote}, containerWidth: ${containerWidth}`);
     return position;
   };
 
@@ -236,8 +241,8 @@ export const NoteVisualizer: React.FC<NoteVisualizerProps> = ({ notes, className
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="text-center text-gray-400">
             <div className="text-2xl mb-2">🎵</div>
-            <div className="text-lg">Play your tin whistle to see notes appear</div>
-            <div className="text-sm mt-2">Notes will fall towards the yellow line</div>
+            <div className="text-lg">Play your instrument to see notes appear</div>
+            <div className="text-sm mt-2">Notes will fall towards the yellow target line</div>
           </div>
         </div>
       )}
