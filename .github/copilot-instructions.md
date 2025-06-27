@@ -142,4 +142,30 @@ Tooter is a web-based MIDI-driven educational app designed specifically to help 
 - Use consistent practice terminology: "session", "song", "practice mode", "performance feedback"
 - Avoid ambiguous terms or acronyms without explanations
 
+## Development Priorities & Phases
+### Phase 1 - Core MIDI Foundation
+- Basic WebMIDI API integration and device detection
+- Simple note input recognition and display
+- Basic falling note visualization (single notes)
+
+### Phase 2 - Practice Interface
+- Song input mechanism (start with manual note entry)
+- Visual feedback system (correct/incorrect notes)
+- Basic timing and accuracy tracking
+
+### Phase 3 - Enhanced Features
+- MIDI file parsing and import
+- Statistics and progress tracking
+- Advanced practice modes (tempo adjustment, looping)
+
+### Phase 4 - Polish & Optimization
+- Bluetooth MIDI support
+- Advanced visualizations
+- Performance optimizations
+
+## Browser Support Priorities
+- Primary: Chrome/Chromium-based browsers (best WebMIDI support)
+- Secondary: Firefox (limited WebMIDI, may need Web Bluetooth fallback)
+- Future: Safari (when WebMIDI support improves)
+
 **End of Tooter AI Assistant Rules File**
