@@ -1,7 +1,7 @@
 # Tooter AI Assistant Rules File
 
 ## Application Purpose
-Tooter is a web-based MIDI-driven educational app designed specifically to help beginners learn and practice songs on the tin whistle. Users play their actual tin whistle (equipped with MIDI capability via devices like Warbl) and receive real-time feedback on their performance. The app provides visual notation, tracks accuracy, and helps users improve their tin whistle playing skills through guided practice sessions.
+Tooter is a web-based MIDI-driven educational app designed specifically to help beginners learn and practice songs on the tin whistle. Users play their actual tin whistle (equipped with MIDI capability via devices like Warbl) and receive real-time feedback on their performance. The app provides visual notation with Guitar Hero-style falling notes, tracks accuracy, and helps users improve their tin whistle playing skills through guided practice sessions with immediate feedback and error correction.
 
 ## Code Style & Standards
 - Use TypeScript for all new files (prefer .ts/.tsx extensions)
@@ -14,10 +14,10 @@ Tooter is a web-based MIDI-driven educational app designed specifically to help 
 
 ## Performance Requirements
 - MIDI input latency must be < 20ms for responsive feedback
-- Real-time note detection and analysis should be seamless
 - Visual feedback updates should be smooth and immediate
 - Sheet music rendering should be optimized for readability
 - Practice session data should be processed efficiently
+- Falling note animations should be smooth and responsive to user input
 
 ## Feature Requirements
 
@@ -26,31 +26,39 @@ Tooter is a web-based MIDI-driven educational app designed specifically to help 
 - Prioritize low latency, with USB MIDI as primary recommendation.
 
 ### User-Friendly Song Input
-- Allow users to easily add new songs:
-  - Provide a drag-and-drop interface for uploading MIDI files.
-  - Automatically parse MIDI files to visualize notes and identify song structures.
-  - Allow basic metadata input (song title, difficulty, tempo adjustments).
+- Allow users to easily add new songs they want to practice:
+  - Provide a drag-and-drop interface for uploading MIDI files
+  - Support manual note entry for songs not available as MIDI
+  - Simple melody input tools (virtual keyboard, note picker)
+  - Automatically parse MIDI files to visualize notes and identify song structures
+  - Allow basic metadata input (song title, difficulty, tempo adjustments)
+  - Save user-created songs for future practice sessions
 
 ### Visual and Real-time Feedback
-- Display sheet music or simplified notation for the selected song
-- Real-time MIDI input analysis provides immediate feedback:
-  - Correct notes: Visual confirmation (green highlight, checkmark, etc.)
-  - Incorrect notes: Clear indication of the mistake (red highlight, show expected vs. played note)
-  - Timing feedback: Early, on-time, or late indicators
-  - Pitch accuracy: Show if the note was sharp, flat, or correct
-- Maintain an encouraging learning atmosphere with positive reinforcement
+- Display notes visually as "falling notes" moving towards a target line (Guitar Hero style)
+- Show upcoming notes clearly so users can prepare for what's coming next
+- Real-time MIDI input analysis with immediate visual feedback:
+  - Correct notes: Visual confirmation (green highlight, successful hit animation)
+  - Wrong notes: Animation pauses, highlights incorrect note (red), shows expected vs. played
+  - Quickly resume animation after error, encouraging retry without penalty
+  - Allow multiple attempts at the same note until correct
+- Maintain an encouraging, trial-and-error friendly learning atmosphere
+- Provide clear visual cues for timing (early, perfect, late)
 
 ### Practice and Learning Modes
 - Adjustable tempo for practicing challenging sections.
 - Loop functionality enabling repeated practice of difficult segments.
 
 ### Performance Statistics
-- Collect detailed accuracy metrics:
-  - Track note correctness and timing accuracy (early, on-time, late).
-  - Save statistics per song, per session.
+- Collect detailed accuracy metrics per song:
+  - Track note correctness and timing accuracy (early, on-time, late)
+  - Record attempts vs. successful hits for each note
+  - Save statistics per song, per session with timestamps
 - Visualize user progress clearly after each session:
-  - Display historical accuracy comparisons.
-  - Highlight areas of improvement or recurring mistakes.
+  - Display current session performance vs. historical averages
+  - Show improvement trends over time for each song
+  - Highlight areas of consistent improvement or recurring mistakes
+  - Per-song progress tracking to show mastery development
 
 ### Technical Specifications
 - Frontend: React.js (using functional components with TypeScript)
@@ -66,9 +74,18 @@ Tooter is a web-based MIDI-driven educational app designed specifically to help 
 - Always check for WebMIDI API support before initialization
 - Implement graceful fallbacks when MIDI devices are unavailable
 - Use consistent MIDI note numbering (Middle C = 60, tin whistle range typically 60-84)
-- Handle MIDI device hot-plugging (connect/disconnect during gameplay)
+- Handle MIDI device hot-plugging (connect/disconnect during practice sessions)
 - Implement MIDI input filtering to ignore irrelevant messages (e.g., aftertouch, pitch bend)
 - Log MIDI events for debugging but avoid performance impact in production
+- Support both USB and Bluetooth (BLE) MIDI connections for Warbl devices
+
+## Error Recovery and Learning Support
+- When wrong notes are played, pause the falling note animation briefly
+- Clearly highlight the incorrect note played vs. the expected note
+- Resume animation quickly to maintain learning flow
+- Allow unlimited retries on each note without penalty
+- Provide encouraging feedback to promote trial-and-error learning
+- Never punish mistakes - focus on positive reinforcement for correct notes
 
 ## Practice Logic Standards
 - Separate concerns: MIDI input → note detection → performance analysis → visual feedback
