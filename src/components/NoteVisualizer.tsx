@@ -154,7 +154,7 @@ export const NoteVisualizer: React.FC<NoteVisualizerProps> = ({ notes, className
   const getNotePosition = (note: PracticeNote): { x: number; y: number } => {
     const containerWidth = containerRef.current?.clientWidth || 800;
     
-    // Expanded range for testing
+    // Tin whistle range (more focused)
     const minNote = 60; // C4 - Lower range for testing
     const maxNote = 96;  // C7 - Higher range for testing
     const noteRange = maxNote - minNote;
@@ -163,11 +163,10 @@ export const NoteVisualizer: React.FC<NoteVisualizerProps> = ({ notes, className
     const noteOffset = Math.max(0, Math.min(noteRange, note.note - minNote));
     const xPosition = (noteOffset / noteRange) * (containerWidth - 100) + 50;
     
-    // Debug: also add some randomness to spread out notes with same pitch
-    const randomOffset = (Math.random() - 0.5) * 30; // ±15px variation
-    
+    // Use a stable hash of the note ID for consistent positioning if we need slight variation
+    // But for now, let's keep it perfectly stable
     const position = {
-      x: Math.max(10, Math.min(xPosition + randomOffset, containerWidth - 90)),
+      x: Math.max(10, Math.min(xPosition, containerWidth - 90)),
       y: 0 // Start at the top of the container
     };
     
