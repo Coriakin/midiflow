@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useMIDI } from './hooks/useMIDI';
 import { NoteVisualizer } from './components/NoteVisualizer';
 import { TinWhistleFingering } from './components/TinWhistleFingering';
+import { SongInput, type Song } from './components/SongInput';
+import { PracticeMode, type PracticeSession } from './components/PracticeMode';
 import type { MIDIMessage, PracticeNote, InstrumentType } from './types/midi';
 import { midiNoteToName, INSTRUMENT_RANGES } from './types/midi';
 
@@ -25,6 +27,35 @@ function App() {
   const [selectedInstrument, setSelectedInstrument] = useState<InstrumentType>('tin-whistle');
   const [customRangeMin, setCustomRangeMin] = useState<number>(48);
   const [customRangeMax, setCustomRangeMax] = useState<number>(96);
+  const [songs, setSongs] = useState<Song[]>([]);
+  const [selectedSong, setSelectedSong] = useState<Song | null>(null);
+  const [practiceMode, setPracticeMode] = useState<'free-play' | 'guided'>('free-play');
+  const [expectedNote, setExpectedNote] = useState<number | null>(null);
+
+  // Built-in songs for quick testing
+  const builtInSongs: Song[] = [
+    {
+      id: 'twinkle-twinkle',
+      title: 'Twinkle Twinkle Little Star',
+      notes: [62, 62, 69, 69, 71, 71, 69, 67, 67, 66, 66, 64, 64, 62], // D D A A B B A G G F# F# E E D
+      tempo: 120
+    },
+    {
+      id: 'c-major-scale',
+      title: 'D Major Scale (Tin Whistle)',
+      notes: [62, 64, 66, 67, 69, 71, 73, 74], // D E F# G A B C# D
+      tempo: 100
+    },
+    {
+      id: 'mary-had-a-little-lamb',
+      title: 'Mary Had a Little Lamb',
+      notes: [66, 64, 62, 64, 66, 66, 66, 64, 64, 64, 66, 69, 69], // F# E D E F# F# F# E E E F# A A
+      tempo: 110
+    }
+  ];
+
+  // Combine built-in songs with user-created songs
+  const allSongs = [...builtInSongs, ...songs];
 
   // Manual MIDI test function
   const testMIDIAccess = async () => {
@@ -181,6 +212,18 @@ function App() {
 
     return () => clearInterval(cleanupInterval);
   }, []);
+
+  // Handle song creation
+  const handleSongCreate = (song: Song) => {
+    setSongs(prev => [...prev, song]);
+    console.log('Song created:', song);
+  };
+
+  // Handle practice session completion
+  const handleSessionComplete = (session: PracticeSession) => {
+    console.log('Practice session completed:', session);
+    // Here we could save session data to localStorage or send to a backend
+  };
 
   if (!isSupported) {
     return (
@@ -393,20 +436,95 @@ function App() {
           </div>
         </div>
 
+        {/* Practice Mode Controls */}
+        <div className="bg-gray-800 rounded-lg p-4 mb-6">
+          <h2 className="text-xl font-semibold mb-3">Practice Mode</h2>
+          
+          {/* Mode Selector */}
+          <div className="flex gap-4 mb-4">
+            <button
+              onClick={() => setPracticeMode('free-play')}
+              className={`px-4 py-2 rounded font-medium ${
+                practiceMode === 'free-play' 
+                  ? 'bg-blue-600 text-white' 
+                  : 'bg-gray-600 text-gray-300 hover:bg-gray-500'
+              }`}
+            >
+              Free Play
+            </button>
+            <button
+              onClick={() => setPracticeMode('guided')}
+              className={`px-4 py-2 rounded font-medium ${
+                practiceMode === 'guided' 
+                  ? 'bg-blue-600 text-white' 
+                  : 'bg-gray-600 text-gray-300 hover:bg-gray-500'
+              }`}
+            >
+              Guided Practice
+            </button>
+          </div>
+
+          {/* Song Management (only show in guided mode) */}
+          {practiceMode === 'guided' && (
+            <div className="space-y-4">
+              {/* Song Input */}
+              <SongInput onSongCreate={handleSongCreate} />
+
+              {/* Song Selection */}
+              <div>
+                <h4 className="text-sm font-medium text-gray-300 mb-2">Select a song to practice:</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                  {allSongs.map(song => (
+                    <button
+                      key={song.id}
+                      onClick={() => setSelectedSong(song)}
+                      className={`p-3 rounded border text-left ${
+                        selectedSong?.id === song.id
+                          ? 'bg-blue-700 border-blue-500 text-white'
+                          : 'bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600'
+                      }`}
+                    >
+                      <div className="font-medium">{song.title}</div>
+                      <div className="text-xs text-gray-400">
+                        {song.notes.length} notes • {song.tempo} BPM
+                        {builtInSongs.find(b => b.id === song.id) && (
+                          <span className="ml-2 text-green-400">• Built-in</span>
+                        )}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* Note Visualizer */}
         <div className="bg-gray-800 rounded-lg p-4">
-          <h2 className="text-xl font-semibold mb-3">Practice Area</h2>
+          <h2 className="text-xl font-semibold mb-3">
+            {practiceMode === 'free-play' ? 'Free Play Area' : 'Practice Area'}
+          </h2>
           
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
             {/* Main practice area */}
             <div className="lg:col-span-3">
-              <NoteVisualizer 
-                notes={practiceNotes}
-                className="h-96 rounded border border-gray-600"
-                onNoteExit={handleNoteExit}
-                instrumentType={selectedInstrument}
-                customRange={selectedInstrument === 'custom' ? { MIN: customRangeMin, MAX: customRangeMax } : undefined}
-              />
+              {practiceMode === 'free-play' ? (
+                <NoteVisualizer 
+                  notes={practiceNotes}
+                  className="h-96 rounded border border-gray-600"
+                  onNoteExit={handleNoteExit}
+                  instrumentType={selectedInstrument}
+                  customRange={selectedInstrument === 'custom' ? { MIN: customRangeMin, MAX: customRangeMax } : undefined}
+                />
+              ) : (
+                <PracticeMode
+                  song={selectedSong}
+                  lastPlayedNote={lastNote?.note || null}
+                  onSessionComplete={handleSessionComplete}
+                  onExpectedNoteChange={setExpectedNote}
+                  className="h-96"
+                />
+              )}
             </div>
             
             {/* Tin whistle fingering chart (only show for tin whistle) */}
@@ -414,6 +532,7 @@ function App() {
               <div className="lg:col-span-1">
                 <TinWhistleFingering 
                   midiNote={lastNote?.note || null}
+                  expectedNote={practiceMode === 'guided' ? expectedNote : null}
                   className="bg-gray-700 rounded-lg p-4"
                 />
               </div>

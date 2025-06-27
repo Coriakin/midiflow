@@ -66,7 +66,7 @@ export interface PracticeNote {
  * Instrument-specific note ranges for practice filtering
  */
 export const INSTRUMENT_RANGES = {
-  'tin-whistle': { MIN: 60, MAX: 84 }, // C4 to C6 - typical tin whistle range
+  'tin-whistle': { MIN: 62, MAX: 84 }, // D4 to C6 - actual tin whistle range (D-tuned)
   'full-keyboard': { MIN: 21, MAX: 108 }, // A0 to C8 - full 88-key piano range  
   'guitar': { MIN: 40, MAX: 88 }, // E2 to E6 - standard guitar range
   'violin': { MIN: 55, MAX: 96 }, // G3 to C7 - violin range

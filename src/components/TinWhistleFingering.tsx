@@ -8,17 +8,21 @@ import { midiNoteToName } from '../types/midi';
  * Based on standard D-tuned tin whistle fingering chart
  */
 const TIN_WHISTLE_FINGERINGS: Record<number, boolean[]> = {
-  // First octave - based on the reference chart
-  62: [true, true, true, true, true, true],   // D5 (low D) - all holes covered
-  64: [true, true, true, true, true, false],  // E5 - hole 6 open
-  65: [true, true, true, true, false, false], // F5 - holes 5,6 open  
-  66: [true, true, true, true, false, false], // F#5 - first 4 holes covered, last 2 open
-  67: [true, true, true, false, false, false], // G5 - holes 4,5,6 open
-  69: [true, true, false, false, false, false], // A5 - holes 3,4,5,6 open
-  71: [true, false, false, false, false, false], // B5 - holes 2,3,4,5,6 open
-  72: [false, false, false, false, false, false], // C6 - all holes open
-  73: [true, false, true, false, false, false], // C#6 - cross-fingering (1,3 covered, 2,4,5,6 open)
-  74: [true, true, true, true, true, true],   // D6 (second octave, requires harder blowing)
+  // First octave - based on standard D-tuned tin whistle
+  // Note: On a D-tuned whistle, the lowest note (all holes covered) is D, not C
+  62: [true, true, true, true, true, true],   // D4 (low D) - all holes covered - LOWEST NOTE
+  63: [true, true, true, true, true, false],  // D#4 - hole 6 open
+  64: [true, true, true, true, true, false],  // E4 - hole 6 open
+  65: [true, true, true, true, false, false], // F4 - holes 5,6 open  
+  66: [true, true, true, true, false, false], // F#4 - first 4 holes covered, last 2 open
+  67: [true, true, true, false, false, false], // G4 - holes 4,5,6 open
+  68: [true, true, false, true, false, false], // G#4 - cross-fingering (1,2,4 covered)
+  69: [true, true, false, false, false, false], // A4 - holes 3,4,5,6 open
+  70: [true, false, true, false, false, false], // A#4 - cross-fingering (1,3 covered)
+  71: [true, false, false, false, false, false], // B4 - holes 2,3,4,5,6 open
+  72: [false, false, false, false, false, false], // C5 - all holes open
+  73: [true, false, true, false, false, false], // C#5 - cross-fingering (1,3 covered, 2,4,5,6 open)
+  74: [true, true, true, true, true, true],   // D5 (second octave, requires harder blowing)
   
   // Second octave (higher notes with overblowing)
   76: [true, true, true, true, true, false],  // E6
@@ -32,6 +36,7 @@ const TIN_WHISTLE_FINGERINGS: Record<number, boolean[]> = {
 
 interface TinWhistleFingeringProps {
   midiNote: number | null;
+  expectedNote?: number | null; // For practice mode - show what should be played
   className?: string;
 }
 
@@ -40,9 +45,10 @@ interface TinWhistleFingeringProps {
  */
 export const TinWhistleFingering: React.FC<TinWhistleFingeringProps> = ({ 
   midiNote, 
+  expectedNote,
   className = '' 
 }) => {
-  if (!midiNote) {
+  if (!midiNote && !expectedNote) {
     return (
       <div className={`flex flex-col items-center ${className}`}>
         <div className="text-sm text-gray-400 mb-2">Tin Whistle Fingering</div>
@@ -51,19 +57,13 @@ export const TinWhistleFingering: React.FC<TinWhistleFingeringProps> = ({
     );
   }
 
-  const fingering = TIN_WHISTLE_FINGERINGS[midiNote];
-  const noteName = midiNoteToName(midiNote);
+  const playedFingering = midiNote ? TIN_WHISTLE_FINGERINGS[midiNote] : null;
+  const expectedFingering = expectedNote ? TIN_WHISTLE_FINGERINGS[expectedNote] : null;
+  const playedNoteName = midiNote ? midiNoteToName(midiNote) : null;
+  const expectedNoteName = expectedNote ? midiNoteToName(expectedNote) : null;
 
-  if (!fingering) {
-    return (
-      <div className={`flex flex-col items-center ${className}`}>
-        <div className="text-sm text-gray-400 mb-2">Tin Whistle Fingering</div>
-        <div className="text-xs text-red-400">
-          {noteName} - Not in standard tin whistle range
-        </div>
-      </div>
-    );
-  }
+  // Practice mode: show both expected and played (if different)
+  const showComparison = expectedNote && midiNote && expectedNote !== midiNote;
 
   return (
     <div className={`flex flex-col items-center ${className}`}>
@@ -71,11 +71,67 @@ export const TinWhistleFingering: React.FC<TinWhistleFingeringProps> = ({
         Tin Whistle Fingering
       </div>
       
-      {/* Note name */}
-      <div className="text-lg font-bold text-yellow-400 mb-3">
-        {noteName}
-      </div>
-      
+      {showComparison ? (
+        /* Practice Mode: Show Expected vs Played */
+        <div className="w-full space-y-4">
+          {/* Expected Fingering */}
+          <div className="text-center">
+            <div className="text-sm font-medium text-green-400 mb-1">Expected:</div>
+            <div className="text-lg font-bold text-green-400 mb-2">
+              {expectedNoteName}
+            </div>
+            {expectedFingering ? (
+              <FingeringChart fingering={expectedFingering} />
+            ) : (
+              <div className="text-xs text-red-400">
+                {expectedNoteName} - Not in standard range
+              </div>
+            )}
+          </div>
+          
+          {/* Played Fingering */}
+          <div className="text-center border-t border-gray-600 pt-4">
+            <div className="text-sm font-medium text-red-400 mb-1">Played:</div>
+            <div className="text-lg font-bold text-red-400 mb-2">
+              {playedNoteName}
+            </div>
+            {playedFingering ? (
+              <FingeringChart fingering={playedFingering} />
+            ) : (
+              <div className="text-xs text-red-400">
+                {playedNoteName} - Not in standard range
+              </div>
+            )}
+          </div>
+        </div>
+      ) : (
+        /* Single Note Mode */
+        <div className="text-center">
+          {/* Note name */}
+          <div className="text-lg font-bold text-yellow-400 mb-3">
+            {expectedNote ? expectedNoteName : playedNoteName}
+          </div>
+          
+          {/* Single fingering chart */}
+          {(expectedFingering || playedFingering) ? (
+            <FingeringChart fingering={expectedFingering || playedFingering!} />
+          ) : (
+            <div className="text-xs text-red-400">
+              {expectedNote ? expectedNoteName : playedNoteName} - Not in standard range
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+/**
+ * Reusable fingering chart component
+ */
+const FingeringChart: React.FC<{ fingering: boolean[] }> = ({ fingering }) => {
+  return (
+    <div className="flex flex-col items-center">
       {/* Whistle body and holes */}
       <div className="relative">
         {/* Whistle body (vertical rectangle) */}
