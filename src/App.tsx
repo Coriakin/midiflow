@@ -36,20 +36,103 @@ function App() {
   const builtInSongs: Song[] = [
     {
       id: 'twinkle-twinkle',
-      title: 'Twinkle Twinkle Little Star',
-      notes: [62, 62, 69, 69, 71, 71, 69, 67, 67, 66, 66, 64, 64, 62], // D D A A B B A G G F# F# E E D
+      title: 'Twinkle Twinkle Little Star (Complete)',
+      notes: [
+        // Twinkle twinkle little star
+        62, 62, 69, 69, 71, 71, 69,
+        // How I wonder what you are
+        67, 67, 66, 66, 64, 64, 62,
+        // Up above the world so high
+        69, 69, 67, 67, 66, 66, 64,
+        // Like a diamond in the sky
+        69, 69, 67, 67, 66, 66, 64,
+        // Twinkle twinkle little star
+        62, 62, 69, 69, 71, 71, 69,
+        // How I wonder what you are
+        67, 67, 66, 66, 64, 64, 62
+      ], // Complete song: D D A A B B A G G F# F# E E D (repeated with verses)
       tempo: 120
     },
     {
-      id: 'c-major-scale',
-      title: 'D Major Scale (Tin Whistle)',
-      notes: [62, 64, 66, 67, 69, 71, 73, 74], // D E F# G A B C# D
+      id: 'mary-had-a-little-lamb',
+      title: 'Mary Had a Little Lamb (Complete)',
+      notes: [
+        // Mary had a little lamb
+        66, 64, 62, 64, 66, 66, 66,
+        // Little lamb, little lamb
+        64, 64, 64, 66, 69, 69,
+        // Mary had a little lamb
+        66, 64, 62, 64, 66, 66, 66,
+        // Its fleece was white as snow
+        66, 64, 64, 66, 64, 62
+      ], // F# E D E F# F# F# E E E F# A A F# E D E F# F# F# F# E E F# E D
+      tempo: 110
+    },
+    {
+      id: 'happy-birthday',
+      title: 'Happy Birthday (Complete)',
+      notes: [
+        // Happy birthday to you
+        62, 62, 64, 62, 67, 66,
+        // Happy birthday to you  
+        62, 62, 64, 62, 69, 67,
+        // Happy birthday dear [name]
+        62, 62, 74, 71, 67, 66, 64,
+        // Happy birthday to you
+        72, 72, 71, 67, 69, 67
+      ], // D D E D G F# D D E D A G D D D(high) B G F# E C C B G A G
       tempo: 100
     },
     {
-      id: 'mary-had-a-little-lamb',
-      title: 'Mary Had a Little Lamb',
-      notes: [66, 64, 62, 64, 66, 66, 66, 64, 64, 64, 66, 69, 69], // F# E D E F# F# F# E E E F# A A
+      id: 'd-major-scale',
+      title: 'D Major Scale (Complete - Up & Down)',
+      notes: [
+        // Up the scale
+        62, 64, 66, 67, 69, 71, 73, 74,
+        // Down the scale
+        74, 73, 71, 69, 67, 66, 64, 62
+      ], // D E F# G A B C# D D C# B A G F# E D
+      tempo: 100
+    },
+    {
+      id: 'hot-cross-buns',
+      title: 'Hot Cross Buns (Complete)',
+      notes: [
+        // Hot cross buns
+        71, 69, 67,
+        // Hot cross buns
+        71, 69, 67,
+        // One a penny, two a penny
+        67, 67, 67, 67, 69, 69, 69, 69,
+        // Hot cross buns
+        71, 69, 67
+      ], // B A G B A G G G G G A A A A B A G
+      tempo: 120
+    },
+    {
+      id: 'amazing-grace',
+      title: 'Amazing Grace (First Verse)',
+      notes: [
+        // Amazing grace how sweet the sound
+        67, 71, 74, 71, 74, 76, 74,
+        // That saved a wretch like me
+        71, 74, 71, 69, 67,
+        // I once was lost but now am found
+        67, 71, 74, 71, 74, 76, 74,
+        // Was blind but now I see
+        71, 69, 67, 62, 67
+      ], // G B D B D E D B D B A G G B D B D E D B A G D G
+      tempo: 90
+    },
+    {
+      id: 'ode-to-joy',
+      title: 'Ode to Joy (Beethoven - Opening)',
+      notes: [
+        // First phrase
+        66, 66, 67, 69, 69, 67, 66, 64, 62, 62, 64, 66, 66, 64, 64,
+        // Second phrase (repeat with variation)
+        66, 66, 67, 69, 69, 67, 66, 64, 62, 62, 64, 66, 64, 62, 62
+      ], // F# F# G A A G F# E D D E F# F# E E F# F# G A A G F# E D D E F# E D D
       tempo: 110
     }
   ];

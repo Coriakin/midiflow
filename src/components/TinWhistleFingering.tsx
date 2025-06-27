@@ -64,6 +64,7 @@ export const TinWhistleFingering: React.FC<TinWhistleFingeringProps> = ({
 
   // Practice mode: show both expected and played (if different)
   const showComparison = expectedNote && midiNote && expectedNote !== midiNote;
+  const showExpectedOnly = expectedNote && !midiNote; // Show expected when no note played yet
 
   return (
     <div className={`flex flex-col items-center ${className}`}>
@@ -104,8 +105,24 @@ export const TinWhistleFingering: React.FC<TinWhistleFingeringProps> = ({
             )}
           </div>
         </div>
+      ) : showExpectedOnly ? (
+        /* Practice Mode: Show Expected Only (before playing) */
+        <div className="text-center">
+          <div className="text-sm font-medium text-green-400 mb-1">Expected:</div>
+          <div className="text-lg font-bold text-green-400 mb-3">
+            {expectedNoteName}
+          </div>
+          
+          {expectedFingering ? (
+            <FingeringChart fingering={expectedFingering} />
+          ) : (
+            <div className="text-xs text-red-400">
+              {expectedNoteName} - Not in standard range
+            </div>
+          )}
+        </div>
       ) : (
-        /* Single Note Mode */
+        /* Single Note Mode (Free Play or Correct Note) */
         <div className="text-center">
           {/* Note name */}
           <div className="text-lg font-bold text-yellow-400 mb-3">
