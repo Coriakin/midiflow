@@ -86,6 +86,7 @@ interface NoteVisualizerProps {
   className?: string;
   onNoteExit?: (noteId: string) => void;
   instrumentType?: 'tin-whistle' | 'full-keyboard' | 'guitar' | 'violin' | 'flute' | 'saxophone' | 'custom';
+  customRange?: { MIN: number; MAX: number };
 }
 
 /**
@@ -95,7 +96,8 @@ export const NoteVisualizer: React.FC<NoteVisualizerProps> = ({
   notes, 
   className = '', 
   onNoteExit,
-  instrumentType = 'tin-whistle' 
+  instrumentType = 'tin-whistle',
+  customRange
 }) => {
   const [activeNotes, setActiveNotes] = useState<PracticeNote[]>([]);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -178,8 +180,8 @@ export const NoteVisualizer: React.FC<NoteVisualizerProps> = ({
   const getNotePosition = (note: PracticeNote): { x: number; y: number } => {
     const containerWidth = containerRef.current?.clientWidth || 800;
     
-    // Get the range for the selected instrument
-    const range = INSTRUMENT_RANGES[instrumentType];
+    // Get the range for the selected instrument (use custom range if provided)
+    const range = instrumentType === 'custom' && customRange ? customRange : INSTRUMENT_RANGES[instrumentType];
     const minNote = range.MIN;
     const maxNote = range.MAX;
     const noteRange = maxNote - minNote;

@@ -3,7 +3,7 @@ import { useMIDI } from './hooks/useMIDI';
 import { NoteVisualizer } from './components/NoteVisualizer';
 import { TinWhistleFingering } from './components/TinWhistleFingering';
 import type { MIDIMessage, PracticeNote, InstrumentType } from './types/midi';
-import { isInPracticeRange, midiNoteToName, INSTRUMENT_RANGES } from './types/midi';
+import { midiNoteToName, INSTRUMENT_RANGES } from './types/midi';
 
 function App() {
   const { 
@@ -23,6 +23,8 @@ function App() {
   const [practiceNotes, setPracticeNotes] = useState<PracticeNote[]>([]);
   const [lastNote, setLastNote] = useState<MIDIMessage | null>(null);
   const [selectedInstrument, setSelectedInstrument] = useState<InstrumentType>('tin-whistle');
+  const [customRangeMin, setCustomRangeMin] = useState<number>(48);
+  const [customRangeMax, setCustomRangeMax] = useState<number>(96);
 
   // Manual MIDI test function
   const testMIDIAccess = async () => {
@@ -76,6 +78,20 @@ function App() {
     });
   };
 
+  // Get current instrument range (including custom range support)
+  const getCurrentInstrumentRange = () => {
+    if (selectedInstrument === 'custom') {
+      return { MIN: customRangeMin, MAX: customRangeMax };
+    }
+    return INSTRUMENT_RANGES[selectedInstrument];
+  };
+
+  // Check if note is in current instrument range (including custom)
+  const isInCurrentRange = (noteNumber: number) => {
+    const range = getCurrentInstrumentRange();
+    return noteNumber >= range.MIN && noteNumber <= range.MAX;
+  };
+
   // Listen for MIDI messages and create falling notes
   useEffect(() => {
     const activeNoteStates = new Map<number, number>(); // Track active notes by MIDI note number -> timestamp
@@ -83,7 +99,7 @@ function App() {
     const handleMIDIMessage = (message: MIDIMessage) => {
       setLastNote(message);
       
-      console.log(`MIDI message: ${message.type}, note: ${message.note}, in range: ${isInPracticeRange(message.note, selectedInstrument)}`);
+      console.log(`MIDI message: ${message.type}, note: ${message.note}, in range: ${isInCurrentRange(message.note)}`);
       
       if (message.type === 'noteoff' && activeNoteStates.has(message.note)) {
         // Note released - remove from active tracking
@@ -92,7 +108,7 @@ function App() {
         return;
       }
       
-      if (message.type === 'noteon' && isInPracticeRange(message.note, selectedInstrument)) {
+      if (message.type === 'noteon' && isInCurrentRange(message.note)) {
         // Check if this note is already active (within last 500ms)
         const lastNoteTime = activeNoteStates.get(message.note);
         const timeSinceLastNote = lastNoteTime ? message.timestamp - lastNoteTime : Infinity;
@@ -216,9 +232,45 @@ function App() {
                 <option value="custom">Custom Range</option>
               </select>
               <span className="text-xs text-gray-400 ml-2">
-                Range: {INSTRUMENT_RANGES[selectedInstrument].MIN}-{INSTRUMENT_RANGES[selectedInstrument].MAX}
+                Range: {getCurrentInstrumentRange().MIN}-{getCurrentInstrumentRange().MAX}
               </span>
             </div>
+            
+            {/* Custom Range Configuration */}
+            {selectedInstrument === 'custom' && (
+              <div className="mt-3 p-3 bg-gray-600 rounded">
+                <h4 className="text-sm font-medium mb-2">Custom Range Configuration:</h4>
+                <div className="flex gap-4 items-center">
+                  <div className="flex items-center gap-2">
+                    <label className="text-xs text-gray-300">Min Note:</label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="127"
+                      value={customRangeMin}
+                      onChange={(e) => setCustomRangeMin(Number(e.target.value))}
+                      className="bg-gray-700 text-white px-2 py-1 rounded text-sm w-16"
+                    />
+                    <span className="text-xs text-gray-400">({midiNoteToName(customRangeMin)})</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <label className="text-xs text-gray-300">Max Note:</label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="127"
+                      value={customRangeMax}
+                      onChange={(e) => setCustomRangeMax(Number(e.target.value))}
+                      className="bg-gray-700 text-white px-2 py-1 rounded text-sm w-16"
+                    />
+                    <span className="text-xs text-gray-400">({midiNoteToName(customRangeMax)})</span>
+                  </div>
+                </div>
+                <div className="mt-2 text-xs text-gray-400">
+                  Enter MIDI note numbers (0-127). Middle C = 60, A4 = 69.
+                </div>
+              </div>
+            )}
           </div>
           
           {/* Debug Information */}
@@ -334,7 +386,7 @@ function App() {
                   vel: {lastNote.velocity}
                 </span>
                 <div className="text-xs text-gray-500 mt-1">
-                  In range: {isInPracticeRange(lastNote.note, selectedInstrument) ? 'Yes' : 'No'}
+                  In range: {isInCurrentRange(lastNote.note) ? 'Yes' : 'No'}
                 </div>
               </div>
             )}
@@ -353,6 +405,7 @@ function App() {
                 className="h-96 rounded border border-gray-600"
                 onNoteExit={handleNoteExit}
                 instrumentType={selectedInstrument}
+                customRange={selectedInstrument === 'custom' ? { MIN: customRangeMin, MAX: customRangeMax } : undefined}
               />
             </div>
             
