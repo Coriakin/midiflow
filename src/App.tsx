@@ -128,7 +128,7 @@ function App() {
         setPracticeNotes(prev => {
           // Force cleanup of any notes that might be stuck
           const now = performance.now();
-          const recentNotes = prev.filter(note => now - note.startTime < 8000); // Reduced to 8 seconds
+          const recentNotes = prev.filter(note => now - note.startTime < 5000); // Reduced to 5 seconds
           
           const newNotes = [...recentNotes, newNote];
           
@@ -153,13 +153,13 @@ function App() {
     const cleanupInterval = setInterval(() => {
       const now = performance.now();
       setPracticeNotes(prev => {
-        const filtered = prev.filter(note => now - note.startTime < 10000); // Reduced to 10 seconds
+        const filtered = prev.filter(note => now - note.startTime < 6000); // Reduced to 6 seconds
         if (filtered.length !== prev.length) {
           console.log(`Periodic cleanup: removed ${prev.length - filtered.length} old notes, remaining: ${filtered.length}`);
         }
         return filtered;
       });
-    }, 2000); // Check every 2 seconds
+    }, 1000); // Check every second instead of 2
 
     return () => clearInterval(cleanupInterval);
   }, []);

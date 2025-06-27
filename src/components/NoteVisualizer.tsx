@@ -13,19 +13,36 @@ interface FallingNoteProps {
  * Individual falling note component with CSS animation
  */
 const FallingNote: React.FC<FallingNoteProps> = ({ note, position, speed, onNoteExit }) => {
-  const animationDuration = 3000; // 3 seconds to fall
+  const animationDuration = 2500; // 2.5 seconds to fall through the container
+  const elementRef = useRef<HTMLDivElement>(null);
   
   useEffect(() => {
     console.log(`FallingNote ${note.id} starting CSS animation from position:`, position);
     
-    // Set a timer to remove the note after animation completes
-    const exitTimer = setTimeout(() => {
-      console.log(`Note ${note.id} animation completed, removing`);
+    // Listen for animation end event for precise cleanup
+    const element = elementRef.current;
+    const handleAnimationEnd = (event: AnimationEvent) => {
+      if (event.animationName === 'fall') {
+        console.log(`Note ${note.id} CSS animation completed, removing`);
+        onNoteExit(note.id);
+      }
+    };
+    
+    if (element) {
+      element.addEventListener('animationend', handleAnimationEnd);
+    }
+    
+    // Backup timeout in case animation event doesn't fire
+    const backupTimer = setTimeout(() => {
+      console.log(`Note ${note.id} backup timer triggered, removing`);
       onNoteExit(note.id);
-    }, animationDuration + 100); // Small buffer after animation
+    }, animationDuration + 100);
 
     return () => {
-      clearTimeout(exitTimer);
+      if (element) {
+        element.removeEventListener('animationend', handleAnimationEnd);
+      }
+      clearTimeout(backupTimer);
     };
   }, [note.id, onNoteExit, animationDuration]);
 
@@ -44,6 +61,7 @@ const FallingNote: React.FC<FallingNoteProps> = ({ note, position, speed, onNote
 
   return (
     <div
+      ref={elementRef}
       className="absolute w-16 h-10 rounded-lg border-2 border-white shadow-lg flex items-center justify-center text-white text-sm font-bold z-10"
       style={{
         left: `${safeX}px`,
@@ -83,7 +101,7 @@ export const NoteVisualizer: React.FC<NoteVisualizerProps> = ({ notes, className
     
     // Filter out notes that are too old (shouldn't be rendered)
     const now = performance.now();
-    const validNotes = notes.filter(note => now - note.startTime < 6000);
+    const validNotes = notes.filter(note => now - note.startTime < 4000); // Reduced to 4 seconds
     
     if (validNotes.length !== notes.length) {
       console.log(`Filtered out ${notes.length - validNotes.length} old notes from incoming props`);
@@ -123,13 +141,13 @@ export const NoteVisualizer: React.FC<NoteVisualizerProps> = ({ notes, className
     const cleanupInterval = setInterval(() => {
       const now = performance.now();
       setActiveNotes(prev => {
-        const filtered = prev.filter(note => now - note.startTime < 6000); // Remove notes older than 6 seconds
+        const filtered = prev.filter(note => now - note.startTime < 4000); // Remove notes older than 4 seconds
         if (filtered.length !== prev.length) {
           const removedCount = prev.length - filtered.length;
           console.log(`Visualizer auto-cleanup: removed ${removedCount} old notes, remaining: ${filtered.length}`);
           // Notify parent about removed notes
           if (onNoteExit) {
-            prev.filter(note => now - note.startTime >= 6000).forEach(note => {
+            prev.filter(note => now - note.startTime >= 4000).forEach(note => {
               console.log(`Auto-removing note ${note.id} from parent`);
               onNoteExit(note.id);
             });
