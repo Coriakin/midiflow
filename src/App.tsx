@@ -58,15 +58,62 @@ function App() {
     }
   };
 
+  // Clear all notes (for debugging)
+  const clearAllNotes = () => {
+    setPracticeNotes([]);
+    console.log('All notes cleared');
+  };
+
+  // Handle note exit from visualizer
+  const handleNoteExit = (noteId: string) => {
+    console.log(`App: Removing note ${noteId} from practice notes`);
+    setPracticeNotes(prev => {
+      const filtered = prev.filter(note => note.id !== noteId);
+      console.log(`Note ${noteId} removed, remaining: ${filtered.length}`);
+      return filtered;
+    });
+  };
+
   // Listen for MIDI messages and create falling notes
   useEffect(() => {
+    const activeNoteStates = new Map<number, number>(); // Track active notes by MIDI note number -> timestamp
+    
     const handleMIDIMessage = (message: MIDIMessage) => {
       setLastNote(message);
       
+      console.log(`MIDI message: ${message.type}, note: ${message.note}, in range: ${isInTinWhistleRange(message.note)}`);
+      
+      if (message.type === 'noteoff' && activeNoteStates.has(message.note)) {
+        // Note released - remove from active tracking
+        console.log(`Note ${message.note} released, removing from active tracking`);
+        activeNoteStates.delete(message.note);
+        return;
+      }
+      
       if (message.type === 'noteon' && isInTinWhistleRange(message.note)) {
+        // Check if this note is already active (within last 500ms)
+        const lastNoteTime = activeNoteStates.get(message.note);
+        const timeSinceLastNote = lastNoteTime ? message.timestamp - lastNoteTime : Infinity;
+        
+        if (timeSinceLastNote < 500) { // 500ms debounce for same note
+          console.log(`Skipping duplicate note ${message.note} - only ${timeSinceLastNote.toFixed(1)}ms since last`);
+          return;
+        }
+        
+        // Update active note tracking
+        activeNoteStates.set(message.note, message.timestamp);
+        
+        // Auto-cleanup old notes from tracking (in case note-off wasn't received)
+        setTimeout(() => {
+          if (activeNoteStates.get(message.note) === message.timestamp) {
+            console.log(`Auto-removing note ${message.note} from tracking after timeout`);
+            activeNoteStates.delete(message.note);
+          }
+        }, 1000);
+        
         // Create a new falling note
         const newNote: PracticeNote = {
-          id: `${message.note}-${message.timestamp}`,
+          id: `${message.note}-${message.timestamp}-${Math.random().toString(36).substr(2, 5)}`,
           note: message.note,
           startTime: message.timestamp,
           duration: 1000, // Default duration
@@ -76,18 +123,46 @@ function App() {
           timingAccuracy: null
         };
 
-        setPracticeNotes(prev => [...prev, newNote]);
-        
-        // Remove note after some time to prevent accumulation
-        setTimeout(() => {
-          setPracticeNotes(prev => prev.filter(note => note.id !== newNote.id));
-        }, 5000);
+        console.log(`Creating new note: ${newNote.id} for MIDI note ${message.note}`);
+
+        setPracticeNotes(prev => {
+          // Force cleanup of any notes that might be stuck
+          const now = performance.now();
+          const recentNotes = prev.filter(note => now - note.startTime < 8000); // Reduced to 8 seconds
+          
+          const newNotes = [...recentNotes, newNote];
+          
+          // Strict limit to prevent accumulation
+          if (newNotes.length > 15) { // Reduced limit
+            console.warn(`Note limit exceeded! Keeping most recent ${10} notes, removing ${newNotes.length - 10} oldest notes`);
+            return newNotes.slice(-10);
+          }
+          
+          console.log(`Added note, total active notes: ${newNotes.length}`);
+          return newNotes;
+        });
       }
     };
 
     addMessageListener(handleMIDIMessage);
     return () => removeMessageListener(handleMIDIMessage);
   }, [addMessageListener, removeMessageListener]);
+
+  // Cleanup old notes periodically (backup mechanism)
+  useEffect(() => {
+    const cleanupInterval = setInterval(() => {
+      const now = performance.now();
+      setPracticeNotes(prev => {
+        const filtered = prev.filter(note => now - note.startTime < 10000); // Reduced to 10 seconds
+        if (filtered.length !== prev.length) {
+          console.log(`Periodic cleanup: removed ${prev.length - filtered.length} old notes, remaining: ${filtered.length}`);
+        }
+        return filtered;
+      });
+    }, 2000); // Check every 2 seconds
+
+    return () => clearInterval(cleanupInterval);
+  }, []);
 
   if (!isSupported) {
     return (
@@ -129,6 +204,7 @@ function App() {
               <div>Is Supported: {isSupported ? 'Yes' : 'No'}</div>
               <div>Is Initialized: {isInitialized ? 'Yes' : 'No'}</div>
               <div>Error: {error || 'None'}</div>
+              <div>Active Notes: {practiceNotes.length}</div>
             </div>
             <div className="flex gap-2 mt-2">
               <button
@@ -142,6 +218,12 @@ function App() {
                 className="px-3 py-1 bg-green-600 hover:bg-green-700 rounded text-sm"
               >
                 Manual MIDI Init
+              </button>
+              <button
+                onClick={clearAllNotes}
+                className="px-3 py-1 bg-red-600 hover:bg-red-700 rounded text-sm"
+              >
+                Clear Notes
               </button>
             </div>
           </div>
@@ -201,16 +283,35 @@ function App() {
             </div>
           )}
 
-          {/* Last Note Display */}
-          {lastNote && (
-            <div className="mt-4 p-3 bg-gray-700 rounded">
-              <strong>Last Note:</strong> {midiNoteToName(lastNote.note)} 
-              (MIDI {lastNote.note}) - {lastNote.type} 
-              <span className="text-gray-400 ml-2">
-                vel: {lastNote.velocity}
-              </span>
+          {/* Debug Info */}
+          <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Active Notes Count */}
+            <div className="p-3 bg-gray-700 rounded">
+              <strong>Active Notes:</strong> <span className="text-blue-400">{practiceNotes.length}</span>
+              <div className="text-sm text-gray-400 mt-1">
+                Notes in animation
+              </div>
+              {practiceNotes.length > 0 && (
+                <div className="text-xs text-gray-500 mt-2">
+                  Last 3: {practiceNotes.slice(-3).map(n => `${midiNoteToName(n.note)}(${n.note})`).join(', ')}
+                </div>
+              )}
             </div>
-          )}
+            
+            {/* Last Note Display */}
+            {lastNote && (
+              <div className="p-3 bg-gray-700 rounded">
+                <strong>Last Note:</strong> {midiNoteToName(lastNote.note)} 
+                (MIDI {lastNote.note}) - {lastNote.type} 
+                <span className="text-gray-400 ml-2">
+                  vel: {lastNote.velocity}
+                </span>
+                <div className="text-xs text-gray-500 mt-1">
+                  In range: {isInTinWhistleRange(lastNote.note) ? 'Yes' : 'No'}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Note Visualizer */}
@@ -219,6 +320,7 @@ function App() {
           <NoteVisualizer 
             notes={practiceNotes}
             className="h-96 rounded border border-gray-600"
+            onNoteExit={handleNoteExit}
           />
           
           {isReady && connectedDevices.length === 0 && (

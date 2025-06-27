@@ -65,10 +65,11 @@ export interface PracticeNote {
 /**
  * Tin whistle note range (typical range D5 to D7)
  * MIDI note numbers: D5=74, D7=98
+ * Expanded for testing to include more notes
  */
 export const TIN_WHISTLE_RANGE = {
-  MIN: 74, // D5
-  MAX: 98  // D7
+  MIN: 60, // C4 - Expanded for testing
+  MAX: 96  // C7 - Expanded for testing
 } as const;
 
 /**
