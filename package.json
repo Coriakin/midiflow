@@ -1,8 +1,9 @@
 {
-  "name": "tooter",
+  "name": "midiflow",
   "private": true,
   "version": "0.1.0",
   "type": "module",
+  "description": "Real-time MIDI practice application with visual feedback",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",

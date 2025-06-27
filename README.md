@@ -1,6 +1,6 @@
-# Tooter - Tin Whistle Practice App
+# MIDIFlow - Real-time MIDI Practice Application
 
-A web-based MIDI-driven educational app to help beginners learn and practice songs on the tin whistle using devices like Warbl.
+A web-based MIDI-driven practice app that provides real-time visual feedback for any MIDI-capable instrument. Features Guitar Hero-style falling notes with instrument-specific note ranges and timing feedback.
 
 ## Phase 1 - Core MIDI Foundation ✅
 
@@ -13,10 +13,11 @@ A web-based MIDI-driven educational app to help beginners learn and practice son
 - ✅ Device hot-plugging support (connect/disconnect during use)
 - ✅ Graceful error handling and fallbacks
 
-#### 🎵 Basic Note Visualization
+#### 🎵 Universal Instrument Support
 - ✅ Falling notes display (Guitar Hero style)
 - ✅ Real-time note creation from MIDI input
-- ✅ Note filtering for tin whistle range (D5-D7, MIDI 74-98)
+- ✅ Multiple instrument presets with appropriate note ranges
+- ✅ Adaptive note positioning based on instrument range
 - ✅ Visual feedback with note names and colors
 - ✅ Target line for timing reference
 
@@ -25,7 +26,7 @@ A web-based MIDI-driven educational app to help beginners learn and practice son
 - ✅ Modular architecture following the rules file
 - ✅ Custom React hooks for MIDI management
 - ✅ Type-safe MIDI message handling
-- ✅ Performance-optimized note animations
+- ✅ Performance-optimized note animations with precise cleanup
 
 ### Current Features
 
@@ -35,17 +36,25 @@ A web-based MIDI-driven educational app to help beginners learn and practice son
    - Real-time device status monitoring
    - Support for USB MIDI (primary) with BLE detection framework
 
-2. **Real-time Note Display**
+2. **Instrument Selection**
+   - Tin Whistle, Flute, Violin, Guitar, Saxophone presets
+   - Full Piano/Keyboard range (88 keys)
+   - Custom range option for flexibility
+   - Automatic note filtering based on selected instrument
+
+3. **Real-time Note Display**
    - Live MIDI input creates falling notes
    - Notes display with proper naming (C4, D#5, etc.)
-   - Automatic filtering for tin whistle range
-   - Smooth animations with cleanup to prevent memory leaks
+   - Instrument-specific note range filtering
+   - Smooth CSS animations with precise cleanup
+   - Perfect state synchronization (active notes = visible notes)
 
-3. **Visual Interface**
+4. **Visual Interface**
    - Clean, dark theme optimized for practice
    - Device status indicators
    - Real-time MIDI message display
    - Error handling with user-friendly messages
+   - Responsive design for various screen sizes
 
 ## Getting Started
 

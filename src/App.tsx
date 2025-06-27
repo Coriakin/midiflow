@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useMIDI } from './hooks/useMIDI';
 import { NoteVisualizer } from './components/NoteVisualizer';
+import { TinWhistleFingering } from './components/TinWhistleFingering';
 import type { MIDIMessage, PracticeNote, InstrumentType } from './types/midi';
 import { isInPracticeRange, midiNoteToName, INSTRUMENT_RANGES } from './types/midi';
 
@@ -169,7 +170,7 @@ function App() {
     return (
       <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-4xl font-bold mb-4">Tooter</h1>
+          <h1 className="text-4xl font-bold mb-4">MIDIFlow</h1>
           <p className="text-xl text-red-400 mb-4">WebMIDI not supported</p>
           <p className="text-gray-400">Please use Chrome or a Chromium-based browser</p>
         </div>
@@ -180,8 +181,8 @@ function App() {
   return (
     <div className="min-h-screen bg-gray-900 text-white">
       <header className="bg-gray-800 p-4">
-        <h1 className="text-3xl font-bold text-center">🎵 MIDI Practice Assistant</h1>
-        <p className="text-center text-gray-400 mt-2">Practice any instrument with real-time MIDI feedback</p>
+        <h1 className="text-3xl font-bold text-center">🎵 MIDIFlow</h1>
+        <p className="text-center text-gray-400 mt-2">Real-time MIDI practice with visual feedback</p>
       </header>
 
       <main className="container mx-auto p-4">
@@ -343,12 +344,28 @@ function App() {
         {/* Note Visualizer */}
         <div className="bg-gray-800 rounded-lg p-4">
           <h2 className="text-xl font-semibold mb-3">Practice Area</h2>
-          <NoteVisualizer 
-            notes={practiceNotes}
-            className="h-96 rounded border border-gray-600"
-            onNoteExit={handleNoteExit}
-            instrumentType={selectedInstrument}
-          />
+          
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+            {/* Main practice area */}
+            <div className="lg:col-span-3">
+              <NoteVisualizer 
+                notes={practiceNotes}
+                className="h-96 rounded border border-gray-600"
+                onNoteExit={handleNoteExit}
+                instrumentType={selectedInstrument}
+              />
+            </div>
+            
+            {/* Tin whistle fingering chart (only show for tin whistle) */}
+            {selectedInstrument === 'tin-whistle' && (
+              <div className="lg:col-span-1">
+                <TinWhistleFingering 
+                  midiNote={lastNote?.note || null}
+                  className="bg-gray-700 rounded-lg p-4"
+                />
+              </div>
+            )}
+          </div>
           
           {isReady && connectedDevices.length === 0 && (
             <div className="text-center text-gray-400 mt-4">

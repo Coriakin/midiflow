@@ -1,7 +1,7 @@
-# Tooter AI Assistant Rules File
+# MIDIFlow AI Assistant Rules File
 
 ## Application Purpose
-Tooter is a web-based MIDI-driven educational app designed specifically to help beginners learn and practice songs on the tin whistle. Users play their actual tin whistle (equipped with MIDI capability via devices like Warbl) and receive real-time feedback on their performance. The app provides visual notation with Guitar Hero-style falling notes, tracks accuracy, and helps users improve their tin whistle playing skills through guided practice sessions with immediate feedback and error correction.
+MIDIFlow is a web-based MIDI-driven practice application that provides real-time visual feedback for any MIDI-capable instrument. Users connect their MIDI controller or instrument and receive immediate visual feedback through Guitar Hero-style falling notes. The app supports multiple instrument types with appropriate note ranges, provides timing feedback, and helps musicians improve their playing skills through guided practice sessions with real-time error correction and encouraging learning atmosphere.
 
 ## Code Style & Standards
 - Use TypeScript for all new files (prefer .ts/.tsx extensions)
@@ -73,11 +73,11 @@ Tooter is a web-based MIDI-driven educational app designed specifically to help 
 ## MIDI-Specific Guidelines
 - Always check for WebMIDI API support before initialization
 - Implement graceful fallbacks when MIDI devices are unavailable
-- Use consistent MIDI note numbering (Middle C = 60, tin whistle range typically 60-84)
+- Use consistent MIDI note numbering (Middle C = 60, instrument ranges vary by type)
 - Handle MIDI device hot-plugging (connect/disconnect during practice sessions)
 - Implement MIDI input filtering to ignore irrelevant messages (e.g., aftertouch, pitch bend)
 - Log MIDI events for debugging but avoid performance impact in production
-- Support both USB and Bluetooth (BLE) MIDI connections for Warbl devices
+- Support both USB and Bluetooth (BLE) MIDI connections for various MIDI devices
 
 ## Error Recovery and Learning Support
 - When wrong notes are played, pause the falling note animation briefly
@@ -132,7 +132,7 @@ Tooter is a web-based MIDI-driven educational app designed specifically to help 
 - Confirm desired precision for performance metrics (e.g., ±50ms timing windows)
 - Request preferred notation style or sheet music examples if unclear
 - Clarify data persistence requirements (temporary vs. long-term statistics)
-- Verify tin whistle note range and preferred octave handling
+- Verify instrument note range and preferred octave handling
 
 ## Naming and Terminology Conventions
 - Refer to the user consistently as "user"
@@ -168,4 +168,4 @@ Tooter is a web-based MIDI-driven educational app designed specifically to help 
 - Secondary: Firefox (limited WebMIDI, may need Web Bluetooth fallback)
 - Future: Safari (when WebMIDI support improves)
 
-**End of Tooter AI Assistant Rules File**
+**End of MIDIFlow AI Assistant Rules File**
