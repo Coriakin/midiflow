@@ -75,6 +75,14 @@ export const MIDIFileUploader: React.FC<MIDIFileUploaderProps> = ({
     try {
       const { notes, tempo, notesWithTiming } = await extractNotesFromTrack(originalFile, selectedTrackIndex);
       
+      // Read the file as ArrayBuffer for storage
+      const fileData = await new Promise<ArrayBuffer>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => resolve(e.target?.result as ArrayBuffer);
+        reader.onerror = () => reject(new Error('Failed to read file'));
+        reader.readAsArrayBuffer(originalFile);
+      });
+      
       const midiSong: MIDISong = {
         id: `midi-${Date.now()}-${selectedTrackIndex}`,
         title: songTitle || `${parsedFile.fileName} - Track ${selectedTrackIndex + 1}`,
@@ -85,7 +93,8 @@ export const MIDIFileUploader: React.FC<MIDIFileUploaderProps> = ({
         fileName: parsedFile.fileName,
         selectedTrack: selectedTrackIndex,
         originalMIDIData: parsedFile,
-        availableTracks: parsedFile.tracks
+        availableTracks: parsedFile.tracks,
+        fileData
       };
 
       onMIDISongCreate(midiSong);

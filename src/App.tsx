@@ -5,7 +5,8 @@ import { TinWhistleSequentialPractice } from './components/TinWhistleSequentialP
 import { SongInput } from './components/SongInput';
 import { MIDIFileUploader } from './components/MIDIFileUploader';
 import type { MIDIMessage, InstrumentType, Song, MIDISong, AnySong } from './types/midi';
-import { midiNoteToName, INSTRUMENT_RANGES, isMIDISong } from './types/midi';
+import { midiNoteToName, INSTRUMENT_RANGES } from './types/midi';
+import { extractNotesFromArrayBuffer } from './lib/midi/midiFileParser';
 
 function App() {
   const { 
@@ -382,9 +383,6 @@ function App() {
       ]
     }
   ];
-
-  // Combine built-in songs with user-created songs and MIDI songs
-  const allSongs: AnySong[] = [...builtInSongs, ...songs, ...midiSongs];
 
   // Manual MIDI test function
   const testMIDIAccess = async () => {
@@ -843,61 +841,185 @@ function App() {
             {/* Song Selection */}
             <div>
               <h4 className="text-sm font-medium text-gray-300 mb-2">Select a song to practice:</h4>
-              <div className="bg-gray-700 rounded-lg p-3 max-h-64 overflow-y-auto">
-                <div className="space-y-1">
-                  {allSongs.map(song => (
-                    <div
-                      key={song.id}
-                      onClick={() => setSelectedSong(song)}
-                      className={`flex items-center justify-between p-2 rounded cursor-pointer transition-colors ${
-                        selectedSong?.id === song.id
-                          ? 'bg-blue-600 text-white'
-                          : 'hover:bg-gray-600 text-gray-300'
-                      }`}
-                    >
-                      <div className="flex items-center space-x-3 flex-1 min-w-0">
-                        <div className={`w-3 h-3 rounded-full flex-shrink-0 ${
-                          selectedSong?.id === song.id ? 'bg-white' : 'bg-gray-500'
-                        }`}></div>
-                        <div className="flex-1 min-w-0">
-                          <div className="font-medium truncate">{song.title}</div>
-                          <div className="text-xs text-gray-400 flex items-center space-x-2">
-                            <span>{song.notes.length} notes</span>
-                            <span>•</span>
-                            <span>{song.tempo} BPM</span>
-                            {builtInSongs.find(b => b.id === song.id) && (
-                              <>
+              
+              {/* Built-in Songs Section */}
+              {builtInSongs.length > 0 && (
+                <div className="mb-4">
+                  <h5 className="text-xs font-medium text-green-400 mb-2 flex items-center">
+                    <span className="w-2 h-2 bg-green-400 rounded-full mr-2"></span>
+                    Built-in Songs ({builtInSongs.length})
+                  </h5>
+                  <div className="bg-gray-700 rounded-lg p-3 max-h-48 overflow-y-auto">
+                    <div className="space-y-1">
+                      {builtInSongs.map(song => (
+                        <div
+                          key={song.id}
+                          onClick={() => setSelectedSong(song)}
+                          className={`flex items-center justify-between p-2 rounded cursor-pointer transition-colors ${
+                            selectedSong?.id === song.id
+                              ? 'bg-blue-600 text-white'
+                              : 'hover:bg-gray-600 text-gray-300'
+                          }`}
+                        >
+                          <div className="flex items-center space-x-3 flex-1 min-w-0">
+                            <div className={`w-3 h-3 rounded-full flex-shrink-0 ${
+                              selectedSong?.id === song.id ? 'bg-white' : 'bg-gray-500'
+                            }`}></div>
+                            <div className="flex-1 min-w-0">
+                              <div className="font-medium truncate">{song.title}</div>
+                              <div className="text-xs text-gray-400 flex items-center space-x-2">
+                                <span>{song.notes.length} notes</span>
                                 <span>•</span>
-                                <span className="text-green-400">Built-in</span>
-                              </>
-                            )}
-                            {isMIDISong(song) && (
-                              <>
+                                <span>{song.tempo} BPM</span>
+                              </div>
+                            </div>
+                          </div>
+                          {selectedSong?.id === song.id && (
+                            <div className="flex-shrink-0 ml-2">
+                              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* MIDI Songs Section */}
+              {(midiSongs.length > 0 || songs.length > 0) && (
+                <div className="mb-4">
+                  <h5 className="text-xs font-medium text-blue-400 mb-2 flex items-center">
+                    <span className="w-2 h-2 bg-blue-400 rounded-full mr-2"></span>
+                    Imported Songs ({midiSongs.length + songs.length})
+                  </h5>
+                  <div className="bg-gray-700 rounded-lg p-3 max-h-48 overflow-y-auto">
+                    <div className="space-y-1">
+                      {/* MIDI Songs */}
+                      {midiSongs.map(song => (
+                        <div
+                          key={song.id}
+                          className={`flex items-center justify-between p-2 rounded transition-colors ${
+                            selectedSong?.id === song.id
+                              ? 'bg-blue-600 text-white'
+                              : 'hover:bg-gray-600 text-gray-300'
+                          }`}
+                        >
+                          <div className="flex items-center space-x-3 flex-1 min-w-0">
+                            <div className={`w-3 h-3 rounded-full flex-shrink-0 ${
+                              selectedSong?.id === song.id ? 'bg-white' : 'bg-gray-500'
+                            }`}></div>
+                            <div className="flex-1 min-w-0">
+                              <div 
+                                className="font-medium truncate cursor-pointer"
+                                onClick={() => setSelectedSong(song)}
+                              >
+                                {song.title}
+                              </div>
+                              <div className="text-xs text-gray-400 flex items-center space-x-2">
+                                <span>{song.notes.length} notes</span>
                                 <span>•</span>
-                                <span className="text-blue-400">MIDI</span>
+                                <span>{song.tempo} BPM</span>
                                 <span>•</span>
                                 <span className="text-purple-400">Track {song.selectedTrack + 1}</span>
-                              </>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            {/* Track Selection Dropdown */}
+                            <select
+                              value={song.selectedTrack}
+                              onChange={(e) => {
+                                const newTrack = parseInt(e.target.value);
+                                try {
+                                  // Extract notes from the new track
+                                  const { notes, tempo, notesWithTiming } = extractNotesFromArrayBuffer(song.fileData!, newTrack);
+                                  const updatedSong = { 
+                                    ...song, 
+                                    selectedTrack: newTrack,
+                                    notes,
+                                    tempo,
+                                    notesWithTiming
+                                  };
+                                  // Update the song in the midiSongs array
+                                  setMidiSongs(prev => prev.map(s => s.id === song.id ? updatedSong : s));
+                                  // If this song is currently selected, update the selected song too
+                                  if (selectedSong?.id === song.id) {
+                                    setSelectedSong(updatedSong);
+                                  }
+                                } catch (error) {
+                                  console.error('Failed to extract notes from track:', error);
+                                }
+                              }}
+                              className="bg-gray-600 text-white px-2 py-1 rounded text-xs"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              {song.availableTracks.map((track, index) => (
+                                <option key={index} value={index}>
+                                  Track {index + 1}: {track.trackName || 'Unnamed'} ({track.noteCount} notes)
+                                </option>
+                              ))}
+                            </select>
+                            {selectedSong?.id === song.id && (
+                              <div className="flex-shrink-0">
+                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                </svg>
+                              </div>
                             )}
                           </div>
                         </div>
-                      </div>
-                      {selectedSong?.id === song.id && (
-                        <div className="flex-shrink-0 ml-2">
-                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                          </svg>
+                      ))}
+                      
+                      {/* Manual Songs */}
+                      {songs.map(song => (
+                        <div
+                          key={song.id}
+                          onClick={() => setSelectedSong(song)}
+                          className={`flex items-center justify-between p-2 rounded cursor-pointer transition-colors ${
+                            selectedSong?.id === song.id
+                              ? 'bg-blue-600 text-white'
+                              : 'hover:bg-gray-600 text-gray-300'
+                          }`}
+                        >
+                          <div className="flex items-center space-x-3 flex-1 min-w-0">
+                            <div className={`w-3 h-3 rounded-full flex-shrink-0 ${
+                              selectedSong?.id === song.id ? 'bg-white' : 'bg-gray-500'
+                            }`}></div>
+                            <div className="flex-1 min-w-0">
+                              <div className="font-medium truncate">{song.title}</div>
+                              <div className="text-xs text-gray-400 flex items-center space-x-2">
+                                <span>{song.notes.length} notes</span>
+                                <span>•</span>
+                                <span>{song.tempo} BPM</span>
+                                <span>•</span>
+                                <span className="text-yellow-400">Manual</span>
+                              </div>
+                            </div>
+                          </div>
+                          {selectedSong?.id === song.id && (
+                            <div className="flex-shrink-0 ml-2">
+                              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                            </div>
+                          )}
                         </div>
-                      )}
+                      ))}
                     </div>
-                  ))}
-                </div>
-                {allSongs.length === 0 && (
-                  <div className="text-center text-gray-500 py-4">
-                    No songs available. Create a song above to get started.
                   </div>
-                )}
-              </div>
+                </div>
+              )}
+
+              {(builtInSongs.length === 0 && midiSongs.length === 0 && songs.length === 0) && (
+                <div className="bg-gray-700 rounded-lg p-4">
+                  <div className="text-center text-gray-500 py-4">
+                    No songs available. Create a song or upload a MIDI file above to get started.
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Practice Controls for Tin Whistle */}

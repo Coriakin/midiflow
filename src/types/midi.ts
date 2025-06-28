@@ -149,6 +149,7 @@ export interface MIDISong extends Song {
   selectedTrack: number;
   originalMIDIData: ParsedMIDIFile;
   availableTracks: MIDITrackInfo[];
+  fileData?: ArrayBuffer; // Store the original file data for re-extraction
 }
 
 /**

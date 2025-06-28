@@ -252,3 +252,81 @@ export function createMIDISongFromFile(
   
   return Promise.resolve(song);
 }
+
+/**
+ * Extract notes from a specific track using ArrayBuffer data
+ */
+export function extractNotesFromArrayBuffer(fileData: ArrayBuffer, trackIndex: number): { notes: number[]; tempo: number; notesWithTiming?: Array<{ note: number; startTime: number; duration: number }> } {
+  const uint8Array = new Uint8Array(fileData);
+  const midiData = MidiParser.parse(uint8Array);
+  
+  if (trackIndex >= midiData.track.length) {
+    throw new Error(`Track index ${trackIndex} not found`);
+  }
+  
+  const track = midiData.track[trackIndex];
+  const notes: number[] = [];
+  const notesWithTiming: Array<{ note: number; startTime: number; duration: number }> = [];
+  const noteOnEvents: Map<number, { tick: number; velocity: number }> = new Map();
+  
+  let currentTick = 0;
+  let tempo = 120; // Default BPM
+  
+  // First pass: find tempo and extract basic info
+  track.event.forEach((event: any) => {
+    currentTick += event.deltaTime;
+    
+    if (event.type === 255 && event.metaType === 81 && event.data) { // Set Tempo
+      const microsecondsPerBeat = (event.data[0] << 16) | (event.data[1] << 8) | event.data[2];
+      tempo = Math.round(60000000 / microsecondsPerBeat);
+    }
+  });
+  
+  const ticksPerBeat = midiData.ticksPerBeat || 480;
+  currentTick = 0; // Reset for second pass
+  
+  // Second pass: extract notes
+  track.event.forEach((event: any) => {
+    currentTick += event.deltaTime;
+    
+    if (event.type === 9 && event.data && event.data.length >= 2) { // Note On
+      const noteNumber = event.data[0];
+      const velocity = event.data[1];
+      
+      if (velocity > 0) {
+        notes.push(noteNumber);
+        noteOnEvents.set(noteNumber, { tick: currentTick, velocity });
+      } else {
+        // Velocity 0 is note off
+        const noteOn = noteOnEvents.get(noteNumber);
+        if (noteOn) {
+          const startTime = noteOn.tick / ticksPerBeat; // in beats
+          const duration = (currentTick - noteOn.tick) / ticksPerBeat; // in beats
+          notesWithTiming.push({ note: noteNumber, startTime, duration });
+          noteOnEvents.delete(noteNumber);
+        }
+      }
+    } else if (event.type === 8 && event.data && event.data.length >= 2) { // Note Off
+      const noteNumber = event.data[0];
+      const noteOn = noteOnEvents.get(noteNumber);
+      if (noteOn) {
+        const startTime = noteOn.tick / ticksPerBeat; // in beats
+        const duration = (currentTick - noteOn.tick) / ticksPerBeat; // in beats
+        notesWithTiming.push({ note: noteNumber, startTime, duration });
+        noteOnEvents.delete(noteNumber);
+      }
+    }
+  });
+  
+  // Handle any remaining note-on events (notes that never had note-off)
+  noteOnEvents.forEach((noteOn, noteNumber) => {
+    const startTime = noteOn.tick / ticksPerBeat;
+    const duration = 0.5; // Default half-beat duration
+    notesWithTiming.push({ note: noteNumber, startTime, duration });
+  });
+  
+  // Sort notes by timing
+  notesWithTiming.sort((a, b) => a.startTime - b.startTime);
+  
+  return { notes, tempo, notesWithTiming };
+}
