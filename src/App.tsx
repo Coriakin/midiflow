@@ -82,6 +82,10 @@ function App() {
   const [showCompletionMessage, setShowCompletionMessage] = useState<boolean>(false);
   const [completionMessage, setCompletionMessage] = useState<string>('');
 
+  // Song editing state
+  const [editingSongId, setEditingSongId] = useState<string | null>(null);
+  const [editingTitle, setEditingTitle] = useState<string>('');
+
   // Built-in songs for quick testing
   const builtInSongs: Song[] = [
     {
@@ -556,6 +560,89 @@ function App() {
     console.log('MIDI song created:', midiSong);
   };
 
+  // Song management functions
+  const deleteMidiSong = (songId: string) => {
+    setMidiSongs(prev => prev.filter(song => song.id !== songId));
+    // If the deleted song was selected, clear selection and stop practice
+    if (selectedSong?.id === songId) {
+      setSelectedSong(null);
+      setPracticeSequence([]);
+      setCurrentNoteIndex(0);
+      setCurrentTargetNote(null);
+      setIsCorrectNote(null);
+      setLastPlayedNote(null);
+    }
+  };
+
+  const deleteManualSong = (songId: string) => {
+    setSongs(prev => prev.filter(song => song.id !== songId));
+    // If the deleted song was selected, clear selection and stop practice
+    if (selectedSong?.id === songId) {
+      setSelectedSong(null);
+      setPracticeSequence([]);
+      setCurrentNoteIndex(0);
+      setCurrentTargetNote(null);
+      setIsCorrectNote(null);
+      setLastPlayedNote(null);
+    }
+  };
+
+  const renameMidiSong = (songId: string, newTitle: string) => {
+    if (newTitle.trim() === '') return;
+    
+    setMidiSongs(prev => prev.map(song => 
+      song.id === songId 
+        ? { ...song, title: newTitle.trim() }
+        : song
+    ));
+    
+    // Update selected song if it's the one being renamed
+    if (selectedSong?.id === songId) {
+      setSelectedSong(prev => prev ? { ...prev, title: newTitle.trim() } : null);
+    }
+  };
+
+  const renameManualSong = (songId: string, newTitle: string) => {
+    if (newTitle.trim() === '') return;
+    
+    setSongs(prev => prev.map(song => 
+      song.id === songId 
+        ? { ...song, title: newTitle.trim() }
+        : song
+    ));
+    
+    // Update selected song if it's the one being renamed
+    if (selectedSong?.id === songId) {
+      setSelectedSong(prev => prev ? { ...prev, title: newTitle.trim() } : null);
+    }
+  };
+
+  // Editing functions
+  const startEditing = (songId: string, currentTitle: string) => {
+    setEditingSongId(songId);
+    setEditingTitle(currentTitle);
+  };
+
+  const cancelEditing = () => {
+    setEditingSongId(null);
+    setEditingTitle('');
+  };
+
+  const saveEditing = (songId: string, isMidiSong: boolean) => {
+    if (editingTitle.trim() === '') {
+      cancelEditing();
+      return;
+    }
+    
+    if (isMidiSong) {
+      renameMidiSong(songId, editingTitle);
+    } else {
+      renameManualSong(songId, editingTitle);
+    }
+    
+    cancelEditing();
+  };
+
   // Start a practice sequence for tin whistle
   const startPracticeSequence = (notes: number[]) => {
     setPracticeSequence(notes);
@@ -987,12 +1074,53 @@ function App() {
                               selectedSong?.id === song.id ? 'bg-white' : 'bg-gray-500'
                             }`}></div>
                             <div className="flex-1 min-w-0">
-                              <div 
-                                className="font-medium truncate cursor-pointer"
-                                onClick={() => setSelectedSong(song)}
-                              >
-                                {song.title}
-                              </div>
+                              {editingSongId === song.id ? (
+                                <div className="flex items-center space-x-2">
+                                  <input
+                                    type="text"
+                                    value={editingTitle}
+                                    onChange={(e) => setEditingTitle(e.target.value)}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') saveEditing(song.id, true);
+                                      if (e.key === 'Escape') cancelEditing();
+                                    }}
+                                    className="bg-gray-600 text-white px-2 py-1 rounded text-sm flex-1"
+                                    autoFocus
+                                    onClick={(e) => e.stopPropagation()}
+                                  />
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      saveEditing(song.id, true);
+                                    }}
+                                    className="text-green-400 hover:text-green-300 p-1"
+                                    title="Save"
+                                  >
+                                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                    </svg>
+                                  </button>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      cancelEditing();
+                                    }}
+                                    className="text-red-400 hover:text-red-300 p-1"
+                                    title="Cancel"
+                                  >
+                                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                      <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                                    </svg>
+                                  </button>
+                                </div>
+                              ) : (
+                                <div 
+                                  className="font-medium truncate cursor-pointer"
+                                  onClick={() => setSelectedSong(song)}
+                                >
+                                  {song.title}
+                                </div>
+                              )}
                               <div className="text-xs text-gray-400 flex items-center space-x-2">
                                 <span>{song.notes.length} notes</span>
                                 <span>•</span>
@@ -1054,6 +1182,37 @@ function App() {
                               <span>Preview</span>
                             </button>
                             
+                            {/* Rename button */}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                startEditing(song.id, song.title);
+                              }}
+                              className="bg-blue-600 hover:bg-blue-500 text-white px-2 py-1 rounded text-xs"
+                              title="Rename song"
+                            >
+                              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                              </svg>
+                            </button>
+                            
+                            {/* Delete button */}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (confirm(`Are you sure you want to delete "${song.title}"?`)) {
+                                  deleteMidiSong(song.id);
+                                }
+                              }}
+                              className="bg-red-600 hover:bg-red-500 text-white px-2 py-1 rounded text-xs"
+                              title="Delete song"
+                            >
+                              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" clipRule="evenodd" />
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414L7.586 12l-1.293 1.293a1 1 0 101.414 1.414L9 13.414l2.293 2.293a1 1 0 001.414-1.414L11.414 12l1.293-1.293z" clipRule="evenodd" />
+                              </svg>
+                            </button>
+                            
                             {selectedSong?.id === song.id && (
                               <div className="flex-shrink-0">
                                 <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
@@ -1069,8 +1228,7 @@ function App() {
                       {songs.map(song => (
                         <div
                           key={song.id}
-                          onClick={() => setSelectedSong(song)}
-                          className={`flex items-center justify-between p-2 rounded cursor-pointer transition-colors ${
+                          className={`flex items-center justify-between p-2 rounded transition-colors ${
                             selectedSong?.id === song.id
                               ? 'bg-blue-600 text-white'
                               : 'hover:bg-gray-600 text-gray-300'
@@ -1081,7 +1239,53 @@ function App() {
                               selectedSong?.id === song.id ? 'bg-white' : 'bg-gray-500'
                             }`}></div>
                             <div className="flex-1 min-w-0">
-                              <div className="font-medium truncate">{song.title}</div>
+                              {editingSongId === song.id ? (
+                                <div className="flex items-center space-x-2">
+                                  <input
+                                    type="text"
+                                    value={editingTitle}
+                                    onChange={(e) => setEditingTitle(e.target.value)}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') saveEditing(song.id, false);
+                                      if (e.key === 'Escape') cancelEditing();
+                                    }}
+                                    className="bg-gray-600 text-white px-2 py-1 rounded text-sm flex-1"
+                                    autoFocus
+                                    onClick={(e) => e.stopPropagation()}
+                                  />
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      saveEditing(song.id, false);
+                                    }}
+                                    className="text-green-400 hover:text-green-300 p-1"
+                                    title="Save"
+                                  >
+                                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                    </svg>
+                                  </button>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      cancelEditing();
+                                    }}
+                                    className="text-red-400 hover:text-red-300 p-1"
+                                    title="Cancel"
+                                  >
+                                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                      <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                                    </svg>
+                                  </button>
+                                </div>
+                              ) : (
+                                <div 
+                                  className="font-medium truncate cursor-pointer"
+                                  onClick={() => setSelectedSong(song)}
+                                >
+                                  {song.title}
+                                </div>
+                              )}
                               <div className="text-xs text-gray-400 flex items-center space-x-2">
                                 <span>{song.notes.length} notes</span>
                                 <span>•</span>
@@ -1091,13 +1295,46 @@ function App() {
                               </div>
                             </div>
                           </div>
-                          {selectedSong?.id === song.id && (
-                            <div className="flex-shrink-0 ml-2">
-                              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          <div className="flex items-center space-x-2">
+                            {/* Rename button */}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                startEditing(song.id, song.title);
+                              }}
+                              className="bg-blue-600 hover:bg-blue-500 text-white px-2 py-1 rounded text-xs"
+                              title="Rename song"
+                            >
+                              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
                               </svg>
-                            </div>
-                          )}
+                            </button>
+                            
+                            {/* Delete button */}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (confirm(`Are you sure you want to delete "${song.title}"?`)) {
+                                  deleteManualSong(song.id);
+                                }
+                              }}
+                              className="bg-red-600 hover:bg-red-500 text-white px-2 py-1 rounded text-xs"
+                              title="Delete song"
+                            >
+                              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" clipRule="evenodd" />
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414L7.586 12l-1.293 1.293a1 1 0 101.414 1.414L9 13.414l2.293 2.293a1 1 0 001.414-1.414L11.414 12l1.293-1.293z" clipRule="evenodd" />
+                              </svg>
+                            </button>
+                            
+                            {selectedSong?.id === song.id && (
+                              <div className="flex-shrink-0">
+                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                </svg>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       ))}
                     </div>
