@@ -25,14 +25,16 @@ MIDIFlow is a web-based MIDI-driven practice application that provides real-time
 - Support USB and Bluetooth (BLE) MIDI devices via WebMIDI and Web Bluetooth APIs.
 - Prioritize low latency, with USB MIDI as primary recommendation.
 
-### User-Friendly Song Input
-- Allow users to easily add new songs they want to practice:
-  - Provide a drag-and-drop interface for uploading MIDI files
-  - Support manual note entry for songs not available as MIDI
-  - Simple melody input tools (virtual keyboard, note picker)
-  - Automatically parse MIDI files to visualize notes and identify song structures
-  - Allow basic metadata input (song title, difficulty, tempo adjustments)
-  - Save user-created songs for future practice sessions
+### User-Friendly Song Input ✅ IMPLEMENTED
+- ✅ Allow users to easily add new songs they want to practice:
+  - ✅ Provide a drag-and-drop interface for uploading MIDI files
+  - ✅ Support manual note entry for songs not available as MIDI
+  - ✅ Simple melody input tools (note name parser, MIDI number input)
+  - ✅ Automatically parse MIDI files to visualize notes and identify song structures
+  - ✅ Allow basic metadata input (song title, tempo from MIDI)
+  - ✅ Track selection from multi-track MIDI files
+  - ✅ Built-in song library for immediate practice
+  - [ ] Save user-created songs to persistent storage (Phase 3)
 
 ### Visual and Real-time Feedback
 - Display notes visually as "falling notes" moving towards a target line (Guitar Hero style)
@@ -61,14 +63,15 @@ MIDIFlow is a web-based MIDI-driven practice application that provides real-time
   - Per-song progress tracking to show mastery development
 
 ### Technical Specifications
-- Frontend: React.js (using functional components with TypeScript)
-- MIDI: WebMIDI API (primary) + Web Bluetooth API (fallback)
-- Visuals & Animation: SVG for sheet music notation, HTML Canvas for real-time visual feedback, Framer Motion for UI transitions
-- Audio: Web Audio API for metronome and audio feedback
-- Data Management: IndexedDB for song storage and statistics, LocalStorage for user preferences
-- State Management: React Context + useReducer for game state, Zustand for global app state
-- Deployment: Web-based (Vite build), ensuring cross-browser compatibility primarily with Chrome-based browsers
-- Testing: Jest + React Testing Library for components, Web MIDI API mocking for MIDI tests
+- Frontend: React.js (using functional components with TypeScript) ✅
+- MIDI: WebMIDI API (primary) + Web Bluetooth API (planned Phase 4) ✅
+- MIDI Parsing: midi-parser-js library for MIDI file import and analysis ✅
+- Visuals & Animation: CSS animations for real-time visual feedback ✅
+- Audio: Web Audio API for metronome and audio feedback (planned Phase 3)
+- Data Management: In-memory state (Phase 2), IndexedDB planned (Phase 3)
+- State Management: React useState/useEffect (Phase 2), Zustand planned (Phase 3)
+- Deployment: Web-based (Vite build), Chrome-based browser focus ✅
+- Testing: Jest + React Testing Library for components (planned Phase 3)
 
 ## MIDI-Specific Guidelines
 - Always check for WebMIDI API support before initialization
@@ -95,15 +98,23 @@ MIDIFlow is a web-based MIDI-driven practice application that provides real-time
 - Use event-driven architecture for loose coupling between input and feedback systems
 
 ## File Organization Patterns
-- `/src/components/` - Reusable UI components
-- `/src/hooks/` - Custom React hooks (useMIDI, usePracticeSession, etc.)
-- `/src/lib/midi/` - MIDI parsing, device management, and input handling
-- `/src/lib/practice/` - Practice session logic, scoring, and performance analysis
-- `/src/lib/audio/` - Audio context management and metronome
-- `/src/lib/notation/` - Sheet music rendering and notation utilities
-- `/src/types/` - TypeScript type definitions
-- `/src/utils/` - Helper functions and utilities
-- `/src/stores/` - State management (Zustand stores)
+- `/src/components/` - Reusable UI components ✅
+  - `SongInput.tsx` - Manual song creation ✅
+  - `MIDIFileUploader.tsx` - MIDI file import and track selection ✅
+  - `TinWhistlePracticeBoard.tsx` - Tin whistle practice interface ✅
+  - `TinWhistleSequentialPractice.tsx` - Sequential practice with timing ✅
+- `/src/hooks/` - Custom React hooks (useMIDI, usePracticeSession, etc.) ✅
+- `/src/lib/midi/` - MIDI parsing, device management, and input handling ✅
+  - `MIDIManager.ts` - Core MIDI device management ✅
+  - `midiFileParser.ts` - MIDI file parsing and note extraction ✅
+- `/src/lib/practice/` - Practice session logic, scoring, and performance analysis (planned Phase 3)
+- `/src/lib/audio/` - Audio context management and metronome (planned Phase 3)
+- `/src/lib/notation/` - Sheet music rendering and notation utilities (planned Phase 4)
+- `/src/types/` - TypeScript type definitions ✅
+  - `midi.ts` - Core MIDI types, song interfaces, and utilities ✅
+  - `midi-parser-js.d.ts` - MIDI parser library type definitions ✅
+- `/src/utils/` - Helper functions and utilities (as needed)
+- `/src/stores/` - State management (Zustand stores, planned Phase 3)
 
 ## Error Handling Requirements
 - Wrap all MIDI operations in try-catch blocks
@@ -143,25 +154,32 @@ MIDIFlow is a web-based MIDI-driven practice application that provides real-time
 - Avoid ambiguous terms or acronyms without explanations
 
 ## Development Priorities & Phases
-### Phase 1 - Core MIDI Foundation
-- Basic WebMIDI API integration and device detection
-- Simple note input recognition and display
-- Basic falling note visualization (single notes)
+### Phase 1 - Core MIDI Foundation ✅ COMPLETE
+- ✅ Basic WebMIDI API integration and device detection
+- ✅ Simple note input recognition and display
+- ✅ Basic falling note visualization (single notes)
 
-### Phase 2 - Practice Interface
-- Song input mechanism (start with manual note entry)
-- Visual feedback system (correct/incorrect notes)
-- Basic timing and accuracy tracking
+### Phase 2 - Practice Interface ✅ COMPLETE
+- ✅ Song input mechanism (manual note entry + MIDI file import)
+- ✅ Visual feedback system (correct/incorrect notes)
+- ✅ Basic timing and accuracy tracking
+- ✅ MIDI file parsing and import with track selection
+- ✅ Sequential practice mode with step-by-step guidance
+- ✅ Built-in song library with timing data
 
-### Phase 3 - Enhanced Features
-- MIDI file parsing and import
-- Statistics and progress tracking
-- Advanced practice modes (tempo adjustment, looping)
+### Phase 3 - Enhanced Features (CURRENT)
+- [ ] Statistics and progress tracking
+- [ ] Advanced practice modes (tempo adjustment, looping)
+- [ ] Local storage for song persistence
+- [ ] Performance metrics and session recording
+- [ ] Advanced error recovery and learning analytics
 
 ### Phase 4 - Polish & Optimization
-- Bluetooth MIDI support
-- Advanced visualizations
-- Performance optimizations
+- [ ] Bluetooth MIDI support
+- [ ] Advanced visualizations and themes
+- [ ] Performance optimizations
+- [ ] MIDI file editing capabilities
+- [ ] Social features and sharing
 
 ## Browser Support Priorities
 - Primary: Chrome/Chromium-based browsers (best WebMIDI support)
