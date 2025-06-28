@@ -77,6 +77,42 @@ export const TinWhistleSequentialPractice: React.FC<SequentialPracticeProps> = (
     : 0;
   const maxTimelinePosition = songEndTime * pixelsPerBeat;
 
+  // Calculate vertical offsets for overlapping notes to prevent stacking
+  const calculateNotePositions = (sequence: NoteWithTiming[]) => {
+    const positions: Array<{ horizontalPos: number; verticalOffset: number }> = [];
+    const stackHeight = 140; // pixels between stacked notes for better separation
+    const noteVisualWidth = 120; // actual visual width of a note (fingering chart + padding)
+    const minOverlapThreshold = 40; // minimum overlap in pixels to trigger stacking
+    
+    sequence.forEach((noteItem, index) => {
+      const horizontalPos = noteItem.startTime * pixelsPerBeat;
+      let verticalOffset = 0;
+      
+      // Check for visual collisions with previous notes
+      for (let i = 0; i < index; i++) {
+        const prevNote = sequence[i];
+        const prevHorizontalPos = prevNote.startTime * pixelsPerBeat;
+        
+        // Calculate the visual overlap between note centers
+        const distance = Math.abs(horizontalPos - prevHorizontalPos);
+        
+        // Only stack if notes are visually too close (would overlap significantly)
+        if (distance < noteVisualWidth && distance < minOverlapThreshold) {
+          // Check if this position would conflict with the previous note's vertical position
+          if (positions[i].verticalOffset === verticalOffset) {
+            verticalOffset = positions[i].verticalOffset + stackHeight;
+          }
+        }
+      }
+      
+      positions.push({ horizontalPos, verticalOffset });
+    });
+    
+    return positions;
+  };
+
+  const notePositions = calculateNotePositions(sequence);
+
   // Timeline animation
   useEffect(() => {
     let animationFrame: number;
@@ -290,19 +326,19 @@ export const TinWhistleSequentialPractice: React.FC<SequentialPracticeProps> = (
       {/* Main practice area */}
       <div 
         ref={containerRef}
-        className="relative h-64 overflow-x-auto overflow-y-hidden bg-gray-900"
-        style={{ scrollBehavior: 'smooth' }}
+        className="relative overflow-x-auto overflow-y-auto bg-gray-900"
+        style={{ height: '500px', scrollBehavior: 'smooth' }}
       >
         {/* Timeline background */}
         <div className="absolute top-0 left-0 h-full bg-gray-800 border-b border-gray-600" 
-             style={{ width: `${maxTimelinePosition + 200}px` }}>
+             style={{ width: `${maxTimelinePosition + 200}px`, minHeight: '500px' }}>
           
           {/* Beat markers */}
           {Array.from({ length: Math.ceil(songEndTime) + 2 }, (_, i) => (
             <div
               key={i}
-              className="absolute top-0 bottom-0 border-l border-gray-600 opacity-30"
-              style={{ left: `${i * pixelsPerBeat}px` }}
+              className="absolute top-0 border-l border-gray-600 opacity-30"
+              style={{ left: `${i * pixelsPerBeat}px`, height: '100%' }}
             >
               <div className="text-xs text-gray-500 mt-1 ml-1">{i + 1}</div>
             </div>
@@ -310,7 +346,7 @@ export const TinWhistleSequentialPractice: React.FC<SequentialPracticeProps> = (
 
           {/* Timeline progress line */}
           <div
-            className={`absolute top-0 bottom-0 w-1 shadow-lg transition-colors duration-300 ${
+            className={`absolute top-0 w-1 shadow-lg transition-colors duration-300 ${
               !hasStarted 
                 ? 'bg-blue-500' 
                 : isCompleted
@@ -321,6 +357,7 @@ export const TinWhistleSequentialPractice: React.FC<SequentialPracticeProps> = (
             }`}
             style={{
               left: `${timelinePosition}px`,
+              height: '100%',
               boxShadow: !hasStarted
                 ? '0 0 10px rgba(59, 130, 246, 0.6)'
                 : isCompleted
@@ -332,26 +369,40 @@ export const TinWhistleSequentialPractice: React.FC<SequentialPracticeProps> = (
           />
 
           {/* Notes */}
-          <div className="absolute top-12 left-0 right-0 h-40 flex items-center">
+          <div className="absolute top-12 left-0 right-0" style={{ minHeight: '450px' }}>
             {sequence.map((noteItem, index) => {
               const isCurrentNote = index === currentNoteIndex;
               const isCompleted = completedNotes.has(index);
               const showGreenFeedback = correctNoteFeedback.has(index);
               const isPastNote = index < currentNoteIndex;
+              const position = notePositions[index];
+              const isStacked = position.verticalOffset > 0;
               
               return (
                 <div
                   key={index}
-                  className="absolute flex flex-col items-center"
-                  style={{ left: `${noteItem.startTime * pixelsPerBeat}px` }}
+                  className={`absolute flex flex-col items-center transition-all duration-300 ${
+                    isStacked ? 'border-l-2 border-blue-400 pl-1' : ''
+                  }`}
+                  style={{ 
+                    left: `${position.horizontalPos}px`,
+                    top: `${position.verticalOffset}px`
+                  }}
                 >
+                  {/* Stack indicator only for actually stacked notes */}
+                  {isStacked && (
+                    <div className="text-xs text-blue-300 mb-1 bg-blue-900 bg-opacity-50 px-1 py-0.5 rounded text-center">
+                      ↕ {Math.floor(position.verticalOffset / 140) + 1}
+                    </div>
+                  )}
+
                   {/* Note name */}
-                  <div className={`text-sm font-medium mb-2 px-2 py-1 rounded ${
+                  <div className={`text-sm font-medium mb-2 px-3 py-1 rounded shadow-md ${
                     isCurrentNote 
-                      ? 'bg-yellow-500 text-black' 
+                      ? 'bg-yellow-500 text-black border-2 border-yellow-300' 
                       : isPastNote || isCompleted
-                        ? 'bg-gray-700 text-gray-400'
-                        : 'bg-gray-600 text-white'
+                        ? 'bg-gray-700 text-gray-400 border border-gray-600'
+                        : 'bg-gray-600 text-white border border-gray-500'
                   }`}>
                     {midiNoteToName(noteItem.note)}
                   </div>
@@ -359,23 +410,30 @@ export const TinWhistleSequentialPractice: React.FC<SequentialPracticeProps> = (
                   {/* Fingering chart */}
                   <div className={`transition-all duration-500 ${
                     showGreenFeedback
-                      ? 'bg-green-500 p-2 rounded-lg shadow-lg scale-110'
+                      ? 'bg-green-500 p-3 rounded-lg shadow-lg scale-110 border-2 border-green-300'
                       : isCurrentNote
-                        ? 'bg-blue-600 p-2 rounded-lg shadow-lg ring-2 ring-yellow-400'
+                        ? 'bg-blue-600 p-3 rounded-lg shadow-lg ring-4 ring-yellow-400'
                         : isPastNote || isCompleted
-                          ? 'opacity-40 filter grayscale'
-                          : 'bg-gray-700 p-1 rounded'
+                          ? 'opacity-40 filter grayscale bg-gray-800 p-2 rounded'
+                          : 'bg-gray-700 p-2 rounded border border-gray-600'
                   }`}>
                     {renderFingeringChart(noteItem.note, isCurrentNote ? 'large' : 'small')}
                   </div>
 
                   {/* Duration indicator */}
                   <div 
-                    className={`mt-2 h-1 rounded ${
+                    className={`mt-3 h-2 rounded shadow-sm ${
                       isPastNote || isCompleted ? 'bg-gray-600' : 'bg-blue-400'
                     }`}
-                    style={{ width: `${noteItem.duration * pixelsPerBeat}px` }}
+                    style={{ width: `${Math.max(noteItem.duration * pixelsPerBeat, 80)}px` }}
                   />
+
+                  {/* Note timing info - only show for stacked or current notes to reduce clutter */}
+                  {(isStacked || isCurrentNote) && (
+                    <div className="text-xs text-gray-400 mt-1">
+                      {noteItem.startTime.toFixed(1)}s
+                    </div>
+                  )}
                 </div>
               );
             })}
