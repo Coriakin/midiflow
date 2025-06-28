@@ -373,36 +373,6 @@ export const MIDIPreview: React.FC<MIDIPreviewProps> = ({
             >
               ⏹️ Stop
             </button>
-            
-            {/* Test Audio Button */}
-            <button
-              onClick={() => {
-                console.log('Testing audio with middle C (note 60)');
-                playNote(60, 1.0, 80);
-              }}
-              className="px-3 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded text-sm"
-              title="Test audio with middle C"
-            >
-              🎵 Test
-            </button>
-            
-            {/* Test First Notes Button */}
-            <button
-              onClick={() => {
-                console.log('Playing first 3 notes from track data...');
-                trackData.slice(0, 3).forEach((note, index) => {
-                  setTimeout(() => {
-                    console.log(`Playing note ${note.note} (scheduled for ${note.startTime.toFixed(2)}s)`);
-                    playNote(note.note, note.duration, note.velocity);
-                  }, index * 500); // Play each note 500ms apart
-                });
-              }}
-              className="px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded text-sm"
-              title="Play first 3 notes from track"
-              disabled={trackData.length === 0}
-            >
-              🎼 First Notes
-            </button>
           </div>
         </div>
 

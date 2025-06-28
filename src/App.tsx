@@ -8,6 +8,14 @@ import { MIDIPreview } from './components/MIDIPreview';
 import type { MIDIMessage, InstrumentType, Song, MIDISong, AnySong } from './types/midi';
 import { midiNoteToName, INSTRUMENT_RANGES } from './types/midi';
 import { extractNotesFromArrayBuffer } from './lib/midi/midiFileParser';
+import { 
+  saveMidiSongsToStorage, 
+  loadMidiSongsFromStorage, 
+  saveManualSongsToStorage, 
+  loadManualSongsFromStorage,
+  clearAllStoredSongs,
+  getStorageInfo
+} from './utils/storage';
 
 function App() {
   const { 
@@ -31,6 +39,35 @@ function App() {
   const [songs, setSongs] = useState<Song[]>([]);
   const [midiSongs, setMidiSongs] = useState<MIDISong[]>([]);
   const [selectedSong, setSelectedSong] = useState<AnySong | null>(null);
+  
+  // Load songs from localStorage on component mount
+  useEffect(() => {
+    console.log('🔄 Loading songs from localStorage...');
+    const savedMidiSongs = loadMidiSongsFromStorage();
+    const savedManualSongs = loadManualSongsFromStorage();
+    
+    if (savedMidiSongs.length > 0) {
+      setMidiSongs(savedMidiSongs);
+    }
+    
+    if (savedManualSongs.length > 0) {
+      setSongs(savedManualSongs);
+    }
+  }, []);
+  
+  // Save MIDI songs to localStorage whenever they change
+  useEffect(() => {
+    if (midiSongs.length > 0) {
+      saveMidiSongsToStorage(midiSongs);
+    }
+  }, [midiSongs]);
+  
+  // Save manual songs to localStorage whenever they change
+  useEffect(() => {
+    if (songs.length > 0) {
+      saveManualSongsToStorage(songs);
+    }
+  }, [songs]);
   
   // MIDI Preview state
   const [previewSong, setPreviewSong] = useState<MIDISong | null>(null);
@@ -842,6 +879,39 @@ function App() {
 
             {/* MIDI File Upload */}
             <MIDIFileUploader onMIDISongCreate={handleMIDISongCreate} />
+
+            {/* Storage Management (Development) */}
+            {process.env.NODE_ENV === 'development' && (
+              <div className="bg-gray-700 rounded-lg p-3">
+                <h4 className="text-sm font-medium text-gray-300 mb-2">Development Tools</h4>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      const info = getStorageInfo();
+                      if (confirm(`Clear all stored songs?\n\nCurrent storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs (${info.totalSize})`)) {
+                        clearAllStoredSongs();
+                        setMidiSongs([]);
+                        setSongs([]);
+                        setSelectedSong(null);
+                        alert('✅ All stored songs cleared!');
+                      }
+                    }}
+                    className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-sm"
+                  >
+                    🗑️ Clear Storage
+                  </button>
+                  <button
+                    onClick={() => {
+                      const info = getStorageInfo();
+                      alert(`Storage Info:\n\n📁 MIDI Songs: ${info.midiSongs}\n📝 Manual Songs: ${info.manualSongs}\n💾 Total Size: ${info.totalSize}`);
+                    }}
+                    className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm"
+                  >
+                    📊 Storage Info
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Song Selection */}
             <div>

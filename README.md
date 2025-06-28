@@ -1,8 +1,8 @@
 # MIDIFlow - Real-time MIDI Practice Application
 
-A web-based MIDI-driven practice app that provides real-time visual feedback for any MIDI-capable instrument. Features Guitar Hero-style falling notes with instrument-specific note ranges, timing feedback, and comprehensive song practice modes including MIDI file import.
+A focused, pedagogical tin whistle practice tool with timeline-based sequential practice mode. Features real-time MIDI input, visual feedback, MIDI file import with advanced track preview, and persistent song storage.
 
-## Phase 2 - Practice Interface ✅
+## Phase 3 - Enhanced Features ✅
 
 ### What's Implemented
 
@@ -13,33 +13,43 @@ A web-based MIDI-driven practice app that provides real-time visual feedback for
 - ✅ Device hot-plugging support (connect/disconnect during use)
 - ✅ Graceful error handling and fallbacks
 
-#### 🎵 Complete Practice System
+#### 🎵 Focused Practice System
+- ✅ **Sequential Practice Mode Only** - Focused, step-by-step learning approach
 - ✅ **Manual Song Creation** - Create practice songs by entering note sequences
-- ✅ **MIDI File Import** - Upload and parse MIDI files with track selection
-- ✅ **Sequential Practice Mode** - Step-by-step note guidance with timing
-- ✅ **Built-in Song Library** - Pre-loaded songs like "Twinkle Twinkle Little Star"
-- ✅ **Smart Track Selection** - Analyze MIDI tracks to find the best practice content
+- ✅ **Advanced MIDI File Import** - Upload and parse MIDI files with intelligent track selection
+- ✅ **MIDI Preview System** - Preview and audition tracks before practicing
+- ✅ **Built-in Song Library** - Pre-loaded songs with timing data
+- ✅ **Persistent Song Storage** - Songs automatically saved and restored between sessions
+
+#### 🎧 MIDI Preview & Track Management
+- ✅ **Real-time MIDI Preview** - Play, pause, skip through MIDI tracks with audio
+- ✅ **Quick Track Switching** - Switch between instruments/tracks during preview
+- ✅ **Playback Controls** - Play/pause/stop with ±15 second skip functionality
+- ✅ **Progress Visualization** - Timeline showing current playback position
+- ✅ **Audio Synthesis** - Web Audio API for immediate track audition
+- ✅ **Dual Access Points** - Preview available both during import and from song list
 
 #### 🎵 Tin Whistle Practice Interface  
 - ✅ Complete note board showing all tin whistle notes with fingerings
 - ✅ Visual practice guidance with highlighted target notes  
 - ✅ Real-time feedback for correct/incorrect notes played
-- ✅ Sequential practice with timeline visualization
-- ✅ Practice completion animations and encouraging feedback
+- ✅ Timeline-based sequential practice with tempo control
+- ✅ Practice status indicator showing current song and progress
+- ✅ Completion animations and encouraging feedback
 
-#### 🎵 Universal Instrument Support
-- ✅ Falling notes display (Guitar Hero style) for non-tin whistle instruments
-- ✅ Real-time note creation from MIDI input
-- ✅ Multiple instrument presets with appropriate note ranges
-- ✅ Adaptive note positioning based on instrument range
-- ✅ Visual feedback with note names and colors
+#### 💾 Persistent Storage System
+- ✅ **Automatic Song Persistence** - MIDI and manual songs saved to localStorage
+- ✅ **Cross-Session Availability** - Songs restored automatically on app restart
+- ✅ **Binary Data Handling** - Efficient storage of MIDI file data
+- ✅ **Development Tools** - Storage management utilities for testing
+- ✅ **Error Recovery** - Graceful handling of storage limitations
 
-#### 🔧 Technical Foundation
-- ✅ React + TypeScript + Vite setup
-- ✅ Modular architecture following the rules file
-- ✅ Custom React hooks for MIDI management
-- ✅ Type-safe MIDI message handling
-- ✅ Performance-optimized note animations with precise cleanup
+#### 🔧 Advanced Song Management
+- ✅ **Organized Song Lists** - Separate sections for built-in vs imported songs
+- ✅ **Track Re-selection** - Change MIDI track selection after import
+- ✅ **Real-time Note Extraction** - Dynamic song updates when changing tracks
+- ✅ **Scalable Interface** - Compact, scrollable lists for many songs
+- ✅ **Song State Management** - Clear practice status and song selection
 
 ### Current Features
 
@@ -48,6 +58,40 @@ A web-based MIDI-driven practice app that provides real-time visual feedback for
    - Connect/disconnect functionality
    - Real-time device status monitoring
    - Support for USB MIDI (primary) with BLE detection framework
+
+2. **Advanced Song Import & Management**
+   - Drag-and-drop MIDI file upload with instant parsing
+   - Multi-track analysis with instrument detection
+   - Real-time MIDI preview with playback controls
+   - Quick track switching during preview
+   - Automatic song persistence across sessions
+   - Organized song lists (built-in vs imported)
+
+3. **MIDI Preview System**
+   - Play/pause/stop controls with ±15 second skip
+   - Real-time track switching without reloading
+   - Web Audio synthesis for immediate audition
+   - Progress timeline with visual feedback
+   - Available both during import and from song list
+
+4. **Focused Practice Interface**
+   - Sequential practice mode only (no free play distractions)
+   - Timeline-based practice with metronome
+   - Real-time feedback for correct/incorrect notes
+   - Practice status indicator always visible
+   - Clear song selection and deselection
+
+5. **Tin Whistle Specialization**
+   - Complete fingering chart for D-tuned tin whistle
+   - Note range: D4 to C6 (MIDI 62-84)
+   - Visual feedback with highlighted target notes
+   - Practice progression tracking
+
+6. **Persistent Storage**
+   - Automatic saving of MIDI and manual songs
+   - Cross-session song availability
+   - Efficient binary data storage
+   - Development tools for storage management
 
 2. **Song Management System**
    - **Manual Song Creation**: Enter note sequences manually using MIDI numbers or note names
@@ -164,39 +208,107 @@ For testing without a physical MIDI device, you can:
 2. Use a software MIDI controller
 3. Some DAWs can send MIDI to browser applications
 
-## MIDI File Support
+## MIDI File Support & Preview
 
-The app supports standard MIDI files (.mid/.midi) with:
+The app supports standard MIDI files (.mid/.midi) with advanced preview capabilities:
+
+### Import Features
 - **Multi-track Analysis**: Automatically detects all tracks and their contents
 - **Instrument Recognition**: Identifies instruments using General MIDI standards
 - **Note Extraction**: Converts MIDI events to practice sequences with timing
 - **Track Selection**: Choose specific tracks that match your instrument
 - **Tempo Preservation**: Maintains original tempo and timing information
 
-**Supported MIDI Features:**
-- Note On/Off events
+### MIDI Preview System
+- **Real-time Playback**: Immediate audio preview of any track using Web Audio API
+- **Navigation Controls**: Play, pause, stop, and skip ±15 seconds through tracks
+- **Quick Track Switching**: Compare different instruments/tracks without reloading
+- **Progress Visualization**: Timeline showing current position and total duration
+- **Tempo Display**: Shows BPM and timing information for each track
+
+### Supported MIDI Features
+- Note On/Off events with velocity and timing
 - Program Change (instrument selection)
-- Tempo changes
+- Tempo changes and time signatures
 - Multiple tracks and channels
 - Standard MIDI File Format 0 and 1
+- Efficient binary data storage for persistence
 
-## What's Next - Phase 3
+## Persistent Storage
 
+All songs are automatically saved and restored:
+
+### What's Persisted
+- **MIDI Files**: Complete binary data, track selections, and metadata
+- **Manual Songs**: User-created note sequences and timing
+- **Preferences**: Selected tracks, tempo settings, and practice state
+- **Cross-Session**: All data survives browser restarts and refreshes
+
+### Storage Management
+- Automatic save/load with visual feedback
+- Efficient storage using base64 encoding for binary data
+- Development tools for storage inspection and cleanup
+- Error handling for storage quotas and failures
+
+## Project Structure
+
+```
+src/
+├── components/
+│   ├── MIDIFileUploader.tsx             # MIDI file import with preview integration
+│   ├── MIDIPreview.tsx                  # Real-time MIDI track preview modal ✨
+│   ├── SongInput.tsx                    # Manual song creation interface
+│   ├── TinWhistleFingering.tsx          # Tin whistle fingering display
+│   ├── TinWhistlePracticeBoard.tsx      # Main practice interface
+│   └── TinWhistleSequentialPractice.tsx # Timeline-based practice mode
+├── hooks/
+│   └── useMIDI.ts                       # WebMIDI API management
+├── lib/
+│   └── midi/
+│       ├── MIDIManager.ts               # Core MIDI device handling
+│       └── midiFileParser.ts            # MIDI file parsing with track extraction
+├── types/
+│   ├── midi.ts                          # Core MIDI types and song interfaces
+│   └── webmidi.d.ts                     # WebMIDI API types
+├── utils/
+│   └── storage.ts                       # localStorage persistence utilities ✨
+└── App.tsx                              # Main application with state management
+```
+
+## What's Next - Phase 4
+
+- [ ] Advanced practice modes (tempo adjustment, looping)
+- [ ] Performance statistics and progress tracking  
+- [ ] Practice session recording and analytics
 - [ ] Bluetooth MIDI support (Web Bluetooth API integration)
-- [ ] Advanced statistics and progress tracking
-- [ ] Practice session recording and playback
-- [ ] Tempo adjustment and loop functionality
 - [ ] Advanced visualizations and themes
-- [ ] Local storage for song persistence
 - [ ] MIDI file editing and modification tools
+- [ ] Social features and sharing capabilities
 
 ## Dependencies
 
 - `react` + `vite` + `typescript` - Core framework
 - `midi-parser-js` - MIDI file parsing and analysis
-- Standard web APIs: WebMIDI, Web Audio (planned)
+- Standard web APIs: WebMIDI, Web Audio, localStorage
 
 ---
 
-**Phase 2 Status: Complete** ✅  
-**Current Focus: Phase 3 - Enhanced Features**
+**Phase 3 Status: Complete** ✅  
+**Current Focus: Phase 4 - Advanced Features**
+
+### Key Achievements in Phase 3
+
+🎧 **MIDI Preview System** - Real-time track audition with playback controls  
+💾 **Persistent Storage** - Automatic song saving across browser sessions  
+🎯 **Focused Practice** - Removed distractions, streamlined for learning  
+🎵 **Enhanced UX** - Organized song lists, clear practice state, quick track switching  
+⚡ **Performance** - Efficient storage, smooth playback, responsive interface
+
+### Phase 3 Implementation Highlights
+
+- **MIDI Preview Modal**: Complete playback system with Web Audio synthesis
+- **Smart Storage**: Base64 binary encoding with automatic save/restore
+- **Focused Interface**: Removed free play mode, emphasizes sequential practice
+- **Track Management**: Real-time track switching with instant note re-extraction
+- **Development Tools**: Storage inspection and management utilities
+- **Cross-Session Persistence**: All songs and preferences survive browser restarts

@@ -1,7 +1,7 @@
 # MIDIFlow AI Assistant Rules File
 
 ## Application Purpose
-MIDIFlow is a web-based MIDI-driven practice application that provides real-time visual feedback for any MIDI-capable instrument. Users connect their MIDI controller or instrument and receive immediate visual feedback through Guitar Hero-style falling notes. The app supports multiple instrument types with appropriate note ranges, provides timing feedback, and helps musicians improve their playing skills through guided practice sessions with real-time error correction and encouraging learning atmosphere.
+MIDIFlow is a focused web-based tin whistle practice application that provides real-time visual feedback through MIDI input. Users connect their MIDI controller and practice songs through timeline-based sequential learning with step-by-step guidance. The app features MIDI file import with track selection, MIDI preview playback, manual song creation, persistent song storage, and real-time visual feedback. It maintains an encouraging learning atmosphere with unlimited retries and clear progress indicators.
 
 ## Code Style & Standards
 - Use TypeScript for all new files (prefer .ts/.tsx extensions)
@@ -32,9 +32,26 @@ MIDIFlow is a web-based MIDI-driven practice application that provides real-time
   - ✅ Simple melody input tools (note name parser, MIDI number input)
   - ✅ Automatically parse MIDI files to visualize notes and identify song structures
   - ✅ Allow basic metadata input (song title, tempo from MIDI)
-  - ✅ Track selection from multi-track MIDI files
+  - ✅ Track selection from multi-track MIDI files with real-time re-extraction
   - ✅ Built-in song library for immediate practice
-  - [ ] Save user-created songs to persistent storage (Phase 3)
+  - ✅ Save user-created songs to persistent localStorage storage
+  - ✅ Separate built-in songs from imported/manual songs in organized UI
+  - ✅ MIDI Preview functionality for track auditioning and selection
+
+### Song Storage and Persistence ✅ IMPLEMENTED
+- ✅ localStorage persistence for both MIDI and manual songs
+- ✅ Base64 encoding for binary MIDI file data storage
+- ✅ Automatic save on song creation/modification
+- ✅ Automatic restore on app load
+- ✅ Development tools for storage management and debugging
+- ✅ Separate storage for built-in vs. user-created content
+
+### MIDI Preview and Playback ✅ IMPLEMENTED
+- ✅ Real-time MIDI file playback with Web Audio API
+- ✅ Play, pause, stop, and time-seeking controls (±15s skip)
+- ✅ Quick track switching during preview with immediate re-extraction
+- ✅ Modal interface for focused preview experience
+- ✅ Integration with both song list and import workflow
 
 ### Visual and Real-time Feedback
 - Display notes visually as "falling notes" moving towards a target line (Guitar Hero style)
@@ -47,9 +64,13 @@ MIDIFlow is a web-based MIDI-driven practice application that provides real-time
 - Maintain an encouraging, trial-and-error friendly learning atmosphere
 - Provide clear visual cues for timing (early, perfect, late)
 
-### Practice and Learning Modes
-- Adjustable tempo for practicing challenging sections.
-- Loop functionality enabling repeated practice of difficult segments.
+### Practice and Learning Modes ✅ IMPLEMENTED
+- ✅ Timeline-based sequential practice with step-by-step guidance
+- ✅ Single-note progression with unlimited retries per note
+- ✅ Practice state persistence and clear visual indicators
+- ✅ Focused practice mode (removed free play for clarity)
+- [ ] Adjustable tempo for practicing challenging sections (planned)
+- [ ] Loop functionality enabling repeated practice of difficult segments (planned)
 
 ### Performance Statistics
 - Collect detailed accuracy metrics per song:
@@ -101,6 +122,7 @@ MIDIFlow is a web-based MIDI-driven practice application that provides real-time
 - `/src/components/` - Reusable UI components ✅
   - `SongInput.tsx` - Manual song creation ✅
   - `MIDIFileUploader.tsx` - MIDI file import and track selection ✅
+  - `MIDIPreview.tsx` - MIDI preview modal with playback controls ✅
   - `TinWhistlePracticeBoard.tsx` - Tin whistle practice interface ✅
   - `TinWhistleSequentialPractice.tsx` - Sequential practice with timing ✅
 - `/src/hooks/` - Custom React hooks (useMIDI, usePracticeSession, etc.) ✅
@@ -113,7 +135,8 @@ MIDIFlow is a web-based MIDI-driven practice application that provides real-time
 - `/src/types/` - TypeScript type definitions ✅
   - `midi.ts` - Core MIDI types, song interfaces, and utilities ✅
   - `midi-parser-js.d.ts` - MIDI parser library type definitions ✅
-- `/src/utils/` - Helper functions and utilities (as needed)
+- `/src/utils/` - Helper functions and utilities ✅
+  - `storage.ts` - localStorage persistence for songs ✅
 - `/src/stores/` - State management (Zustand stores, planned Phase 3)
 
 ## Error Handling Requirements
@@ -170,7 +193,7 @@ MIDIFlow is a web-based MIDI-driven practice application that provides real-time
 ### Phase 3 - Enhanced Features (CURRENT)
 - [ ] Statistics and progress tracking
 - [ ] Advanced practice modes (tempo adjustment, looping)
-- [ ] Local storage for song persistence
+- ✅ Local storage for song persistence
 - [ ] Performance metrics and session recording
 - [ ] Advanced error recovery and learning analytics
 
