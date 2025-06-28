@@ -5,14 +5,13 @@ import { midiNoteToName, INSTRUMENT_RANGES } from '../types/midi';
 interface FallingNoteProps {
   note: PracticeNote;
   position: { x: number; y: number };
-  speed: number;
   onNoteExit: (noteId: string) => void;
 }
 
 /**
  * Individual falling note component with CSS animation
  */
-const FallingNote: React.FC<FallingNoteProps> = ({ note, position, speed, onNoteExit }) => {
+const FallingNote: React.FC<FallingNoteProps> = ({ note, position, onNoteExit }) => {
   const animationDuration = 2500; // 2.5 seconds to fall through the container
   const elementRef = useRef<HTMLDivElement>(null);
   
@@ -225,7 +224,6 @@ export const NoteVisualizer: React.FC<NoteVisualizerProps> = ({
             key={note.id}
             note={note}
             position={position}
-            speed={3} // Adjusted speed for better visibility
             onNoteExit={handleNoteExit}
           />
         );

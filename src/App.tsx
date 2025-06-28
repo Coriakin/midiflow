@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useMIDI } from './hooks/useMIDI';
 import { NoteVisualizer } from './components/NoteVisualizer';
-import { TinWhistleFingering } from './components/TinWhistleFingering';
+import { TinWhistlePracticeBoard } from './components/TinWhistlePracticeBoard';
 import { SongInput, type Song } from './components/SongInput';
 import { PracticeMode, type PracticeSession } from './components/PracticeMode';
 import type { MIDIMessage, PracticeNote, InstrumentType } from './types/midi';
@@ -30,7 +30,13 @@ function App() {
   const [songs, setSongs] = useState<Song[]>([]);
   const [selectedSong, setSelectedSong] = useState<Song | null>(null);
   const [practiceMode, setPracticeMode] = useState<'free-play' | 'guided'>('free-play');
-  const [expectedNote, setExpectedNote] = useState<number | null>(null);
+  
+  // New states for practice board
+  const [currentTargetNote, setCurrentTargetNote] = useState<number | null>(null);
+  const [lastPlayedNote, setLastPlayedNote] = useState<number | null>(null);
+  const [isCorrectNote, setIsCorrectNote] = useState<boolean | null>(null);
+  const [practiceSequence, setPracticeSequence] = useState<number[]>([]);
+  const [currentNoteIndex, setCurrentNoteIndex] = useState<number>(0);
 
   // Built-in songs for quick testing
   const builtInSongs: Song[] = [
@@ -243,7 +249,30 @@ function App() {
           }
         }, 1000);
         
-        // Create a new falling note
+        // Update practice board state for tin whistle
+        if (selectedInstrument === 'tin-whistle') {
+          setLastPlayedNote(message.note);
+          
+          // Check if this matches the current target note
+          if (currentTargetNote !== null) {
+            const isCorrect = message.note === currentTargetNote;
+            setIsCorrectNote(isCorrect);
+            
+            if (isCorrect) {
+              // Move to next note in sequence after a brief highlight
+              setTimeout(() => {
+                if (practiceSequence.length > 0 && currentNoteIndex < practiceSequence.length - 1) {
+                  const nextIndex = currentNoteIndex + 1;
+                  setCurrentNoteIndex(nextIndex);
+                  setCurrentTargetNote(practiceSequence[nextIndex]);
+                  setIsCorrectNote(null); // Reset for next note
+                }
+              }, 500); // Brief green highlight
+            }
+          }
+        }
+        
+        // Create a new falling note (for non-tin-whistle instruments or free play)
         const newNote: PracticeNote = {
           id: `${message.note}-${message.timestamp}-${Math.random().toString(36).substr(2, 5)}`,
           note: message.note,
@@ -278,7 +307,7 @@ function App() {
 
     addMessageListener(handleMIDIMessage);
     return () => removeMessageListener(handleMIDIMessage);
-  }, [addMessageListener, removeMessageListener, selectedInstrument]);
+  }, [addMessageListener, removeMessageListener, selectedInstrument, currentTargetNote, practiceSequence, currentNoteIndex]);
 
   // Cleanup old notes periodically (backup mechanism)
   useEffect(() => {
@@ -306,6 +335,37 @@ function App() {
   const handleSessionComplete = (session: PracticeSession) => {
     console.log('Practice session completed:', session);
     // Here we could save session data to localStorage or send to a backend
+  };
+
+  // Start a practice sequence for tin whistle
+  const startPracticeSequence = (notes: number[]) => {
+    setPracticeSequence(notes);
+    setCurrentNoteIndex(0);
+    setCurrentTargetNote(notes[0]);
+    setIsCorrectNote(null);
+    setLastPlayedNote(null);
+    console.log('Started practice sequence:', notes.map(n => midiNoteToName(n)).join(' -> '));
+  };
+
+  // Stop practice sequence
+  const stopPracticeSequence = () => {
+    setPracticeSequence([]);
+    setCurrentNoteIndex(0);
+    setCurrentTargetNote(null);
+    setIsCorrectNote(null);
+    setLastPlayedNote(null);
+    console.log('Stopped practice sequence');
+  };
+
+  // Reset practice sequence to beginning
+  const resetPracticeSequence = () => {
+    if (practiceSequence.length > 0) {
+      setCurrentNoteIndex(0);
+      setCurrentTargetNote(practiceSequence[0]);
+      setIsCorrectNote(null);
+      setLastPlayedNote(null);
+      console.log('Reset practice sequence to beginning');
+    }
   };
 
   if (!isSupported) {
@@ -578,56 +638,127 @@ function App() {
                   ))}
                 </div>
               </div>
+
+              {/* Practice Controls for Tin Whistle */}
+              {selectedInstrument === 'tin-whistle' && selectedSong && (
+                <div className="bg-gray-700 rounded-lg p-4">
+                  <h4 className="text-sm font-medium text-gray-300 mb-2">Practice Controls:</h4>
+                  <div className="flex gap-2 flex-wrap">
+                    <button
+                      onClick={() => startPracticeSequence(selectedSong.notes)}
+                      className="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-500"
+                    >
+                      Start Practice
+                    </button>
+                    <button
+                      onClick={resetPracticeSequence}
+                      className="px-3 py-1 bg-yellow-600 text-white rounded text-sm hover:bg-yellow-500"
+                      disabled={practiceSequence.length === 0}
+                    >
+                      Reset
+                    </button>
+                    <button
+                      onClick={stopPracticeSequence}
+                      className="px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-500"
+                      disabled={practiceSequence.length === 0}
+                    >
+                      Stop
+                    </button>
+                  </div>
+                  {practiceSequence.length > 0 && (
+                    <div className="mt-2 text-sm text-gray-300">
+                      Progress: {currentNoteIndex + 1} of {practiceSequence.length} notes
+                      {currentTargetNote && (
+                        <span className="ml-2 text-yellow-400">
+                          • Current: {midiNoteToName(currentTargetNote)}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
-        </div>
 
-        {/* Note Visualizer */}
-        <div className="bg-gray-800 rounded-lg p-4">
-          <h2 className="text-xl font-semibold mb-3">
-            {practiceMode === 'free-play' ? 'Free Play Area' : 'Practice Area'}
-          </h2>
-          
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-            {/* Main practice area */}
-            <div className="lg:col-span-3">
-              {practiceMode === 'free-play' ? (
-                <NoteVisualizer 
-                  notes={practiceNotes}
-                  className="h-96 rounded border border-gray-600"
-                  onNoteExit={handleNoteExit}
-                  instrumentType={selectedInstrument}
-                  customRange={selectedInstrument === 'custom' ? { MIN: customRangeMin, MAX: customRangeMax } : undefined}
+          {/* Free Play Controls for Tin Whistle */}
+          {practiceMode === 'free-play' && selectedInstrument === 'tin-whistle' && (
+            <div className="bg-gray-700 rounded-lg p-4">
+              <h4 className="text-sm font-medium text-gray-300 mb-2">Quick Practice:</h4>
+              <div className="flex gap-2 flex-wrap">
+                <button
+                  onClick={() => startPracticeSequence([62, 64, 66, 67, 69, 71, 74])} // D major scale
+                  className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-500"
+                >
+                  D Scale
+                </button>
+                <button
+                  onClick={() => startPracticeSequence([62, 62, 69, 69, 71, 71, 69])} // Twinkle start
+                  className="px-3 py-1 bg-purple-600 text-white rounded text-sm hover:bg-purple-500"
+                >
+                  Twinkle Start
+                </button>
+                <button
+                  onClick={stopPracticeSequence}
+                  className="px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-500"
+                  disabled={practiceSequence.length === 0}
+                >
+                  Stop Practice
+                </button>
+              </div>
+              {practiceSequence.length > 0 && (
+                <div className="mt-2 text-sm text-gray-300">
+                  Progress: {currentNoteIndex + 1} of {practiceSequence.length} notes
+                  {currentTargetNote && (
+                    <span className="ml-2 text-yellow-400">
+                      • Current: {midiNoteToName(currentTargetNote)}
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Note Visualizer */}
+          <div className="bg-gray-800 rounded-lg p-4">
+            <h2 className="text-xl font-semibold mb-3">
+              {practiceMode === 'free-play' ? 'Free Play Area' : 'Practice Area'}
+            </h2>
+            
+            <div className="grid grid-cols-1 gap-4">
+              {/* Main practice area */}
+              <div>
+                {selectedInstrument === 'tin-whistle' ? (                <TinWhistlePracticeBoard
+                  currentTargetNote={currentTargetNote}
+                  lastPlayedNote={lastPlayedNote}
+                  isCorrectNote={isCorrectNote}
+                  className="h-auto"
                 />
-              ) : (
-                <PracticeMode
+                ) : practiceMode === 'free-play' ? (
+                  <NoteVisualizer 
+                    notes={practiceNotes}
+                    className="h-96 rounded border border-gray-600"
+                    onNoteExit={handleNoteExit}
+                    instrumentType={selectedInstrument}
+                    customRange={selectedInstrument === 'custom' ? { MIN: customRangeMin, MAX: customRangeMax } : undefined}
+                  />
+                ) : (                <PracticeMode
                   song={selectedSong}
                   lastPlayedNote={lastNote?.note || null}
                   onSessionComplete={handleSessionComplete}
-                  onExpectedNoteChange={setExpectedNote}
+                  onExpectedNoteChange={() => {}} // No longer using this callback
                   className="h-96"
                 />
-              )}
+                )}
+              </div>
             </div>
             
-            {/* Tin whistle fingering chart (only show for tin whistle) */}
-            {selectedInstrument === 'tin-whistle' && (
-              <div className="lg:col-span-1">
-                <TinWhistleFingering 
-                  midiNote={lastNote?.note || null}
-                  expectedNote={practiceMode === 'guided' ? expectedNote : null}
-                  className="bg-gray-700 rounded-lg p-4"
-                />
+            {isReady && connectedDevices.length === 0 && (
+              <div className="text-center text-gray-400 mt-4">
+                <p>Connect a MIDI device to start practicing!</p>
+                <p className="text-sm">Make sure your MIDI controller or instrument is connected.</p>
               </div>
             )}
           </div>
-          
-          {isReady && connectedDevices.length === 0 && (
-            <div className="text-center text-gray-400 mt-4">
-              <p>Connect a MIDI device to start practicing!</p>
-              <p className="text-sm">Make sure your MIDI controller or instrument is connected.</p>
-            </div>
-          )}
         </div>
       </main>
     </div>
