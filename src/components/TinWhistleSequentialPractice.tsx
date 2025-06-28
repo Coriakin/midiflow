@@ -397,14 +397,16 @@ export const TinWhistleSequentialPractice: React.FC<SequentialPracticeProps> = (
                   )}
 
                   {/* Note name */}
-                  <div className={`text-sm font-medium mb-2 px-3 py-1 rounded shadow-md ${
+                  <div className={`text-sm font-medium mb-2 px-3 py-1 rounded shadow-md relative ${
                     isCurrentNote 
                       ? 'bg-yellow-500 text-black border-2 border-yellow-300' 
                       : isPastNote || isCompleted
                         ? 'bg-gray-700 text-gray-400 border border-gray-600'
                         : 'bg-gray-600 text-white border border-gray-500'
                   }`}>
-                    {midiNoteToName(noteItem.note)}
+                    <span className={noteItem.note >= 74 ? 'border-b-2 border-orange-400' : ''}>
+                      {midiNoteToName(noteItem.note)}
+                    </span>
                   </div>
 
                   {/* Fingering chart */}

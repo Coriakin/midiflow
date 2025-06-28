@@ -79,7 +79,7 @@ export const TinWhistlePracticeBoard: React.FC<TinWhistlePracticeBoardProps> = (
                 >
                   {/* Note name */}
                   <div className="text-center mb-3">
-                    <div className="text-xl font-bold text-white">
+                    <div className={`text-xl font-bold text-white ${midiNote >= 74 ? 'border-b-2 border-orange-400 inline-block' : ''}`}>
                       {noteName}
                     </div>
                   </div>
