@@ -420,14 +420,6 @@ export const TinWhistleSequentialPractice: React.FC<SequentialPracticeProps> = (
                     {renderFingeringChart(noteItem.note, isCurrentNote ? 'large' : 'small')}
                   </div>
 
-                  {/* Duration indicator */}
-                  <div 
-                    className={`mt-3 h-2 rounded shadow-sm ${
-                      isPastNote || isCompleted ? 'bg-gray-600' : 'bg-blue-400'
-                    }`}
-                    style={{ width: `${Math.max(noteItem.duration * pixelsPerBeat, 80)}px` }}
-                  />
-
                   {/* Note timing info - only show for stacked or current notes to reduce clutter */}
                   {(isStacked || isCurrentNote) && (
                     <div className="text-xs text-gray-400 mt-1">
