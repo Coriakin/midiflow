@@ -2,9 +2,10 @@ import { useState, useEffect } from 'react';
 import { useMIDI } from './hooks/useMIDI';
 import { TinWhistlePracticeBoard } from './components/TinWhistlePracticeBoard';
 import { TinWhistleSequentialPractice } from './components/TinWhistleSequentialPractice';
-import { SongInput, type Song } from './components/SongInput';
-import type { MIDIMessage, InstrumentType } from './types/midi';
-import { midiNoteToName, INSTRUMENT_RANGES } from './types/midi';
+import { SongInput } from './components/SongInput';
+import { MIDIFileUploader } from './components/MIDIFileUploader';
+import type { MIDIMessage, InstrumentType, Song, MIDISong, AnySong } from './types/midi';
+import { midiNoteToName, INSTRUMENT_RANGES, isMIDISong } from './types/midi';
 
 function App() {
   const { 
@@ -26,7 +27,8 @@ function App() {
   const [customRangeMin, setCustomRangeMin] = useState<number>(48);
   const [customRangeMax, setCustomRangeMax] = useState<number>(96);
   const [songs, setSongs] = useState<Song[]>([]);
-  const [selectedSong, setSelectedSong] = useState<Song | null>(null);
+  const [midiSongs, setMidiSongs] = useState<MIDISong[]>([]);
+  const [selectedSong, setSelectedSong] = useState<AnySong | null>(null);
   
   // Sequential practice states
   const [currentTargetNote, setCurrentTargetNote] = useState<number | null>(null);
@@ -381,8 +383,8 @@ function App() {
     }
   ];
 
-  // Combine built-in songs with user-created songs
-  const allSongs = [...builtInSongs, ...songs];
+  // Combine built-in songs with user-created songs and MIDI songs
+  const allSongs: AnySong[] = [...builtInSongs, ...songs, ...midiSongs];
 
   // Manual MIDI test function
   const testMIDIAccess = async () => {
@@ -506,6 +508,12 @@ function App() {
   const handleSongCreate = (song: Song) => {
     setSongs(prev => [...prev, song]);
     console.log('Song created:', song);
+  };
+
+  // Handle MIDI song creation
+  const handleMIDISongCreate = (midiSong: MIDISong) => {
+    setMidiSongs(prev => [...prev, midiSong]);
+    console.log('MIDI song created:', midiSong);
   };
 
   // Start a practice sequence for tin whistle
@@ -826,8 +834,11 @@ function App() {
           
           {/* Song Management */}
           <div className="space-y-4">
-            {/* Song Input */}
+            {/* Manual Song Input */}
             <SongInput onSongCreate={handleSongCreate} />
+
+            {/* MIDI File Upload */}
+            <MIDIFileUploader onMIDISongCreate={handleMIDISongCreate} />
 
             {/* Song Selection */}
             <div>
@@ -858,6 +869,14 @@ function App() {
                               <>
                                 <span>•</span>
                                 <span className="text-green-400">Built-in</span>
+                              </>
+                            )}
+                            {isMIDISong(song) && (
+                              <>
+                                <span>•</span>
+                                <span className="text-blue-400">MIDI</span>
+                                <span>•</span>
+                                <span className="text-purple-400">Track {song.selectedTrack + 1}</span>
                               </>
                             )}
                           </div>

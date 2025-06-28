@@ -112,3 +112,93 @@ export function isInPracticeRange(noteNumber: MIDINoteNumber, instrumentType: In
 export function isInTinWhistleRange(noteNumber: MIDINoteNumber): boolean {
   return isInPracticeRange(noteNumber, 'tin-whistle');
 }
+
+/**
+ * MIDI file track information for track selection
+ */
+export interface MIDITrackInfo {
+  trackIndex: number;
+  trackName?: string;
+  channelNumbers: number[]; // MIDI channels used in this track
+  instrumentNumbers: number[]; // Program change numbers (instruments)
+  noteCount: number;
+  noteRange: { min: number; max: number };
+  instrumentName?: string; // Human-readable instrument name
+}
+
+/**
+ * Parsed MIDI file data
+ */
+export interface ParsedMIDIFile {
+  fileName: string;
+  tracks: MIDITrackInfo[];
+  ticksPerBeat: number;
+  timeSignature?: { numerator: number; denominator: number };
+  keySignature?: string;
+  tempoChanges: Array<{ tick: number; bpm: number }>;
+  totalTicks: number;
+  durationInSeconds: number;
+}
+
+/**
+ * Extended Song interface to support MIDI file sources
+ */
+export interface MIDISong extends Song {
+  source: 'midi-file';
+  fileName: string;
+  selectedTrack: number;
+  originalMIDIData: ParsedMIDIFile;
+  availableTracks: MIDITrackInfo[];
+}
+
+/**
+ * Combined song type that can be either manually created or MIDI-imported
+ */
+export type AnySong = Song | MIDISong;
+
+/**
+ * Type guard to check if a song is from a MIDI file
+ */
+export function isMIDISong(song: Song | MIDISong): song is MIDISong {
+  return 'source' in song && song.source === 'midi-file';
+}
+
+/**
+ * MIDI instrument number to name mapping (General MIDI)
+ */
+export const GM_INSTRUMENT_NAMES: { [key: number]: string } = {
+  0: 'Acoustic Grand Piano',
+  1: 'Bright Acoustic Piano',
+  // ... we can expand this list as needed
+  40: 'Violin',
+  41: 'Viola',
+  42: 'Cello',
+  56: 'Trumpet',
+  57: 'Trombone',
+  58: 'Tuba',
+  64: 'Soprano Sax',
+  65: 'Alto Sax',
+  66: 'Tenor Sax',
+  67: 'Baritone Sax',
+  72: 'Piccolo',
+  73: 'Flute',
+  74: 'Recorder',
+  75: 'Pan Flute',
+  // Add more as needed
+};
+
+/**
+ * Basic song structure for practice sessions
+ */
+export interface Song {
+  id: string;
+  title: string;
+  notes: number[]; // Array of MIDI note numbers
+  tempo: number; // BPM
+  // Optional timing data for sequential practice
+  notesWithTiming?: Array<{
+    note: number;
+    startTime: number; // in beats from song start
+    duration: number; // in beats
+  }>;
+}

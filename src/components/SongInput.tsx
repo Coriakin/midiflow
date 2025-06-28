@@ -1,18 +1,5 @@
 import React, { useState } from 'react';
-import { midiNoteToName } from '../types/midi';
-
-export interface Song {
-  id: string;
-  title: string;
-  notes: number[]; // Array of MIDI note numbers
-  tempo: number; // BPM
-  // Optional timing data for sequential practice
-  notesWithTiming?: Array<{
-    note: number;
-    startTime: number; // in beats from song start
-    duration: number; // in beats
-  }>;
-}
+import { midiNoteToName, Song } from '../types/midi';
 
 interface SongInputProps {
   onSongCreate: (song: Song) => void;
@@ -101,7 +88,7 @@ export const SongInput: React.FC<SongInputProps> = ({ onSongCreate, className = 
   return (
     <div className={`bg-gray-800 rounded-lg p-4 ${className}`}>
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-lg font-semibold text-white">Create Practice Song</h3>
+        <h3 className="text-lg font-semibold text-white">Create Practice Song (Manual)</h3>
         <button
           onClick={() => setIsExpanded(!isExpanded)}
           className="px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded text-sm text-white"
