@@ -1153,10 +1153,8 @@ function App() {
 
         {activeTab === 'practice' && (
           <div className="space-y-6">
-            {/* Sequential Practice Mode */}
+            {/* Song Selection */}
             <div className="bg-gray-800 rounded-lg p-4">
-              <h2 className="text-xl font-semibold mb-3">Sequential Practice Mode</h2>
-              
               {/* Song Selection */}
               <div>
                 <h4 className="text-sm font-medium text-gray-300 mb-2">Select a song to practice:</h4>

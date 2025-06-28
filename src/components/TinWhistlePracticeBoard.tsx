@@ -53,10 +53,6 @@ export const TinWhistlePracticeBoard: React.FC<TinWhistlePracticeBoardProps> = (
 }) => {
   return (
     <div className={`bg-gray-900 rounded-lg p-6 ${className}`}>
-      <h2 className="text-xl font-bold text-white mb-4 text-center">
-        Tin Whistle Practice Board
-      </h2>
-      
       <div className="flex">
         {/* Main note board - showing all notes */}
         <div className="flex-1">
