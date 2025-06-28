@@ -6,6 +6,12 @@ export interface Song {
   title: string;
   notes: number[]; // Array of MIDI note numbers
   tempo: number; // BPM
+  // Optional timing data for sequential practice
+  notesWithTiming?: Array<{
+    note: number;
+    startTime: number; // in beats from song start
+    duration: number; // in beats
+  }>;
 }
 
 interface SongInputProps {

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useMIDI } from './hooks/useMIDI';
 import { NoteVisualizer } from './components/NoteVisualizer';
 import { TinWhistlePracticeBoard } from './components/TinWhistlePracticeBoard';
+import { TinWhistleSequentialPractice } from './components/TinWhistleSequentialPractice';
 import { SongInput, type Song } from './components/SongInput';
 import { PracticeMode, type PracticeSession } from './components/PracticeMode';
 import type { MIDIMessage, PracticeNote, InstrumentType } from './types/midi';
@@ -59,7 +60,62 @@ function App() {
         // How I wonder what you are
         67, 67, 66, 66, 64, 64, 62
       ], // Complete song: D D A A B B A G G F# F# E E D (repeated with verses)
-      tempo: 120
+      tempo: 120,
+      notesWithTiming: [
+        // Twinkle twinkle little star (each note is a quarter note)
+        { note: 62, startTime: 0, duration: 1 },    // Twin-
+        { note: 62, startTime: 1, duration: 1 },    // -kle
+        { note: 69, startTime: 2, duration: 1 },    // twin-
+        { note: 69, startTime: 3, duration: 1 },    // -kle
+        { note: 71, startTime: 4, duration: 1 },    // lit-
+        { note: 71, startTime: 5, duration: 1 },    // -tle
+        { note: 69, startTime: 6, duration: 2 },    // star (half note)
+        
+        // How I wonder what you are
+        { note: 67, startTime: 8, duration: 1 },    // How
+        { note: 67, startTime: 9, duration: 1 },    // I
+        { note: 66, startTime: 10, duration: 1 },   // won-
+        { note: 66, startTime: 11, duration: 1 },   // -der
+        { note: 64, startTime: 12, duration: 1 },   // what
+        { note: 64, startTime: 13, duration: 1 },   // you
+        { note: 62, startTime: 14, duration: 2 },   // are (half note)
+        
+        // Up above the world so high
+        { note: 69, startTime: 16, duration: 1 },   // Up
+        { note: 69, startTime: 17, duration: 1 },   // a-
+        { note: 67, startTime: 18, duration: 1 },   // -bove
+        { note: 67, startTime: 19, duration: 1 },   // the
+        { note: 66, startTime: 20, duration: 1 },   // world
+        { note: 66, startTime: 21, duration: 1 },   // so
+        { note: 64, startTime: 22, duration: 2 },   // high (half note)
+        
+        // Like a diamond in the sky
+        { note: 69, startTime: 24, duration: 1 },   // Like
+        { note: 69, startTime: 25, duration: 1 },   // a
+        { note: 67, startTime: 26, duration: 1 },   // dia-
+        { note: 67, startTime: 27, duration: 1 },   // -mond
+        { note: 66, startTime: 28, duration: 1 },   // in
+        { note: 66, startTime: 29, duration: 1 },   // the
+        { note: 64, startTime: 30, duration: 2 },   // sky (half note)
+        
+        // Twinkle twinkle little star (repeat)
+        { note: 62, startTime: 32, duration: 1 },   // Twin-
+        { note: 62, startTime: 33, duration: 1 },   // -kle
+        { note: 69, startTime: 34, duration: 1 },   // twin-
+        { note: 69, startTime: 35, duration: 1 },   // -kle
+        { note: 71, startTime: 36, duration: 1 },   // lit-
+        { note: 71, startTime: 37, duration: 1 },   // -tle
+        { note: 69, startTime: 38, duration: 2 },   // star (half note)
+        
+        // How I wonder what you are (repeat)
+        { note: 67, startTime: 40, duration: 1 },   // How
+        { note: 67, startTime: 41, duration: 1 },   // I
+        { note: 66, startTime: 42, duration: 1 },   // won-
+        { note: 66, startTime: 43, duration: 1 },   // -der
+        { note: 64, startTime: 44, duration: 1 },   // what
+        { note: 64, startTime: 45, duration: 1 },   // you
+        { note: 62, startTime: 46, duration: 2 },   // are (half note)
+      ]
     },
     {
       id: 'mary-had-a-little-lamb',
@@ -836,6 +892,7 @@ function App() {
                   onClick={() => {
                     const twinkleSong = builtInSongs.find(song => song.id === 'twinkle-twinkle');
                     if (twinkleSong) {
+                      setSelectedSong(twinkleSong); // Set selected song for timing data
                       startPracticeSequence(twinkleSong.notes);
                     }
                   }}
@@ -886,12 +943,27 @@ function App() {
             <div className="grid grid-cols-1 gap-4">
               {/* Main practice area */}
               <div>
-                {selectedInstrument === 'tin-whistle' ? (                <TinWhistlePracticeBoard
-                  currentTargetNote={currentTargetNote}
-                  lastPlayedNote={lastPlayedNote}
-                  isCorrectNote={isCorrectNote}
-                  className="h-auto"
-                />
+                {selectedInstrument === 'tin-whistle' ? (
+                  // Tin whistle practice area
+                  practiceSequence.length > 0 && selectedSong?.notesWithTiming ? (
+                    // Sequential practice with timeline (only for practice mode with timing data)
+                    <TinWhistleSequentialPractice
+                      sequence={selectedSong.notesWithTiming}
+                      currentNoteIndex={currentNoteIndex}
+                      tempo={selectedSong.tempo}
+                      lastPlayedNote={lastPlayedNote}
+                      isCorrectNote={isCorrectNote}
+                      className="h-auto"
+                    />
+                  ) : (
+                    // Standard static practice board (for free play or sequences without timing)
+                    <TinWhistlePracticeBoard
+                      currentTargetNote={currentTargetNote}
+                      lastPlayedNote={lastPlayedNote}
+                      isCorrectNote={isCorrectNote}
+                      className="h-auto"
+                    />
+                  )
                 ) : practiceMode === 'free-play' ? (
                   <NoteVisualizer 
                     notes={practiceNotes}
