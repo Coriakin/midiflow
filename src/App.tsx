@@ -1,11 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useMIDI } from './hooks/useMIDI';
-import { NoteVisualizer } from './components/NoteVisualizer';
 import { TinWhistlePracticeBoard } from './components/TinWhistlePracticeBoard';
 import { TinWhistleSequentialPractice } from './components/TinWhistleSequentialPractice';
 import { SongInput, type Song } from './components/SongInput';
-import { PracticeMode, type PracticeSession } from './components/PracticeMode';
-import type { MIDIMessage, PracticeNote, InstrumentType } from './types/midi';
+import type { MIDIMessage, InstrumentType } from './types/midi';
 import { midiNoteToName, INSTRUMENT_RANGES } from './types/midi';
 
 function App() {
@@ -23,16 +21,14 @@ function App() {
     isReady 
   } = useMIDI();
 
-  const [practiceNotes, setPracticeNotes] = useState<PracticeNote[]>([]);
   const [lastNote, setLastNote] = useState<MIDIMessage | null>(null);
   const [selectedInstrument, setSelectedInstrument] = useState<InstrumentType>('tin-whistle');
   const [customRangeMin, setCustomRangeMin] = useState<number>(48);
   const [customRangeMax, setCustomRangeMax] = useState<number>(96);
   const [songs, setSongs] = useState<Song[]>([]);
   const [selectedSong, setSelectedSong] = useState<Song | null>(null);
-  const [practiceMode, setPracticeMode] = useState<'free-play' | 'guided'>('free-play');
   
-  // New states for practice board
+  // Sequential practice states
   const [currentTargetNote, setCurrentTargetNote] = useState<number | null>(null);
   const [lastPlayedNote, setLastPlayedNote] = useState<number | null>(null);
   const [isCorrectNote, setIsCorrectNote] = useState<boolean | null>(null);
@@ -130,7 +126,42 @@ function App() {
         // Its fleece was white as snow
         66, 64, 64, 66, 64, 62
       ], // F# E D E F# F# F# E E E F# A A F# E D E F# F# F# F# E E F# E D
-      tempo: 110
+      tempo: 110,
+      notesWithTiming: [
+        // Mary had a little lamb
+        { note: 66, startTime: 0, duration: 1 },    // Ma-
+        { note: 64, startTime: 1, duration: 1 },    // -ry
+        { note: 62, startTime: 2, duration: 1 },    // had
+        { note: 64, startTime: 3, duration: 1 },    // a
+        { note: 66, startTime: 4, duration: 1 },    // lit-
+        { note: 66, startTime: 5, duration: 1 },    // -tle
+        { note: 66, startTime: 6, duration: 2 },    // lamb (half note)
+        
+        // Little lamb, little lamb
+        { note: 64, startTime: 8, duration: 1 },    // Lit-
+        { note: 64, startTime: 9, duration: 1 },    // -tle
+        { note: 64, startTime: 10, duration: 2 },   // lamb (half note)
+        { note: 66, startTime: 12, duration: 1 },   // lit-
+        { note: 69, startTime: 13, duration: 1 },   // -tle
+        { note: 69, startTime: 14, duration: 2 },   // lamb (half note)
+        
+        // Mary had a little lamb
+        { note: 66, startTime: 16, duration: 1 },   // Ma-
+        { note: 64, startTime: 17, duration: 1 },   // -ry
+        { note: 62, startTime: 18, duration: 1 },   // had
+        { note: 64, startTime: 19, duration: 1 },   // a
+        { note: 66, startTime: 20, duration: 1 },   // lit-
+        { note: 66, startTime: 21, duration: 1 },   // -tle
+        { note: 66, startTime: 22, duration: 2 },   // lamb (half note)
+        
+        // Its fleece was white as snow
+        { note: 66, startTime: 24, duration: 1 },   // Its
+        { note: 64, startTime: 25, duration: 1 },   // fleece
+        { note: 64, startTime: 26, duration: 1 },   // was
+        { note: 66, startTime: 27, duration: 1 },   // white
+        { note: 64, startTime: 28, duration: 1 },   // as
+        { note: 62, startTime: 29, duration: 3 },   // snow (dotted half note)
+      ]
     },
     {
       id: 'happy-birthday',
@@ -145,7 +176,41 @@ function App() {
         // Happy birthday to you
         72, 72, 71, 67, 69, 67
       ], // D D E D G F# D D E D A G D D D(high) B G F# E C C B G A G
-      tempo: 100
+      tempo: 100,
+      notesWithTiming: [
+        // Happy birthday to you
+        { note: 62, startTime: 0, duration: 0.75 },   // Hap-
+        { note: 62, startTime: 0.75, duration: 0.25 }, // -py
+        { note: 64, startTime: 1, duration: 1 },      // birth-
+        { note: 62, startTime: 2, duration: 1 },      // -day
+        { note: 67, startTime: 3, duration: 1 },      // to
+        { note: 66, startTime: 4, duration: 2 },      // you (half note)
+        
+        // Happy birthday to you
+        { note: 62, startTime: 6, duration: 0.75 },   // Hap-
+        { note: 62, startTime: 6.75, duration: 0.25 }, // -py
+        { note: 64, startTime: 7, duration: 1 },      // birth-
+        { note: 62, startTime: 8, duration: 1 },      // -day
+        { note: 69, startTime: 9, duration: 1 },      // to
+        { note: 67, startTime: 10, duration: 2 },     // you (half note)
+        
+        // Happy birthday dear [name]
+        { note: 62, startTime: 12, duration: 0.75 },  // Hap-
+        { note: 62, startTime: 12.75, duration: 0.25 }, // -py
+        { note: 74, startTime: 13, duration: 1 },     // birth-
+        { note: 71, startTime: 14, duration: 1 },     // -day
+        { note: 67, startTime: 15, duration: 1 },     // dear
+        { note: 66, startTime: 16, duration: 1 },     // [name]
+        { note: 64, startTime: 17, duration: 2 },     // (pause, half note)
+        
+        // Happy birthday to you
+        { note: 72, startTime: 19, duration: 0.75 },  // Hap-
+        { note: 72, startTime: 19.75, duration: 0.25 }, // -py
+        { note: 71, startTime: 20, duration: 1 },     // birth-
+        { note: 67, startTime: 21, duration: 1 },     // -day
+        { note: 69, startTime: 22, duration: 1 },     // to
+        { note: 67, startTime: 23, duration: 3 },     // you (dotted half note)
+      ]
     },
     {
       id: 'd-major-scale',
@@ -156,7 +221,28 @@ function App() {
         // Down the scale
         74, 73, 71, 69, 67, 66, 64, 62
       ], // D E F# G A B C# D D C# B A G F# E D
-      tempo: 100
+      tempo: 100,
+      notesWithTiming: [
+        // Up the scale
+        { note: 62, startTime: 0, duration: 1 },    // D
+        { note: 64, startTime: 1, duration: 1 },    // E
+        { note: 66, startTime: 2, duration: 1 },    // F#
+        { note: 67, startTime: 3, duration: 1 },    // G
+        { note: 69, startTime: 4, duration: 1 },    // A
+        { note: 71, startTime: 5, duration: 1 },    // B
+        { note: 73, startTime: 6, duration: 1 },    // C#
+        { note: 74, startTime: 7, duration: 1 },    // D (high)
+        
+        // Down the scale
+        { note: 74, startTime: 8, duration: 1 },    // D (high)
+        { note: 73, startTime: 9, duration: 1 },    // C#
+        { note: 71, startTime: 10, duration: 1 },   // B
+        { note: 69, startTime: 11, duration: 1 },   // A
+        { note: 67, startTime: 12, duration: 1 },   // G
+        { note: 66, startTime: 13, duration: 1 },   // F#
+        { note: 64, startTime: 14, duration: 1 },   // E
+        { note: 62, startTime: 15, duration: 2 },   // D (final, half note)
+      ]
     },
     {
       id: 'hot-cross-buns',
@@ -171,7 +257,33 @@ function App() {
         // Hot cross buns
         71, 69, 67
       ], // B A G B A G G G G G A A A A B A G
-      tempo: 120
+      tempo: 120,
+      notesWithTiming: [
+        // Hot cross buns
+        { note: 71, startTime: 0, duration: 1 },    // Hot
+        { note: 69, startTime: 1, duration: 1 },    // cross
+        { note: 67, startTime: 2, duration: 2 },    // buns (half note)
+        
+        // Hot cross buns
+        { note: 71, startTime: 4, duration: 1 },    // Hot
+        { note: 69, startTime: 5, duration: 1 },    // cross
+        { note: 67, startTime: 6, duration: 2 },    // buns (half note)
+        
+        // One a penny, two a penny
+        { note: 67, startTime: 8, duration: 0.5 },  // One
+        { note: 67, startTime: 8.5, duration: 0.5 }, // a
+        { note: 67, startTime: 9, duration: 0.5 },  // pen-
+        { note: 67, startTime: 9.5, duration: 0.5 }, // -ny
+        { note: 69, startTime: 10, duration: 0.5 }, // two
+        { note: 69, startTime: 10.5, duration: 0.5 }, // a
+        { note: 69, startTime: 11, duration: 0.5 }, // pen-
+        { note: 69, startTime: 11.5, duration: 0.5 }, // -ny
+        
+        // Hot cross buns
+        { note: 71, startTime: 12, duration: 1 },   // Hot
+        { note: 69, startTime: 13, duration: 1 },   // cross
+        { note: 67, startTime: 14, duration: 2 },   // buns (half note)
+      ]
     },
     {
       id: 'amazing-grace',
@@ -186,7 +298,40 @@ function App() {
         // Was blind but now I see
         71, 69, 67, 62, 67
       ], // G B D B D E D B D B A G G B D B D E D B A G D G
-      tempo: 90
+      tempo: 90,
+      notesWithTiming: [
+        // Amazing grace how sweet the sound
+        { note: 67, startTime: 0, duration: 1.5 },    // A-
+        { note: 71, startTime: 1.5, duration: 0.5 },  // -ma-
+        { note: 74, startTime: 2, duration: 1 },      // -zing
+        { note: 71, startTime: 3, duration: 1.5 },    // grace
+        { note: 74, startTime: 4.5, duration: 0.5 },  // how
+        { note: 76, startTime: 5, duration: 1 },      // sweet
+        { note: 74, startTime: 6, duration: 2 },      // the (half note)
+        
+        // That saved a wretch like me
+        { note: 71, startTime: 8, duration: 1.5 },    // sound
+        { note: 74, startTime: 9.5, duration: 0.5 },  // that
+        { note: 71, startTime: 10, duration: 1 },     // saved
+        { note: 69, startTime: 11, duration: 1 },     // a
+        { note: 67, startTime: 12, duration: 4 },     // wretch (whole note)
+        
+        // I once was lost but now am found
+        { note: 67, startTime: 16, duration: 1.5 },   // like
+        { note: 71, startTime: 17.5, duration: 0.5 }, // me
+        { note: 74, startTime: 18, duration: 1 },     // I
+        { note: 71, startTime: 19, duration: 1.5 },   // once
+        { note: 74, startTime: 20.5, duration: 0.5 }, // was
+        { note: 76, startTime: 21, duration: 1 },     // lost
+        { note: 74, startTime: 22, duration: 2 },     // but (half note)
+        
+        // Was blind but now I see
+        { note: 71, startTime: 24, duration: 1.5 },   // now
+        { note: 69, startTime: 25.5, duration: 0.5 }, // am
+        { note: 67, startTime: 26, duration: 1 },     // found
+        { note: 62, startTime: 27, duration: 1 },     // was
+        { note: 67, startTime: 28, duration: 4 },     // blind (whole note)
+      ]
     },
     {
       id: 'ode-to-joy',
@@ -197,7 +342,42 @@ function App() {
         // Second phrase (repeat with variation)
         66, 66, 67, 69, 69, 67, 66, 64, 62, 62, 64, 66, 64, 62, 62
       ], // F# F# G A A G F# E D D E F# F# E E F# F# G A A G F# E D D E F# E D D
-      tempo: 110
+      tempo: 110,
+      notesWithTiming: [
+        // First phrase
+        { note: 66, startTime: 0, duration: 1 },     // Joy-
+        { note: 66, startTime: 1, duration: 1 },     // -ful
+        { note: 67, startTime: 2, duration: 1 },     // joy-
+        { note: 69, startTime: 3, duration: 1 },     // -ful
+        { note: 69, startTime: 4, duration: 1 },     // we
+        { note: 67, startTime: 5, duration: 1 },     // a-
+        { note: 66, startTime: 6, duration: 1 },     // -dore
+        { note: 64, startTime: 7, duration: 1 },     // thee
+        { note: 62, startTime: 8, duration: 1 },     // God
+        { note: 62, startTime: 9, duration: 1 },     // of
+        { note: 64, startTime: 10, duration: 1 },    // glo-
+        { note: 66, startTime: 11, duration: 1 },    // -ry
+        { note: 66, startTime: 12, duration: 1.5 },  // Lord
+        { note: 64, startTime: 13.5, duration: 0.5 }, // of
+        { note: 64, startTime: 14, duration: 2 },    // love (half note)
+        
+        // Second phrase (repeat with variation)
+        { note: 66, startTime: 16, duration: 1 },    // Joy-
+        { note: 66, startTime: 17, duration: 1 },    // -ful
+        { note: 67, startTime: 18, duration: 1 },    // joy-
+        { note: 69, startTime: 19, duration: 1 },    // -ful
+        { note: 69, startTime: 20, duration: 1 },    // we
+        { note: 67, startTime: 21, duration: 1 },    // a-
+        { note: 66, startTime: 22, duration: 1 },    // -dore
+        { note: 64, startTime: 23, duration: 1 },    // thee
+        { note: 62, startTime: 24, duration: 1 },    // Hearts
+        { note: 62, startTime: 25, duration: 1 },    // un-
+        { note: 64, startTime: 26, duration: 1 },    // -fold
+        { note: 66, startTime: 27, duration: 1 },    // like
+        { note: 64, startTime: 28, duration: 1.5 },  // flow-
+        { note: 62, startTime: 29.5, duration: 0.5 }, // -ers
+        { note: 62, startTime: 30, duration: 2 },    // before (half note)
+      ]
     }
   ];
 
@@ -240,22 +420,6 @@ function App() {
     }
   };
 
-  // Clear all notes (for debugging)
-  const clearAllNotes = () => {
-    setPracticeNotes([]);
-    console.log('All notes cleared');
-  };
-
-  // Handle note exit from visualizer
-  const handleNoteExit = (noteId: string) => {
-    console.log(`App: Removing note ${noteId} from practice notes`);
-    setPracticeNotes(prev => {
-      const filtered = prev.filter(note => note.id !== noteId);
-      console.log(`Note ${noteId} removed, remaining: ${filtered.length}`);
-      return filtered;
-    });
-  };
-
   // Get current instrument range (including custom range support)
   const getCurrentInstrumentRange = () => {
     if (selectedInstrument === 'custom') {
@@ -270,167 +434,78 @@ function App() {
     return noteNumber >= range.MIN && noteNumber <= range.MAX;
   };
 
-  // Listen for MIDI messages and create falling notes
+  // Listen for MIDI messages for sequential practice
   useEffect(() => {
-    const activeNoteStates = new Map<number, number>(); // Track active notes by MIDI note number -> timestamp
-    
     const handleMIDIMessage = (message: MIDIMessage) => {
       setLastNote(message);
       
-      console.log(`MIDI message: ${message.type}, note: ${message.note}, in range: ${isInCurrentRange(message.note)}`);
-      
-      if (message.type === 'noteoff' && activeNoteStates.has(message.note)) {
-        // Note released - remove from active tracking
-        console.log(`Note ${message.note} released, removing from active tracking`);
-        activeNoteStates.delete(message.note);
-        return;
-      }
-      
+      // Only handle note on messages in the current instrument range
       if (message.type === 'noteon' && isInCurrentRange(message.note)) {
-        // Check if this note is already active (within last 500ms)
-        const lastNoteTime = activeNoteStates.get(message.note);
-        const timeSinceLastNote = lastNoteTime ? message.timestamp - lastNoteTime : Infinity;
+        console.log(`MIDI note: ${midiNoteToName(message.note)} (${message.note})`);
         
-        if (timeSinceLastNote < 500) { // 500ms debounce for same note
-          console.log(`Skipping duplicate note ${message.note} - only ${timeSinceLastNote.toFixed(1)}ms since last`);
-          return;
-        }
+        setLastPlayedNote(message.note);
         
-        // Update active note tracking
-        activeNoteStates.set(message.note, message.timestamp);
-        
-        // Auto-cleanup old notes from tracking (in case note-off wasn't received)
-        setTimeout(() => {
-          if (activeNoteStates.get(message.note) === message.timestamp) {
-            console.log(`Auto-removing note ${message.note} from tracking after timeout`);
-            activeNoteStates.delete(message.note);
-          }
-        }, 1000);
-        
-        // Update practice board state for tin whistle
-        if (selectedInstrument === 'tin-whistle') {
-          setLastPlayedNote(message.note);
+        // For tin whistle, handle sequential practice logic
+        if (selectedInstrument === 'tin-whistle' && currentTargetNote !== null) {
+          const isCorrect = message.note === currentTargetNote;
+          console.log(`Note played: ${midiNoteToName(message.note)} (${message.note}), Target: ${midiNoteToName(currentTargetNote)} (${currentTargetNote}), Correct: ${isCorrect}`);
+          setIsCorrectNote(isCorrect);
           
-          // Check if this matches the current target note
-          if (currentTargetNote !== null) {
-            // Allow for slight MIDI note variations (±1 semitone) for tin whistles
-            const isCorrect = Math.abs(message.note - currentTargetNote) <= 0; // Exact match for now, can adjust if needed
-            console.log(`Note played: ${midiNoteToName(message.note)} (${message.note}), Target: ${midiNoteToName(currentTargetNote)} (${currentTargetNote}), Correct: ${isCorrect}`);
-            setIsCorrectNote(isCorrect);
+          if (isCorrect) {
+            console.log(`Correct note! Current index: ${currentNoteIndex}, Sequence length: ${practiceSequence.length}`);
             
-            if (isCorrect) {
-              console.log(`Correct note! Current index: ${currentNoteIndex}, Sequence length: ${practiceSequence.length}`);
+            // Move to next note in sequence immediately, but show green feedback briefly
+            if (practiceSequence.length > 0 && currentNoteIndex < practiceSequence.length - 1) {
+              const nextIndex = currentNoteIndex + 1;
+              const nextNote = practiceSequence[nextIndex];
               
-              // Move to next note in sequence immediately, but show green feedback briefly
-              if (practiceSequence.length > 0 && currentNoteIndex < practiceSequence.length - 1) {
-                const nextIndex = currentNoteIndex + 1;
-                const nextNote = practiceSequence[nextIndex];
-                
-                console.log(`Advancing to next note: ${midiNoteToName(nextNote)} (${nextNote}) at index ${nextIndex}`);
-                
-                // Update state immediately to prevent getting stuck
-                setCurrentNoteIndex(nextIndex);
-                setCurrentTargetNote(nextNote);
-                
-                // Show green feedback briefly, then reset for next note
-                setTimeout(() => {
-                  setIsCorrectNote(null);
-                }, 500);
-              } else if (currentNoteIndex >= practiceSequence.length - 1) {
-                console.log('Practice sequence completed!');
-                
-                // Determine sequence name for completion message
-                let sequenceName = 'sequence';
-                if (practiceSequence.length === 7 && practiceSequence[0] === 62) {
-                  sequenceName = 'D Major Scale';
-                } else if (practiceSequence.length === 42 && practiceSequence[0] === 62 && practiceSequence[1] === 62) {
-                  sequenceName = 'Twinkle Twinkle Little Star (Complete)';
-                } else if (selectedSong) {
-                  sequenceName = selectedSong.title;
-                }
-                
-                // Show completion notification
-                showPracticeCompletion(sequenceName);
-                
-                // Sequence completed - reset after showing green feedback
-                setTimeout(() => {
-                  setIsCorrectNote(null);
-                  setCurrentTargetNote(null);
-                  setCurrentNoteIndex(0);
-                  setPracticeSequence([]);
-                }, 1000);
+              console.log(`Advancing to next note: ${midiNoteToName(nextNote)} (${nextNote}) at index ${nextIndex}`);
+              
+              // Update state immediately to prevent getting stuck
+              setCurrentNoteIndex(nextIndex);
+              setCurrentTargetNote(nextNote);
+              
+              // Show green feedback briefly, then reset for next note
+              setTimeout(() => {
+                setIsCorrectNote(null);
+              }, 500);
+            } else if (currentNoteIndex >= practiceSequence.length - 1) {
+              console.log('Practice sequence completed!');
+              
+              // Determine sequence name for completion message
+              let sequenceName = 'sequence';
+              if (selectedSong) {
+                sequenceName = selectedSong.title;
+              } else if (practiceSequence.length === 7 && practiceSequence[0] === 62) {
+                sequenceName = 'D Major Scale';
               }
-            } else {
-              console.log(`Incorrect note played. Expected: ${midiNoteToName(currentTargetNote)}, Got: ${midiNoteToName(message.note)}`);
+              
+              // Show completion notification
+              showPracticeCompletion(sequenceName);
+              
+              // Sequence completed - reset after showing green feedback
+              setTimeout(() => {
+                setIsCorrectNote(null);
+                setCurrentTargetNote(null);
+                setCurrentNoteIndex(0);
+                setPracticeSequence([]);
+              }, 1000);
             }
           } else {
-            console.log(`Free play note: ${midiNoteToName(message.note)} (${message.note})`);
+            console.log(`Incorrect note played. Expected: ${midiNoteToName(currentTargetNote)}, Got: ${midiNoteToName(message.note)}`);
           }
         }
-        
-        // Create a new falling note (for non-tin-whistle instruments or free play)
-        const newNote: PracticeNote = {
-          id: `${message.note}-${message.timestamp}-${Math.random().toString(36).substr(2, 5)}`,
-          note: message.note,
-          startTime: message.timestamp,
-          duration: 1000, // Default duration
-          isTarget: false,
-          isPlayed: true,
-          isCorrect: null,
-          timingAccuracy: null
-        };
-
-        console.log(`Creating new note: ${newNote.id} for MIDI note ${message.note}`);
-
-        setPracticeNotes(prev => {
-          // Force cleanup of any notes that might be stuck
-          const now = performance.now();
-          const recentNotes = prev.filter(note => now - note.startTime < 5000); // Reduced to 5 seconds
-          
-          const newNotes = [...recentNotes, newNote];
-          
-          // Strict limit to prevent accumulation
-          if (newNotes.length > 15) { // Reduced limit
-            console.warn(`Note limit exceeded! Keeping most recent ${10} notes, removing ${newNotes.length - 10} oldest notes`);
-            return newNotes.slice(-10);
-          }
-          
-          console.log(`Added note, total active notes: ${newNotes.length}`);
-          return newNotes;
-        });
       }
     };
 
     addMessageListener(handleMIDIMessage);
     return () => removeMessageListener(handleMIDIMessage);
-  }, [addMessageListener, removeMessageListener, selectedInstrument, currentTargetNote, practiceSequence, currentNoteIndex]);
-
-  // Cleanup old notes periodically (backup mechanism)
-  useEffect(() => {
-    const cleanupInterval = setInterval(() => {
-      const now = performance.now();
-      setPracticeNotes(prev => {
-        const filtered = prev.filter(note => now - note.startTime < 6000); // Reduced to 6 seconds
-        if (filtered.length !== prev.length) {
-          console.log(`Periodic cleanup: removed ${prev.length - filtered.length} old notes, remaining: ${filtered.length}`);
-        }
-        return filtered;
-      });
-    }, 1000); // Check every second instead of 2
-
-    return () => clearInterval(cleanupInterval);
-  }, []);
+  }, [addMessageListener, removeMessageListener, selectedInstrument, currentTargetNote, practiceSequence, currentNoteIndex, selectedSong]);
 
   // Handle song creation
   const handleSongCreate = (song: Song) => {
     setSongs(prev => [...prev, song]);
     console.log('Song created:', song);
-  };
-
-  // Handle practice session completion
-  const handleSessionComplete = (session: PracticeSession) => {
-    console.log('Practice session completed:', session);
-    // Here we could save session data to localStorage or send to a backend
   };
 
   // Start a practice sequence for tin whistle
@@ -653,7 +728,7 @@ function App() {
               <div>Is Supported: {isSupported ? 'Yes' : 'No'}</div>
               <div>Is Initialized: {isInitialized ? 'Yes' : 'No'}</div>
               <div>Error: {error || 'None'}</div>
-              <div>Active Notes: {practiceNotes.length}</div>
+              <div>Selected Instrument: {selectedInstrument}</div>
             </div>
             <div className="flex gap-2 mt-2">
               <button
@@ -667,12 +742,6 @@ function App() {
                 className="px-3 py-1 bg-green-600 hover:bg-green-700 rounded text-sm"
               >
                 Manual MIDI Init
-              </button>
-              <button
-                onClick={clearAllNotes}
-                className="px-3 py-1 bg-red-600 hover:bg-red-700 rounded text-sm"
-              >
-                Clear Notes
               </button>
             </div>
           </div>
@@ -733,20 +802,7 @@ function App() {
           )}
 
           {/* Debug Info */}
-          <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Active Notes Count */}
-            <div className="p-3 bg-gray-700 rounded">
-              <strong>Active Notes:</strong> <span className="text-blue-400">{practiceNotes.length}</span>
-              <div className="text-sm text-gray-400 mt-1">
-                Notes in animation
-              </div>
-              {practiceNotes.length > 0 && (
-                <div className="text-xs text-gray-500 mt-2">
-                  Last 3: {practiceNotes.slice(-3).map(n => `${midiNoteToName(n.note)}(${n.note})`).join(', ')}
-                </div>
-              )}
-            </div>
-            
+          <div className="mt-4 grid grid-cols-1 md:grid-cols-1 gap-4">
             {/* Last Note Display */}
             {lastNote && (
               <div className="p-3 bg-gray-700 rounded">
@@ -763,182 +819,154 @@ function App() {
           </div>
         </div>
 
-        {/* Practice Mode Controls */}
+        {/* Sequential Practice Mode */}
         <div className="bg-gray-800 rounded-lg p-4 mb-6">
-          <h2 className="text-xl font-semibold mb-3">Practice Mode</h2>
+          <h2 className="text-xl font-semibold mb-3">Sequential Practice Mode</h2>
           
-          {/* Mode Selector */}
-          <div className="flex gap-4 mb-4">
-            <button
-              onClick={() => setPracticeMode('free-play')}
-              className={`px-4 py-2 rounded font-medium ${
-                practiceMode === 'free-play' 
-                  ? 'bg-blue-600 text-white' 
-                  : 'bg-gray-600 text-gray-300 hover:bg-gray-500'
-              }`}
-            >
-              Free Play
-            </button>
-            <button
-              onClick={() => setPracticeMode('guided')}
-              className={`px-4 py-2 rounded font-medium ${
-                practiceMode === 'guided' 
-                  ? 'bg-blue-600 text-white' 
-                  : 'bg-gray-600 text-gray-300 hover:bg-gray-500'
-              }`}
-            >
-              Guided Practice
-            </button>
+          {/* Song Management */}
+          <div className="space-y-4">
+            {/* Song Input */}
+            <SongInput onSongCreate={handleSongCreate} />
+
+            {/* Song Selection */}
+            <div>
+              <h4 className="text-sm font-medium text-gray-300 mb-2">Select a song to practice:</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                {allSongs.map(song => (
+                  <button
+                    key={song.id}
+                    onClick={() => setSelectedSong(song)}
+                    className={`p-3 rounded border text-left ${
+                      selectedSong?.id === song.id
+                        ? 'bg-blue-700 border-blue-500 text-white'
+                        : 'bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600'
+                    }`}
+                  >
+                    <div className="font-medium">{song.title}</div>
+                    <div className="text-xs text-gray-400">
+                      {song.notes.length} notes • {song.tempo} BPM
+                      {builtInSongs.find(b => b.id === song.id) && (
+                        <span className="ml-2 text-green-400">• Built-in</span>
+                      )}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Practice Controls for Tin Whistle */}
+            {selectedInstrument === 'tin-whistle' && selectedSong && (
+              <div className="bg-gray-700 rounded-lg p-4">
+                <h4 className="text-sm font-medium text-gray-300 mb-2">Practice Controls:</h4>
+                <div className="flex gap-2 flex-wrap">
+                  <button
+                    onClick={() => startPracticeSequence(selectedSong.notes)}
+                    className="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-500"
+                  >
+                    Start Practice
+                  </button>
+                  <button
+                    onClick={resetPracticeSequence}
+                    className="px-3 py-1 bg-yellow-600 text-white rounded text-sm hover:bg-yellow-500"
+                    disabled={practiceSequence.length === 0}
+                  >
+                    Reset
+                  </button>
+                  <button
+                    onClick={skipToNextNote}
+                    className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-500"
+                    disabled={practiceSequence.length === 0 || currentNoteIndex >= practiceSequence.length - 1}
+                    title="Skip to next note (for debugging)"
+                  >
+                    Skip Note
+                  </button>
+                  <button
+                    onClick={stopPracticeSequence}
+                    className="px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-500"
+                    disabled={practiceSequence.length === 0}
+                  >
+                    Stop
+                  </button>
+                </div>
+                {practiceSequence.length > 0 && (
+                  <div className="mt-2 text-sm text-gray-300">
+                    Progress: {currentNoteIndex + 1} of {practiceSequence.length} notes
+                    {currentTargetNote && (
+                      <span className="ml-2 text-yellow-400">
+                        • Current: {midiNoteToName(currentTargetNote)} (MIDI {currentTargetNote})
+                      </span>
+                    )}
+                    <div className="mt-1 text-xs text-gray-400">
+                      Sequence: {practiceSequence.map((note, idx) => 
+                        `${midiNoteToName(note)}${idx === currentNoteIndex ? '←' : ''}`
+                      ).join(' → ')}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Quick Practice Controls for Tin Whistle - only show when no song is selected */}
+            {selectedInstrument === 'tin-whistle' && !selectedSong && (
+              <div className="bg-gray-700 rounded-lg p-4">
+                <h4 className="text-sm font-medium text-gray-300 mb-2">Quick Practice:</h4>
+                <div className="flex gap-2 flex-wrap">
+                  <button
+                    onClick={() => startPracticeSequence([62, 64, 66, 67, 69, 71, 74])} // D major scale
+                    className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-500"
+                  >
+                    D Scale
+                  </button>
+                  <button
+                    onClick={() => {
+                      const twinkleSong = builtInSongs.find(song => song.id === 'twinkle-twinkle');
+                      if (twinkleSong) {
+                        setSelectedSong(twinkleSong); // Set selected song for timing data
+                        startPracticeSequence(twinkleSong.notes);
+                      }
+                    }}
+                    className="px-3 py-1 bg-purple-600 text-white rounded text-sm hover:bg-purple-500"
+                  >
+                    Twinkle Twinkle (Full)
+                  </button>
+                  <button
+                    onClick={skipToNextNote}
+                    className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-500"
+                    disabled={practiceSequence.length === 0 || currentNoteIndex >= practiceSequence.length - 1}
+                    title="Skip to next note (for debugging)"
+                  >
+                    Skip Note
+                  </button>
+                  <button
+                    onClick={stopPracticeSequence}
+                    className="px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-500"
+                    disabled={practiceSequence.length === 0}
+                  >
+                    Stop Practice
+                  </button>
+                </div>
+                {practiceSequence.length > 0 && (
+                  <div className="mt-2 text-sm text-gray-300">
+                    Progress: {currentNoteIndex + 1} of {practiceSequence.length} notes
+                    {currentTargetNote && (
+                      <span className="ml-2 text-yellow-400">
+                        • Current: {midiNoteToName(currentTargetNote)} (MIDI {currentTargetNote})
+                      </span>
+                    )}
+                    <div className="mt-1 text-xs text-gray-400">
+                      Sequence: {practiceSequence.map((note, idx) => 
+                        `${midiNoteToName(note)}${idx === currentNoteIndex ? '←' : ''}`
+                      ).join(' → ')}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
-          {/* Song Management (only show in guided mode) */}
-          {practiceMode === 'guided' && (
-            <div className="space-y-4">
-              {/* Song Input */}
-              <SongInput onSongCreate={handleSongCreate} />
-
-              {/* Song Selection */}
-              <div>
-                <h4 className="text-sm font-medium text-gray-300 mb-2">Select a song to practice:</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-                  {allSongs.map(song => (
-                    <button
-                      key={song.id}
-                      onClick={() => setSelectedSong(song)}
-                      className={`p-3 rounded border text-left ${
-                        selectedSong?.id === song.id
-                          ? 'bg-blue-700 border-blue-500 text-white'
-                          : 'bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600'
-                      }`}
-                    >
-                      <div className="font-medium">{song.title}</div>
-                      <div className="text-xs text-gray-400">
-                        {song.notes.length} notes • {song.tempo} BPM
-                        {builtInSongs.find(b => b.id === song.id) && (
-                          <span className="ml-2 text-green-400">• Built-in</span>
-                        )}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Practice Controls for Tin Whistle */}
-              {selectedInstrument === 'tin-whistle' && selectedSong && (
-                <div className="bg-gray-700 rounded-lg p-4">
-                  <h4 className="text-sm font-medium text-gray-300 mb-2">Practice Controls:</h4>
-                  <div className="flex gap-2 flex-wrap">
-                    <button
-                      onClick={() => startPracticeSequence(selectedSong.notes)}
-                      className="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-500"
-                    >
-                      Start Practice
-                    </button>
-                    <button
-                      onClick={resetPracticeSequence}
-                      className="px-3 py-1 bg-yellow-600 text-white rounded text-sm hover:bg-yellow-500"
-                      disabled={practiceSequence.length === 0}
-                    >
-                      Reset
-                    </button>
-                    <button
-                      onClick={skipToNextNote}
-                      className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-500"
-                      disabled={practiceSequence.length === 0 || currentNoteIndex >= practiceSequence.length - 1}
-                      title="Skip to next note (for debugging)"
-                    >
-                      Skip Note
-                    </button>
-                    <button
-                      onClick={stopPracticeSequence}
-                      className="px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-500"
-                      disabled={practiceSequence.length === 0}
-                    >
-                      Stop
-                    </button>
-                  </div>
-                  {practiceSequence.length > 0 && (
-                    <div className="mt-2 text-sm text-gray-300">
-                      Progress: {currentNoteIndex + 1} of {practiceSequence.length} notes
-                      {currentTargetNote && (
-                        <span className="ml-2 text-yellow-400">
-                          • Current: {midiNoteToName(currentTargetNote)} (MIDI {currentTargetNote})
-                        </span>
-                      )}
-                      <div className="mt-1 text-xs text-gray-400">
-                        Sequence: {practiceSequence.map((note, idx) => 
-                          `${midiNoteToName(note)}${idx === currentNoteIndex ? '←' : ''}`
-                        ).join(' → ')}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Free Play Controls for Tin Whistle */}
-          {practiceMode === 'free-play' && selectedInstrument === 'tin-whistle' && (
-            <div className="bg-gray-700 rounded-lg p-4">
-              <h4 className="text-sm font-medium text-gray-300 mb-2">Quick Practice:</h4>
-              <div className="flex gap-2 flex-wrap">
-                <button
-                  onClick={() => startPracticeSequence([62, 64, 66, 67, 69, 71, 74])} // D major scale
-                  className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-500"
-                >
-                  D Scale
-                </button>
-                <button
-                  onClick={() => {
-                    const twinkleSong = builtInSongs.find(song => song.id === 'twinkle-twinkle');
-                    if (twinkleSong) {
-                      setSelectedSong(twinkleSong); // Set selected song for timing data
-                      startPracticeSequence(twinkleSong.notes);
-                    }
-                  }}
-                  className="px-3 py-1 bg-purple-600 text-white rounded text-sm hover:bg-purple-500"
-                >
-                  Twinkle Twinkle (Full)
-                </button>
-                <button
-                  onClick={skipToNextNote}
-                  className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-500"
-                  disabled={practiceSequence.length === 0 || currentNoteIndex >= practiceSequence.length - 1}
-                  title="Skip to next note (for debugging)"
-                >
-                  Skip Note
-                </button>
-                <button
-                  onClick={stopPracticeSequence}
-                  className="px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-500"
-                  disabled={practiceSequence.length === 0}
-                >
-                  Stop Practice
-                </button>
-              </div>
-              {practiceSequence.length > 0 && (
-                <div className="mt-2 text-sm text-gray-300">
-                  Progress: {currentNoteIndex + 1} of {practiceSequence.length} notes
-                  {currentTargetNote && (
-                    <span className="ml-2 text-yellow-400">
-                      • Current: {midiNoteToName(currentTargetNote)} (MIDI {currentTargetNote})
-                    </span>
-                  )}
-                  <div className="mt-1 text-xs text-gray-400">
-                    Sequence: {practiceSequence.map((note, idx) => 
-                      `${midiNoteToName(note)}${idx === currentNoteIndex ? '←' : ''}`
-                    ).join(' → ')}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Note Visualizer */}
+          {/* Practice Area */}
           <div className="bg-gray-800 rounded-lg p-4">
-            <h2 className="text-xl font-semibold mb-3">
-              {practiceMode === 'free-play' ? 'Free Play Area' : 'Practice Area'}
-            </h2>
+            <h2 className="text-xl font-semibold mb-3">Practice Area</h2>
             
             <div className="grid grid-cols-1 gap-4">
               {/* Main practice area */}
@@ -946,7 +974,7 @@ function App() {
                 {selectedInstrument === 'tin-whistle' ? (
                   // Tin whistle practice area
                   practiceSequence.length > 0 && selectedSong?.notesWithTiming ? (
-                    // Sequential practice with timeline (only for practice mode with timing data)
+                    // Sequential practice with timeline (when timing data is available)
                     <TinWhistleSequentialPractice
                       sequence={selectedSong.notesWithTiming}
                       currentNoteIndex={currentNoteIndex}
@@ -956,7 +984,7 @@ function App() {
                       className="h-auto"
                     />
                   ) : (
-                    // Standard static practice board (for free play or sequences without timing)
+                    // Fallback static practice board (when no timing data)
                     <TinWhistlePracticeBoard
                       currentTargetNote={currentTargetNote}
                       lastPlayedNote={lastPlayedNote}
@@ -964,21 +992,30 @@ function App() {
                       className="h-auto"
                     />
                   )
-                ) : practiceMode === 'free-play' ? (
-                  <NoteVisualizer 
-                    notes={practiceNotes}
-                    className="h-96 rounded border border-gray-600"
-                    onNoteExit={handleNoteExit}
-                    instrumentType={selectedInstrument}
-                    customRange={selectedInstrument === 'custom' ? { MIN: customRangeMin, MAX: customRangeMax } : undefined}
-                  />
-                ) : (                <PracticeMode
-                  song={selectedSong}
-                  lastPlayedNote={lastNote?.note || null}
-                  onSessionComplete={handleSessionComplete}
-                  onExpectedNoteChange={() => {}} // No longer using this callback
-                  className="h-96"
-                />
+                ) : (
+                  // Simple note display for other instruments
+                  <div className="bg-gray-700 rounded-lg p-8 text-center">
+                    <h3 className="text-lg font-medium text-gray-300 mb-4">
+                      {selectedInstrument.charAt(0).toUpperCase() + selectedInstrument.slice(1).replace('-', ' ')} Practice
+                    </h3>
+                    {lastPlayedNote ? (
+                      <div className="text-4xl font-bold text-blue-400 mb-2">
+                        {midiNoteToName(lastPlayedNote)}
+                      </div>
+                    ) : (
+                      <div className="text-2xl text-gray-500 mb-2">
+                        Play a note
+                      </div>
+                    )}
+                    <div className="text-sm text-gray-400">
+                      Range: {getCurrentInstrumentRange().MIN}-{getCurrentInstrumentRange().MAX}
+                      {lastPlayedNote && (
+                        <span className="ml-2">
+                          (MIDI {lastPlayedNote})
+                        </span>
+                      )}
+                    </div>
+                  </div>
                 )}
               </div>
             </div>
