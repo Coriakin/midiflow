@@ -196,6 +196,7 @@ export interface Song {
   title: string;
   notes: number[]; // Array of MIDI note numbers
   tempo: number; // BPM
+  tempoMultiplier?: number; // Practice speed multiplier (10-200%), defaults to 100%
   // Optional timing data for sequential practice
   notesWithTiming?: Array<{
     note: number;

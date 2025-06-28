@@ -6,7 +6,7 @@ import { SongInput } from './components/SongInput';
 import { MIDIFileUploader } from './components/MIDIFileUploader';
 import { MIDIPreview } from './components/MIDIPreview';
 import type { MIDIMessage, InstrumentType, Song, MIDISong, AnySong } from './types/midi';
-import { midiNoteToName, INSTRUMENT_RANGES } from './types/midi';
+import { midiNoteToName, INSTRUMENT_RANGES, isMIDISong } from './types/midi';
 import { extractNotesFromArrayBuffer } from './lib/midi/midiFileParser';
 import { 
   saveMidiSongsToStorage, 
@@ -85,6 +85,18 @@ function App() {
   // Song editing state
   const [editingSongId, setEditingSongId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState<string>('');
+
+  // Tempo control state
+  const [tempoMultiplier, setTempoMultiplier] = useState<number>(100); // 100% = normal speed
+
+  // Update tempo multiplier when a song is selected
+  useEffect(() => {
+    if (selectedSong?.tempoMultiplier) {
+      setTempoMultiplier(selectedSong.tempoMultiplier);
+    } else {
+      setTempoMultiplier(100); // Default to 100% for songs without saved tempo
+    }
+  }, [selectedSong]);
 
   // Built-in songs for quick testing
   const builtInSongs: Song[] = [
@@ -643,6 +655,31 @@ function App() {
     cancelEditing();
   };
 
+  // Update tempo multiplier for the current song and persist it
+  const updateSongTempoMultiplier = (newTempoMultiplier: number) => {
+    if (!selectedSong) return;
+    
+    setTempoMultiplier(newTempoMultiplier);
+    
+    // Update the song in the appropriate array
+    if (isMIDISong(selectedSong)) {
+      setMidiSongs(prev => prev.map(song => 
+        song.id === selectedSong.id 
+          ? { ...song, tempoMultiplier: newTempoMultiplier }
+          : song
+      ));
+    } else {
+      setSongs(prev => prev.map(song => 
+        song.id === selectedSong.id 
+          ? { ...song, tempoMultiplier: newTempoMultiplier }
+          : song
+      ));
+    }
+    
+    // Update the selected song reference
+    setSelectedSong(prev => prev ? { ...prev, tempoMultiplier: newTempoMultiplier } : null);
+  };
+
   // Start a practice sequence for tin whistle
   const startPracticeSequence = (notes: number[]) => {
     setPracticeSequence(notes);
@@ -748,6 +785,52 @@ function App() {
 
   return (
     <div className="min-h-screen bg-gray-900 text-white">
+      <style>
+        {`
+          /* Custom slider styles */
+          .slider::-webkit-slider-thumb {
+            appearance: none;
+            height: 18px;
+            width: 18px;
+            border-radius: 50%;
+            background: #3B82F6;
+            border: 2px solid #1E40AF;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+          }
+          
+          .slider::-webkit-slider-thumb:hover {
+            background: #2563EB;
+            transform: scale(1.1);
+          }
+          
+          .slider::-moz-range-thumb {
+            height: 18px;
+            width: 18px;
+            border-radius: 50%;
+            background: #3B82F6;
+            border: 2px solid #1E40AF;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+          }
+          
+          .slider::-moz-range-thumb:hover {
+            background: #2563EB;
+            transform: scale(1.1);
+          }
+          
+          .slider::-webkit-slider-track {
+            height: 8px;
+            border-radius: 4px;
+          }
+          
+          .slider::-moz-range-track {
+            height: 8px;
+            border-radius: 4px;
+            background: #4B5563;
+          }
+        `}
+      </style>
       <header className="bg-gray-800 p-4">
         <h1 className="text-3xl font-bold text-center">🎵 MIDIFlow</h1>
         <p className="text-center text-gray-400 mt-2">Real-time MIDI practice with visual feedback</p>
@@ -1125,6 +1208,12 @@ function App() {
                                 <span>{song.notes.length} notes</span>
                                 <span>•</span>
                                 <span>{song.tempo} BPM</span>
+                                {song.tempoMultiplier && song.tempoMultiplier !== 100 && (
+                                  <>
+                                    <span>•</span>
+                                    <span className="text-green-400">{song.tempoMultiplier}% speed</span>
+                                  </>
+                                )}
                                 <span>•</span>
                                 <span className="text-purple-400">Track {song.selectedTrack + 1}</span>
                               </div>
@@ -1290,6 +1379,12 @@ function App() {
                                 <span>{song.notes.length} notes</span>
                                 <span>•</span>
                                 <span>{song.tempo} BPM</span>
+                                {song.tempoMultiplier && song.tempoMultiplier !== 100 && (
+                                  <>
+                                    <span>•</span>
+                                    <span className="text-green-400">{song.tempoMultiplier}% speed</span>
+                                  </>
+                                )}
                                 <span>•</span>
                                 <span className="text-yellow-400">Manual</span>
                               </div>
@@ -1354,7 +1449,76 @@ function App() {
             {/* Practice Controls for Tin Whistle */}
             {selectedInstrument === 'tin-whistle' && selectedSong && (
               <div className="bg-gray-700 rounded-lg p-4">
-                <h4 className="text-sm font-medium text-gray-300 mb-2">Practice Controls:</h4>
+                <h4 className="text-sm font-medium text-gray-300 mb-3">Practice Controls:</h4>
+                
+                {/* Tempo Control Slider */}
+                <div className="mb-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-xs font-medium text-gray-300">Practice Speed:</label>
+                    <span className="text-xs text-gray-400">
+                      {tempoMultiplier}% ({Math.round((selectedSong.tempo || 120) * tempoMultiplier / 100)} BPM)
+                    </span>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <span className="text-xs text-gray-500">10%</span>
+                    <div className="flex-1 relative">
+                      <input
+                        type="range"
+                        min="10"
+                        max="200"
+                        step="10"
+                        value={tempoMultiplier}
+                        onChange={(e) => updateSongTempoMultiplier(parseInt(e.target.value))}
+                        className="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer slider"
+                        style={{
+                          background: `linear-gradient(to right, #3B82F6 0%, #3B82F6 ${(tempoMultiplier - 10) / 1.9}%, #4B5563 ${(tempoMultiplier - 10) / 1.9}%, #4B5563 100%)`
+                        }}
+                      />
+                      {/* Tempo percentage markers */}
+                      <div className="flex justify-between text-xs text-gray-500 mt-1">
+                        <span>25%</span>
+                        <span>50%</span>
+                        <span>100%</span>
+                        <span>150%</span>
+                        <span>200%</span>
+                      </div>
+                    </div>
+                    <span className="text-xs text-gray-500">200%</span>
+                  </div>
+                  <div className="flex gap-1 mt-2">
+                    <button
+                      onClick={() => updateSongTempoMultiplier(50)}
+                      className="px-2 py-1 bg-gray-600 text-gray-300 rounded text-xs hover:bg-gray-500"
+                    >
+                      50%
+                    </button>
+                    <button
+                      onClick={() => updateSongTempoMultiplier(75)}
+                      className="px-2 py-1 bg-gray-600 text-gray-300 rounded text-xs hover:bg-gray-500"
+                    >
+                      75%
+                    </button>
+                    <button
+                      onClick={() => updateSongTempoMultiplier(100)}
+                      className="px-2 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-500"
+                    >
+                      Normal
+                    </button>
+                    <button
+                      onClick={() => updateSongTempoMultiplier(125)}
+                      className="px-2 py-1 bg-gray-600 text-gray-300 rounded text-xs hover:bg-gray-500"
+                    >
+                      125%
+                    </button>
+                    <button
+                      onClick={() => updateSongTempoMultiplier(150)}
+                      className="px-2 py-1 bg-gray-600 text-gray-300 rounded text-xs hover:bg-gray-500"
+                    >
+                      150%
+                    </button>
+                  </div>
+                </div>
+
                 <div className="flex gap-2 flex-wrap">
                   <button
                     onClick={() => startPracticeSequence(selectedSong.notes)}
@@ -1475,7 +1639,7 @@ function App() {
                     <TinWhistleSequentialPractice
                       sequence={selectedSong.notesWithTiming}
                       currentNoteIndex={currentNoteIndex}
-                      tempo={selectedSong.tempo}
+                      tempo={Math.round((selectedSong.tempo || 120) * tempoMultiplier / 100)}
                       lastPlayedNote={lastPlayedNote}
                       isCorrectNote={isCorrectNote}
                       className="h-auto"
