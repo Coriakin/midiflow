@@ -37,6 +37,8 @@ function App() {
   const [isCorrectNote, setIsCorrectNote] = useState<boolean | null>(null);
   const [practiceSequence, setPracticeSequence] = useState<number[]>([]);
   const [currentNoteIndex, setCurrentNoteIndex] = useState<number>(0);
+  const [showCompletionMessage, setShowCompletionMessage] = useState<boolean>(false);
+  const [completionMessage, setCompletionMessage] = useState<string>('');
 
   // Built-in songs for quick testing
   const builtInSongs: Song[] = [
@@ -280,10 +282,23 @@ function App() {
                 }, 500);
               } else if (currentNoteIndex >= practiceSequence.length - 1) {
                 console.log('Practice sequence completed!');
-                // Sequence completed
+                
+                // Determine sequence name for completion message
+                let sequenceName = 'sequence';
+                if (practiceSequence.length === 7 && practiceSequence[0] === 62) {
+                  sequenceName = 'D Major Scale';
+                } else if (practiceSequence.length === 7 && practiceSequence[0] === 62 && practiceSequence[1] === 62) {
+                  sequenceName = 'Twinkle Twinkle opening';
+                } else if (selectedSong) {
+                  sequenceName = selectedSong.title;
+                }
+                
+                // Show completion notification
+                showPracticeCompletion(sequenceName);
+                
+                // Sequence completed - reset after showing green feedback
                 setTimeout(() => {
                   setIsCorrectNote(null);
-                  // Optionally reset to beginning or stop
                   setCurrentTargetNote(null);
                   setCurrentNoteIndex(0);
                   setPracticeSequence([]);
@@ -405,6 +420,53 @@ function App() {
     }
   };
 
+  // Show practice completion notification
+  const showPracticeCompletion = (sequenceName: string) => {
+    const messages = [
+      `🎉 Excellent! You completed the ${sequenceName}!`,
+      `🌟 Well done! ${sequenceName} finished perfectly!`,
+      `✨ Fantastic! You've mastered the ${sequenceName}!`,
+      `🎵 Great job! ${sequenceName} complete!`,
+    ];
+    const randomMessage = messages[Math.floor(Math.random() * messages.length)];
+    
+    setCompletionMessage(randomMessage);
+    setShowCompletionMessage(true);
+    
+    // Optional: Play a completion sound (if Web Audio API is available)
+    try {
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      // Play a nice ascending chord progression
+      const frequencies = [523.25, 659.25, 783.99]; // C5, E5, G5
+      frequencies.forEach((freq, index) => {
+        const osc = audioContext.createOscillator();
+        const gain = audioContext.createGain();
+        osc.connect(gain);
+        gain.connect(audioContext.destination);
+        
+        osc.frequency.setValueAtTime(freq, audioContext.currentTime + index * 0.1);
+        gain.gain.setValueAtTime(0.1, audioContext.currentTime + index * 0.1);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + index * 0.1 + 0.3);
+        
+        osc.start(audioContext.currentTime + index * 0.1);
+        osc.stop(audioContext.currentTime + index * 0.1 + 0.3);
+      });
+    } catch (error) {
+      console.log('Audio feedback not available:', error);
+    }
+    
+    // Hide the message after 3 seconds
+    setTimeout(() => {
+      setShowCompletionMessage(false);
+    }, 3000);
+  };
+
   if (!isSupported) {
     return (
       <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
@@ -423,6 +485,35 @@ function App() {
         <h1 className="text-3xl font-bold text-center">🎵 MIDIFlow</h1>
         <p className="text-center text-gray-400 mt-2">Real-time MIDI practice with visual feedback</p>
       </header>
+
+      {/* Practice Completion Notification */}
+      {showCompletionMessage && (
+        <div className="fixed top-4 right-4 z-50 transition-all duration-500 ease-in-out transform">
+          <div className="bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-4 rounded-lg shadow-xl border-2 border-green-400 max-w-sm animate-pulse relative">
+            {/* Dismiss button */}
+            <button
+              onClick={() => setShowCompletionMessage(false)}
+              className="absolute top-2 right-2 text-white hover:text-gray-200 text-xl leading-none"
+              title="Dismiss"
+            >
+              ×
+            </button>
+            
+            <div className="flex items-center space-x-3 pr-6">
+              <div className="text-3xl animate-bounce">🎉</div>
+              <div>
+                <div className="font-bold text-lg">Practice Complete!</div>
+                <div className="text-sm opacity-90">{completionMessage.replace(/^🎉|🌟|✨|🎵\s*/, '')}</div>
+              </div>
+            </div>
+            
+            {/* Progress bar animation */}
+            <div className="mt-3 w-full bg-green-700 rounded-full h-1">
+              <div className="bg-white h-1 rounded-full animate-pulse" style={{ width: '100%' }}></div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <main className="container mx-auto p-4">
         {/* Error Display */}
