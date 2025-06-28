@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { MIDISong, ParsedMIDIFile, MIDITrackInfo } from '../types/midi';
-import { parseMIDIFile, extractNotesFromTrack } from '../lib/midi/midiFileParser';
+import { parseMIDIFile, extractNotesFromArrayBuffer } from '../lib/midi/midiFileParser';
+import { MIDIPreview } from './MIDIPreview';
 
 interface MIDIFileUploaderProps {
   onMIDISongCreate: (song: MIDISong) => void;
@@ -21,6 +22,8 @@ export const MIDIFileUploader: React.FC<MIDIFileUploaderProps> = ({
   const [selectedTrackIndex, setSelectedTrackIndex] = useState<number>(0);
   const [songTitle, setSongTitle] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [showPreview, setShowPreview] = useState<boolean>(false);
+  const [previewSong, setPreviewSong] = useState<MIDISong | null>(null);
 
   const handleFileUpload = async (file: File) => {
     if (!file.name.toLowerCase().endsWith('.mid') && !file.name.toLowerCase().endsWith('.midi')) {
@@ -73,15 +76,15 @@ export const MIDIFileUploader: React.FC<MIDIFileUploaderProps> = ({
     setError(null);
 
     try {
-      const { notes, tempo, notesWithTiming } = await extractNotesFromTrack(originalFile, selectedTrackIndex);
-      
-      // Read the file as ArrayBuffer for storage
+      // Read the file as ArrayBuffer
       const fileData = await new Promise<ArrayBuffer>((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = (e) => resolve(e.target?.result as ArrayBuffer);
         reader.onerror = () => reject(new Error('Failed to read file'));
         reader.readAsArrayBuffer(originalFile);
       });
+      
+      const { notes, tempo, notesWithTiming } = extractNotesFromArrayBuffer(fileData, selectedTrackIndex);
       
       const midiSong: MIDISong = {
         id: `midi-${Date.now()}-${selectedTrackIndex}`,
@@ -232,6 +235,46 @@ export const MIDIFileUploader: React.FC<MIDIFileUploaderProps> = ({
             >
               {isUploading ? 'Creating...' : 'Create Practice Song'}
             </button>
+            
+            {/* Preview Button */}
+            <button
+              onClick={async () => {
+                if (!parsedFile || !originalFile) return;
+                
+                try {
+                  // Create a temporary song for preview
+                  const fileData = await originalFile.arrayBuffer();
+                  const { notes, tempo, notesWithTiming } = extractNotesFromArrayBuffer(fileData, selectedTrackIndex);
+                  
+                  const tempSong: MIDISong = {
+                    id: `temp-preview-${Date.now()}`,
+                    title: songTitle || 'Preview',
+                    notes,
+                    tempo,
+                    notesWithTiming,
+                    source: 'midi-file',
+                    fileName: originalFile.name,
+                    selectedTrack: selectedTrackIndex,
+                    originalMIDIData: parsedFile,
+                    availableTracks: parsedFile.tracks,
+                    fileData: fileData
+                  };
+                  
+                  setPreviewSong(tempSong);
+                  setShowPreview(true);
+                } catch (err) {
+                  setError(err instanceof Error ? err.message : 'Failed to create preview');
+                }
+              }}
+              disabled={isUploading}
+              className="px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 text-white rounded text-sm flex items-center space-x-1"
+            >
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
+              </svg>
+              <span>Preview</span>
+            </button>
+            
             <button
               onClick={() => {
                 setParsedFile(null);
@@ -246,6 +289,39 @@ export const MIDIFileUploader: React.FC<MIDIFileUploaderProps> = ({
             </button>
           </div>
         </div>
+      )}
+
+      {/* MIDI Preview Modal */}
+      {showPreview && previewSong && (
+        <MIDIPreview
+          song={previewSong}
+          availableTracks={previewSong.availableTracks}
+          onTrackChange={(trackIndex) => {
+            if (!previewSong?.fileData) return;
+            
+            try {
+              // Update the selected track index in the main component
+              setSelectedTrackIndex(trackIndex);
+              
+              // Update the preview song with the new track
+              const { notes, tempo, notesWithTiming } = extractNotesFromArrayBuffer(previewSong.fileData, trackIndex);
+              const updatedSong = {
+                ...previewSong,
+                selectedTrack: trackIndex,
+                notes,
+                tempo,
+                notesWithTiming
+              };
+              setPreviewSong(updatedSong);
+            } catch (error) {
+              console.error('Failed to switch track in preview:', error);
+            }
+          }}
+          onClose={() => {
+            setShowPreview(false);
+            setPreviewSong(null);
+          }}
+        />
       )}
     </div>
   );

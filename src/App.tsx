@@ -4,6 +4,7 @@ import { TinWhistlePracticeBoard } from './components/TinWhistlePracticeBoard';
 import { TinWhistleSequentialPractice } from './components/TinWhistleSequentialPractice';
 import { SongInput } from './components/SongInput';
 import { MIDIFileUploader } from './components/MIDIFileUploader';
+import { MIDIPreview } from './components/MIDIPreview';
 import type { MIDIMessage, InstrumentType, Song, MIDISong, AnySong } from './types/midi';
 import { midiNoteToName, INSTRUMENT_RANGES } from './types/midi';
 import { extractNotesFromArrayBuffer } from './lib/midi/midiFileParser';
@@ -30,6 +31,10 @@ function App() {
   const [songs, setSongs] = useState<Song[]>([]);
   const [midiSongs, setMidiSongs] = useState<MIDISong[]>([]);
   const [selectedSong, setSelectedSong] = useState<AnySong | null>(null);
+  
+  // MIDI Preview state
+  const [previewSong, setPreviewSong] = useState<MIDISong | null>(null);
+  const [showPreview, setShowPreview] = useState<boolean>(false);
   
   // Sequential practice states
   const [currentTargetNote, setCurrentTargetNote] = useState<number | null>(null);
@@ -962,6 +967,23 @@ function App() {
                                 </option>
                               ))}
                             </select>
+                            
+                            {/* MIDI Preview Button */}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setPreviewSong(song);
+                                setShowPreview(true);
+                              }}
+                              className="bg-purple-600 hover:bg-purple-500 text-white px-2 py-1 rounded text-xs flex items-center space-x-1"
+                              title="Preview MIDI track"
+                            >
+                              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
+                              </svg>
+                              <span>Preview</span>
+                            </button>
+                            
                             {selectedSong?.id === song.id && (
                               <div className="flex-shrink-0">
                                 <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
@@ -1197,6 +1219,44 @@ function App() {
           </div>
         </div>
       </main>
+
+      {/* MIDI Preview Modal */}
+      {showPreview && previewSong && (
+        <MIDIPreview
+          song={previewSong}
+          availableTracks={previewSong.availableTracks}
+          onTrackChange={(trackIndex) => {
+            try {
+              // Extract notes from the new track
+              const { notes, tempo, notesWithTiming } = extractNotesFromArrayBuffer(previewSong.fileData!, trackIndex);
+              const updatedSong = { 
+                ...previewSong, 
+                selectedTrack: trackIndex,
+                notes,
+                tempo,
+                notesWithTiming
+              };
+              
+              // Update the preview song
+              setPreviewSong(updatedSong);
+              
+              // Update the song in the midiSongs array
+              setMidiSongs(prev => prev.map(s => s.id === previewSong.id ? updatedSong : s));
+              
+              // If this song is currently selected, update the selected song too
+              if (selectedSong?.id === previewSong.id) {
+                setSelectedSong(updatedSong);
+              }
+            } catch (error) {
+              console.error('Failed to extract notes from track in preview:', error);
+            }
+          }}
+          onClose={() => {
+            setShowPreview(false);
+            setPreviewSong(null);
+          }}
+        />
+      )}
     </div>
   );
 }
