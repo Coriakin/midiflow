@@ -1451,70 +1451,54 @@ function App() {
               <div className="bg-gray-700 rounded-lg p-4">
                 <h4 className="text-sm font-medium text-gray-300 mb-3">Practice Controls:</h4>
                 
-                {/* Tempo Control Slider */}
+                {/* Tempo Control Buttons */}
                 <div className="mb-4">
-                  <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center justify-between mb-3">
                     <label className="text-xs font-medium text-gray-300">Practice Speed:</label>
                     <span className="text-xs text-gray-400">
                       {tempoMultiplier}% ({Math.round((selectedSong.tempo || 120) * tempoMultiplier / 100)} BPM)
                     </span>
                   </div>
-                  <div className="flex items-center space-x-3">
-                    <span className="text-xs text-gray-500">10%</span>
-                    <div className="flex-1 relative">
-                      <input
-                        type="range"
-                        min="10"
-                        max="200"
-                        step="10"
-                        value={tempoMultiplier}
-                        onChange={(e) => updateSongTempoMultiplier(parseInt(e.target.value))}
-                        className="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer slider"
-                        style={{
-                          background: `linear-gradient(to right, #3B82F6 0%, #3B82F6 ${(tempoMultiplier - 10) / 1.9}%, #4B5563 ${(tempoMultiplier - 10) / 1.9}%, #4B5563 100%)`
-                        }}
-                      />
-                      {/* Tempo percentage markers */}
-                      <div className="flex justify-between text-xs text-gray-500 mt-1">
-                        <span>25%</span>
-                        <span>50%</span>
-                        <span>100%</span>
-                        <span>150%</span>
-                        <span>200%</span>
-                      </div>
-                    </div>
-                    <span className="text-xs text-gray-500">200%</span>
-                  </div>
-                  <div className="flex gap-1 mt-2">
+                  <div className="flex gap-1 flex-wrap">
+                    <button
+                      onClick={() => updateSongTempoMultiplier(25)}
+                      className={`px-3 py-1 rounded text-xs transition-colors ${
+                        tempoMultiplier === 25 
+                          ? 'bg-blue-600 text-white' 
+                          : 'bg-gray-600 text-gray-300 hover:bg-gray-500'
+                      }`}
+                    >
+                      25%
+                    </button>
                     <button
                       onClick={() => updateSongTempoMultiplier(50)}
-                      className="px-2 py-1 bg-gray-600 text-gray-300 rounded text-xs hover:bg-gray-500"
+                      className={`px-3 py-1 rounded text-xs transition-colors ${
+                        tempoMultiplier === 50 
+                          ? 'bg-blue-600 text-white' 
+                          : 'bg-gray-600 text-gray-300 hover:bg-gray-500'
+                      }`}
                     >
                       50%
                     </button>
                     <button
                       onClick={() => updateSongTempoMultiplier(75)}
-                      className="px-2 py-1 bg-gray-600 text-gray-300 rounded text-xs hover:bg-gray-500"
+                      className={`px-3 py-1 rounded text-xs transition-colors ${
+                        tempoMultiplier === 75 
+                          ? 'bg-blue-600 text-white' 
+                          : 'bg-gray-600 text-gray-300 hover:bg-gray-500'
+                      }`}
                     >
                       75%
                     </button>
                     <button
                       onClick={() => updateSongTempoMultiplier(100)}
-                      className="px-2 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-500"
+                      className={`px-3 py-1 rounded text-xs transition-colors ${
+                        tempoMultiplier === 100 
+                          ? 'bg-green-600 text-white' 
+                          : 'bg-gray-600 text-gray-300 hover:bg-gray-500'
+                      }`}
                     >
-                      Normal
-                    </button>
-                    <button
-                      onClick={() => updateSongTempoMultiplier(125)}
-                      className="px-2 py-1 bg-gray-600 text-gray-300 rounded text-xs hover:bg-gray-500"
-                    >
-                      125%
-                    </button>
-                    <button
-                      onClick={() => updateSongTempoMultiplier(150)}
-                      className="px-2 py-1 bg-gray-600 text-gray-300 rounded text-xs hover:bg-gray-500"
-                    >
-                      150%
+                      100%
                     </button>
                   </div>
                 </div>
