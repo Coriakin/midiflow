@@ -287,8 +287,8 @@ function App() {
                 let sequenceName = 'sequence';
                 if (practiceSequence.length === 7 && practiceSequence[0] === 62) {
                   sequenceName = 'D Major Scale';
-                } else if (practiceSequence.length === 7 && practiceSequence[0] === 62 && practiceSequence[1] === 62) {
-                  sequenceName = 'Twinkle Twinkle opening';
+                } else if (practiceSequence.length === 42 && practiceSequence[0] === 62 && practiceSequence[1] === 62) {
+                  sequenceName = 'Twinkle Twinkle Little Star (Complete)';
                 } else if (selectedSong) {
                   sequenceName = selectedSong.title;
                 }
@@ -833,10 +833,15 @@ function App() {
                   D Scale
                 </button>
                 <button
-                  onClick={() => startPracticeSequence([62, 62, 69, 69, 71, 71, 69])} // Twinkle start
+                  onClick={() => {
+                    const twinkleSong = builtInSongs.find(song => song.id === 'twinkle-twinkle');
+                    if (twinkleSong) {
+                      startPracticeSequence(twinkleSong.notes);
+                    }
+                  }}
                   className="px-3 py-1 bg-purple-600 text-white rounded text-sm hover:bg-purple-500"
                 >
-                  Twinkle Start
+                  Twinkle Twinkle (Full)
                 </button>
                 <button
                   onClick={skipToNextNote}

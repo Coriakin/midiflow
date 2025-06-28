@@ -12,7 +12,9 @@ export default defineConfig({
   },
   server: {
     port: 3000,
-    host: true
+    host: true,
+    strictPort: true, // Don't try other ports if 3000 is occupied
+    open: false // Don't auto-open browser
   },
   build: {
     target: 'esnext'
