@@ -1,25 +1,33 @@
 # MIDIFlow - Real-time MIDI Practice Application
 
-A focused, pedagogical tin whistle practice tool with timeline-based sequential practice mode. Features real-time MIDI input, visual feedback, MIDI file import with advanced track preview, and persistent song storage.
+A focused, pedagogical tin whistle practice tool with timeline-based sequential practice mode. Features a clean tab-based interface, real-time MIDI input, visual feedback, MIDI file import with advanced track preview, and persistent song storage.
 
 ## Phase 3 - Enhanced Features ✅
 
 ### What's Implemented
 
-#### 🎹 MIDI Integration
+#### � Tab-Based Interface Design
+- ✅ **Clean Tab Navigation** - Three focused sections: Practice, Create Practice Song, MIDI Status
+- ✅ **Compact Status Bar** - MIDI connection status always visible in header
+- ✅ **Organized Content** - Each tab has specific functionality without clutter
+- ✅ **Responsive Design** - Works well on different screen sizes
+- ✅ **Visual Hierarchy** - Clear separation between different app functions
+
+#### �🎹 MIDI Integration
 - ✅ WebMIDI API integration with TypeScript support
 - ✅ Automatic MIDI device detection and connection
 - ✅ Real-time MIDI message parsing (Note On/Off)
 - ✅ Device hot-plugging support (connect/disconnect during use)
 - ✅ Graceful error handling and fallbacks
+- ✅ Complete debugging interface in MIDI Status tab
 
 #### 🎵 Focused Practice System
 - ✅ **Sequential Practice Mode Only** - Focused, step-by-step learning approach
-- ✅ **Manual Song Creation** - Create practice songs by entering note sequences
-- ✅ **Advanced MIDI File Import** - Upload and parse MIDI files with intelligent track selection
-- ✅ **MIDI Preview System** - Preview and audition tracks before practicing
-- ✅ **Built-in Song Library** - Pre-loaded songs with timing data
-- ✅ **Persistent Song Storage** - Songs automatically saved and restored between sessions
+- ✅ **Timeline-Based Practice** - Visual timeline with moving progress indicator
+- ✅ **Smart Note Stacking** - Overlapping notes are intelligently separated vertically
+- ✅ **Tempo Control** - Practice at 25%, 50%, 75%, or 100% speed with button controls
+- ✅ **Per-Song Tempo Persistence** - Speed settings saved individually for each song
+- ✅ **Unlimited Retries** - Encouraging, trial-and-error friendly learning atmosphere
 
 #### 🎧 MIDI Preview & Track Management
 - ✅ **Real-time MIDI Preview** - Play, pause, skip through MIDI tracks with audio
@@ -33,9 +41,10 @@ A focused, pedagogical tin whistle practice tool with timeline-based sequential 
 - ✅ Complete note board showing all tin whistle notes with fingerings
 - ✅ Visual practice guidance with highlighted target notes  
 - ✅ Real-time feedback for correct/incorrect notes played
-- ✅ Timeline-based sequential practice with tempo control
+- ✅ Timeline-based sequential practice with smooth scrolling
 - ✅ Practice status indicator showing current song and progress
 - ✅ Completion animations and encouraging feedback
+- ✅ Smart collision detection for overlapping notes
 
 #### 💾 Persistent Storage System
 - ✅ **Automatic Song Persistence** - MIDI and manual songs saved to localStorage
@@ -46,6 +55,7 @@ A focused, pedagogical tin whistle practice tool with timeline-based sequential 
 
 #### 🔧 Advanced Song Management
 - ✅ **Organized Song Lists** - Separate sections for built-in vs imported songs
+- ✅ **Song Editing** - Delete and rename songs with inline editing
 - ✅ **Track Re-selection** - Change MIDI track selection after import
 - ✅ **Real-time Note Extraction** - Dynamic song updates when changing tracks
 - ✅ **Scalable Interface** - Compact, scrollable lists for many songs
@@ -53,64 +63,95 @@ A focused, pedagogical tin whistle practice tool with timeline-based sequential 
 
 ### Current Features
 
-1. **MIDI Device Management**
-   - Automatic detection of connected MIDI devices
-   - Connect/disconnect functionality
-   - Real-time device status monitoring
-   - Support for USB MIDI (primary) with BLE detection framework
+#### **Practice Tab**
+1. **Song Selection & Management**
+   - Built-in song library (Twinkle Twinkle, Mary Had a Little Lamb, etc.)
+   - Imported MIDI songs with track information
+   - Manual songs created with note input
+   - Delete and rename functionality with confirmation dialogs
+   - Visual indicators for custom tempo settings
 
-2. **Advanced Song Import & Management**
-   - Drag-and-drop MIDI file upload with instant parsing
-   - Multi-track analysis with instrument detection
-   - Real-time MIDI preview with playback controls
-   - Quick track switching during preview
-   - Automatic song persistence across sessions
-   - Organized song lists (built-in vs imported)
+2. **Practice Controls**
+   - Tempo adjustment: 25%, 50%, 75%, 100% speed with button controls
+   - Per-song tempo persistence (settings saved automatically)
+   - Start Practice, Reset, Skip Note, Stop buttons
+   - Real-time practice status indicator
 
-3. **MIDI Preview System**
-   - Play/pause/stop controls with ±15 second skip
-   - Real-time track switching without reloading
-   - Web Audio synthesis for immediate audition
-   - Progress timeline with visual feedback
-   - Available both during import and from song list
+3. **Sequential Practice Interface**
+   - Timeline-based practice with moving progress line
+   - Smart note stacking for overlapping notes (prevents visual confusion)
+   - Tin whistle fingering charts with visual feedback
+   - Real-time metronome with beat indicators
+   - Encouraging retry system with unlimited attempts
 
-4. **Focused Practice Interface**
-   - Sequential practice mode only (no free play distractions)
-   - Timeline-based practice with metronome
-   - Real-time feedback for correct/incorrect notes
-   - Practice status indicator always visible
-   - Clear song selection and deselection
+#### **Create Practice Song Tab**
+1. **Manual Song Creation**
+   - Note name input (e.g., "D E F# G A B C")
+   - Tempo setting with BPM input
+   - Automatic timing generation for practice
+   - Title customization and immediate saving
 
-5. **Tin Whistle Specialization**
-   - Complete fingering chart for D-tuned tin whistle
-   - Note range: D4 to C6 (MIDI 62-84)
-   - Visual feedback with highlighted target notes
-   - Practice progression tracking
+2. **MIDI File Import**
+   - Drag-and-drop MIDI file upload
+   - Multi-track analysis and selection
+   - Real-time note extraction and visualization
+   - Integration with MIDI preview system
 
-6. **Persistent Storage**
-   - Automatic saving of MIDI and manual songs
-   - Cross-session song availability
-   - Efficient binary data storage
-   - Development tools for storage management
+3. **Development Tools** (Development Mode Only)
+   - Storage management (clear all songs, view storage info)
+   - Debugging utilities for localStorage
+   - Song persistence verification
 
-2. **Song Management System**
-   - **Manual Song Creation**: Enter note sequences manually using MIDI numbers or note names
-   - **MIDI File Import**: Upload .mid/.midi files with intelligent track analysis
-   - **Track Selection**: Choose specific instruments/tracks from multi-track MIDI files
-   - **Smart Recommendations**: Auto-select tracks with the most notes for practice
-   - **Built-in Library**: Pre-loaded practice songs with timing data and expandable collection
-   - **Compact Song Selection**: Scalable list interface for easy navigation of large song libraries
+#### **MIDI Status Tab**
+1. **Instrument Configuration**
+   - Instrument selection (tin whistle, flute, violin, etc.)
+   - Note range display and custom range setup
+   - MIDI note number to name conversion
 
-3. **Instrument Selection**
-   - Tin Whistle, Flute, Violin, Guitar, Saxophone presets
-   - Full Piano/Keyboard range (88 keys)
-   - Custom range option for flexibility
-   - Automatic note filtering based on selected instrument
+2. **Device Management**
+   - Available MIDI device list with connection status
+   - Connect/disconnect functionality per device
+   - Real-time device state monitoring
+   - Device manufacturer and name display
 
-4. **Advanced Practice Modes**
-   - **Sequential Practice**: Step-by-step note guidance with visual feedback
-   - **Timing Practice**: Use MIDI timing data for tempo-based practice
-   - **Progress Tracking**: Visual indicators of practice completion
+3. **Debug Information**
+   - WebMIDI API availability and initialization status
+   - Browser compatibility checking
+   - HTTPS/localhost detection
+   - Last played note display with timing
+   - Manual MIDI initialization controls
+
+#### **Header Status Bar**
+- Compact MIDI connection indicators always visible
+- WebMIDI Support, Initialization, and Connected Devices status
+- Color-coded status dots (green/yellow/red) for quick reference
+
+### Technical Features
+
+1. **Persistent Storage System**
+   - Automatic saving of MIDI and manual songs to localStorage
+   - Cross-session song availability with automatic restore
+   - Efficient binary data storage for MIDI files
+   - Development tools for storage management and debugging
+
+2. **Advanced MIDI Processing**
+   - Real-time MIDI file parsing with midi-parser-js
+   - Multi-track analysis and intelligent track selection
+   - Web Audio API integration for MIDI preview playback
+   - Smart note extraction with timing preservation
+
+3. **Instrument Specialization**
+   - Tin Whistle: Complete D-tuned fingering charts (D4-C6, MIDI 62-84)
+   - Flute, Violin, Guitar, Saxophone: Appropriate note ranges
+   - Full Piano/Keyboard: Complete 88-key range
+   - Custom range option for any MIDI instrument
+
+4. **Practice Intelligence**
+   - Smart note collision detection and vertical stacking
+   - Per-song tempo persistence with visual indicators
+   - Encouraging retry system with unlimited attempts
+   - Timeline-based practice with smooth scrolling
+   - Real-time metronome with visual beat indicators
    - **Practice State Management**: Clear visual feedback of active practice sessions
    - **Error Recovery**: Encouraging feedback with unlimited retries
 
@@ -150,38 +191,59 @@ npm run dev
 ```
 
 ### Using the App
-1. Open the app in Chrome
-2. Connect your MIDI device (USB or Bluetooth)
-3. Click "Connect" next to your device in the MIDI Status section
-4. **Create or Import Songs:**
-   - **Manual**: Use "Create Practice Song (Manual)" to enter note sequences
-   - **MIDI Upload**: Use "Upload MIDI File" to import existing MIDI files
-   - **Built-in**: Select from pre-loaded practice songs
-5. **Select Your Song**: Choose a song from the list to start practicing
-6. **Start Practice**: Click "Start Practice" to begin sequential note guidance
-7. **Play Along**: Follow the visual cues and play the indicated notes on your instrument
+
+#### 1. **Initial Setup**
+- Open the app in Chrome
+- Check the header status bar for MIDI connection indicators
+- Navigate to **MIDI Status** tab if you need device troubleshooting
+
+#### 2. **Connect MIDI Device**
+- Go to **MIDI Status** tab
+- Your device should appear in the "Available Devices" list
+- Click "Connect" next to your device
+- Watch for the green "Connected Devices: 1" indicator in the header
+
+#### 3. **Create or Import Songs** (Create Practice Song Tab)
+- **Manual Creation**: Enter note sequences like "D E F# G A B C"
+- **MIDI File Import**: Drag and drop .mid/.midi files
+- **Track Selection**: Preview and choose the best track from multi-track files
+- Songs are automatically saved and available across sessions
+
+#### 4. **Practice** (Practice Tab)
+- Select a song from Built-in Songs, Imported Songs, or Manual Songs
+- Adjust tempo (25%, 50%, 75%, 100%) - settings are saved per song
+- Click "Start Practice" to begin sequential practice
+- Follow the timeline and play notes when highlighted
+- Enjoy unlimited retries with encouraging feedback
 
 ## Architecture
 
+### Tab-Based Interface
+- **Practice Tab**: Song selection, tempo control, and sequential practice interface
+- **Create Practice Song Tab**: Manual song creation and MIDI file import
+- **MIDI Status Tab**: Complete device management and debugging information
+- **Header Status Bar**: Always-visible MIDI connection indicators
+
 ### Key Components
+- `App` - Main application with tab navigation and comprehensive practice management
+- `TinWhistlePracticeBoard` - Complete tin whistle practice interface with fingerings
+- `TinWhistleSequentialPractice` - Timeline-based practice with timing visualization and smart note stacking
+- `SongInput` - Manual song creation component with note name parsing
+- `MIDIFileUploader` - MIDI file import and track selection with preview integration
+- `MIDIPreview` - Real-time MIDI playback with track switching capabilities
 - `MIDIManager` - Core MIDI device and message handling
 - `useMIDI` - React hook for MIDI integration
-- `TinWhistlePracticeBoard` - Complete tin whistle practice interface with fingerings
-- `TinWhistleSequentialPractice` - Timeline-based practice with timing visualization
-- `SongInput` - Manual song creation component
-- `MIDIFileUploader` - MIDI file import and track selection
-- `NoteVisualizer` - Falling notes display component for other instruments
-- `App` - Main application with comprehensive practice management
 
 ### File Structure
 ```
 src/
 ├── components/
 │   ├── TinWhistlePracticeBoard.tsx      # Complete tin whistle practice interface
-│   ├── TinWhistleSequentialPractice.tsx # Timeline-based practice visualization
+│   ├── TinWhistleSequentialPractice.tsx # Timeline-based practice with smart stacking
 │   ├── SongInput.tsx                    # Manual song creation
 │   ├── MIDIFileUploader.tsx            # MIDI file import and track selection
-│   └── NoteVisualizer.tsx              # Falling notes visualization
+│   ├── MIDIPreview.tsx                  # MIDI preview modal with playback
+│   └── NoteVisualizer.tsx              # Falling notes visualization (legacy)
 ├── hooks/
 │   └── useMIDI.ts                      # MIDI device management hook
 ├── lib/
@@ -189,7 +251,10 @@ src/
 │       ├── MIDIManager.ts              # Core MIDI functionality
 │       └── midiFileParser.ts           # MIDI file parsing and analysis
 ├── types/
-│   ├── midi.ts                         # MIDI type definitions including MIDI songs
+│   ├── midi.ts                         # MIDI type definitions including song types
+│   └── webmidi.d.ts                    # WebMIDI API type definitions
+├── utils/
+│   └── storage.ts                      # localStorage persistence utilities
 │   ├── midi-parser-js.d.ts            # MIDI parser library types
 │   └── webmidi.d.ts                   # WebMIDI API types
 └── App.tsx                             # Main application

@@ -1,7 +1,16 @@
 # MIDIFlow AI Assistant Rules File
 
 ## Application Purpose
-MIDIFlow is a focused web-based tin whistle practice application that provides real-time visual feedback through MIDI input. Users connect their MIDI controller and practice songs through timeline-based sequential learning with step-by-step guidance. The app features MIDI file import with track selection, MIDI preview playback, manual song creation, persistent song storage, and real-time visual feedback. It maintains an encouraging learning atmosphere with unlimited retries and clear progress indicators.
+MIDIFlow is a focused web-based tin whistle practice application that provides real-time visual feedback through MIDI input. Users connect their MIDI controller and practice songs through timeline-based sequential learning with step-by-step guidance. The app features a clean tab-based interface, MIDI file import with track selection, MIDI preview playback, manual song creation, persistent song storage, and real-time visual feedback. It maintains an encouraging learning atmosphere with unlimited retries and clear progress indicators.
+
+## Interface Design ✅ IMPLEMENTED
+- ✅ Tab-based interface with three main sections:
+  - ✅ **Practice Tab**: Song selection, practice controls, sequential timeline practice
+  - ✅ **Create Practice Song Tab**: Manual song creation and MIDI file import
+  - ✅ **MIDI Status Tab**: Complete debugging information and device management
+- ✅ Compact MIDI connection status bar in header (always visible)
+- ✅ Clean separation of functionality for focused user experience
+- ✅ Responsive design with proper spacing and visual hierarchy
 
 ## Code Style & Standards
 - Use TypeScript for all new files (prefer .ts/.tsx extensions)
@@ -69,8 +78,18 @@ MIDIFlow is a focused web-based tin whistle practice application that provides r
 - ✅ Single-note progression with unlimited retries per note
 - ✅ Practice state persistence and clear visual indicators
 - ✅ Focused practice mode (removed free play for clarity)
-- [ ] Adjustable tempo for practicing challenging sections (planned)
+- ✅ Adjustable tempo for practicing challenging sections (25%, 50%, 75%, 100%)
+- ✅ Per-song tempo persistence with visual indicators
+- ✅ Smart note stacking for overlapping notes to prevent visual confusion
 - [ ] Loop functionality enabling repeated practice of difficult segments (planned)
+
+### Song Management ✅ IMPLEMENTED
+- ✅ Built-in song library with complete timing data
+- ✅ Manual song creation with note name input and tempo settings
+- ✅ MIDI file import with multi-track support and preview
+- ✅ Song deletion and renaming functionality with inline editing
+- ✅ Scalable song list UI with organized sections (Built-in, Imported, Manual)
+- ✅ Real-time track switching and note re-extraction for MIDI files
 
 ### Performance Statistics
 - Collect detailed accuracy metrics per song:
@@ -89,8 +108,8 @@ MIDIFlow is a focused web-based tin whistle practice application that provides r
 - MIDI Parsing: midi-parser-js library for MIDI file import and analysis ✅
 - Visuals & Animation: CSS animations for real-time visual feedback ✅
 - Audio: Web Audio API for metronome and audio feedback (planned Phase 3)
-- Data Management: In-memory state (Phase 2), IndexedDB planned (Phase 3)
-- State Management: React useState/useEffect (Phase 2), Zustand planned (Phase 3)
+- Data Management: localStorage persistence (Phase 2), IndexedDB planned (Phase 3) ✅
+- State Management: React useState/useEffect (Phase 2), Zustand planned (Phase 3) ✅
 - Deployment: Web-based (Vite build), Chrome-based browser focus ✅
 - Testing: Jest + React Testing Library for components (planned Phase 3)
 
@@ -179,6 +198,27 @@ MIDIFlow is a focused web-based tin whistle practice application that provides r
 ## Development Priorities & Phases
 ### Phase 1 - Core MIDI Foundation ✅ COMPLETE
 - ✅ Basic WebMIDI API integration and device detection
+- ✅ Simple note input recognition and display
+- ✅ Basic falling note visualization (single notes)
+
+### Phase 2 - Practice Interface ✅ COMPLETE
+- ✅ Song input mechanism (manual note entry + MIDI file import)
+- ✅ Visual feedback system (correct/incorrect notes)
+- ✅ Basic timing and accuracy tracking
+- ✅ MIDI file parsing and import with track selection
+- ✅ Sequential practice mode with step-by-step guidance
+- ✅ Built-in song library with timing data
+- ✅ Tab-based interface with organized UI sections
+- ✅ Tempo control with speed adjustment (25%-100%)
+- ✅ Song deletion and renaming functionality
+- ✅ Smart note stacking for overlapping notes
+
+### Phase 3 - Enhanced Features (CURRENT)
+- [ ] Statistics and progress tracking
+- [ ] Advanced practice modes (looping sections)
+- ✅ Local storage for song persistence
+- [ ] Performance metrics and session recording
+- [ ] Advanced error recovery and learning analytics
 - ✅ Simple note input recognition and display
 - ✅ Basic falling note visualization (single notes)
 

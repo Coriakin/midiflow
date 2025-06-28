@@ -89,6 +89,9 @@ function App() {
   // Tempo control state
   const [tempoMultiplier, setTempoMultiplier] = useState<number>(100); // 100% = normal speed
 
+  // Tab state
+  const [activeTab, setActiveTab] = useState<'practice' | 'create' | 'midi-status'>('practice');
+
   // Update tempo multiplier when a song is selected
   useEffect(() => {
     if (selectedSong?.tempoMultiplier) {
@@ -832,8 +835,26 @@ function App() {
         `}
       </style>
       <header className="bg-gray-800 p-4">
-        <h1 className="text-3xl font-bold text-center">🎵 MIDIFlow</h1>
-        <p className="text-center text-gray-400 mt-2">Real-time MIDI practice with visual feedback</p>
+        <div className="container mx-auto">
+          <h1 className="text-3xl font-bold text-center">🎵 MIDIFlow</h1>
+          <p className="text-center text-gray-400 mt-2">Real-time MIDI practice with visual feedback</p>
+          
+          {/* MIDI Connection Status - Compact at top */}
+          <div className="mt-4 flex items-center justify-center space-x-6 text-sm">
+            <div className="flex items-center space-x-2">
+              <div className={`w-3 h-3 rounded-full ${isSupported && isInitialized ? 'bg-green-500' : 'bg-red-500'}`}></div>
+              <span className="text-gray-300">WebMIDI Support: {isSupported && isInitialized ? 'Yes' : 'No'}</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <div className={`w-3 h-3 rounded-full ${isInitialized ? 'bg-green-500' : 'bg-yellow-500'}`}></div>
+              <span className="text-gray-300">Initialized: {isInitialized ? 'Yes' : 'No'}</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <div className={`w-3 h-3 rounded-full ${connectedDevices.length > 0 ? 'bg-green-500' : 'bg-gray-500'}`}></div>
+              <span className="text-gray-300">Connected Devices: {connectedDevices.length}</span>
+            </div>
+          </div>
+        </div>
       </header>
 
       {/* Practice Completion Notification */}
@@ -873,219 +894,272 @@ function App() {
           </div>
         )}
 
-        {/* MIDI Status */}
-        <div className="bg-gray-800 rounded-lg p-4 mb-6">
-          <h2 className="text-xl font-semibold mb-3">MIDI Status</h2>
-          
-          {/* Instrument Selection */}
-          <div className="bg-gray-700 p-3 rounded mb-4">
-            <h3 className="font-medium mb-2">Instrument Settings:</h3>
-            <div className="flex flex-wrap gap-2">
-              <label className="text-sm text-gray-300">Select your instrument:</label>
-              <select
-                value={selectedInstrument}
-                onChange={(e) => setSelectedInstrument(e.target.value as InstrumentType)}
-                className="bg-gray-600 text-white px-3 py-1 rounded text-sm"
-              >
-                <option value="tin-whistle">Tin Whistle</option>
-                <option value="flute">Flute</option>
-                <option value="violin">Violin</option>
-                <option value="guitar">Guitar</option>
-                <option value="saxophone">Saxophone</option>
-                <option value="full-keyboard">Piano/Keyboard</option>
-                <option value="custom">Custom Range</option>
-              </select>
-              <span className="text-xs text-gray-400 ml-2">
-                Range: {getCurrentInstrumentRange().MIN}-{getCurrentInstrumentRange().MAX}
-              </span>
-            </div>
-            
-            {/* Custom Range Configuration */}
-            {selectedInstrument === 'custom' && (
-              <div className="mt-3 p-3 bg-gray-600 rounded">
-                <h4 className="text-sm font-medium mb-2">Custom Range Configuration:</h4>
-                <div className="flex gap-4 items-center">
-                  <div className="flex items-center gap-2">
-                    <label className="text-xs text-gray-300">Min Note:</label>
-                    <input
-                      type="number"
-                      min="0"
-                      max="127"
-                      value={customRangeMin}
-                      onChange={(e) => setCustomRangeMin(Number(e.target.value))}
-                      className="bg-gray-700 text-white px-2 py-1 rounded text-sm w-16"
-                    />
-                    <span className="text-xs text-gray-400">({midiNoteToName(customRangeMin)})</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <label className="text-xs text-gray-300">Max Note:</label>
-                    <input
-                      type="number"
-                      min="0"
-                      max="127"
-                      value={customRangeMax}
-                      onChange={(e) => setCustomRangeMax(Number(e.target.value))}
-                      className="bg-gray-700 text-white px-2 py-1 rounded text-sm w-16"
-                    />
-                    <span className="text-xs text-gray-400">({midiNoteToName(customRangeMax)})</span>
-                  </div>
-                </div>
-                <div className="mt-2 text-xs text-gray-400">
-                  Enter MIDI note numbers (0-127). Middle C = 60, A4 = 69.
-                </div>
-              </div>
-            )}
-          </div>
-          
-          {/* Debug Information */}
-          <div className="bg-gray-700 p-3 rounded mb-4 text-sm">
-            <h3 className="font-medium mb-2">Debug Information:</h3>
-            <div className="space-y-1">
-              <div>Browser: {navigator.userAgent.includes('Chrome') ? 'Chrome/Chromium' : 'Other'}</div>
-              <div>WebMIDI API Available: {typeof navigator.requestMIDIAccess !== 'undefined' ? 'Yes' : 'No'}</div>
-              <div>HTTPS: {window.location.protocol === 'https:' ? 'Yes' : 'No (localhost OK)'}</div>
-              <div>Is Supported: {isSupported ? 'Yes' : 'No'}</div>
-              <div>Is Initialized: {isInitialized ? 'Yes' : 'No'}</div>
-              <div>Error: {error || 'None'}</div>
-              <div>Selected Instrument: {selectedInstrument}</div>
-            </div>
-            <div className="flex gap-2 mt-2">
-              <button
-                onClick={testMIDIAccess}
-                className="px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded text-sm"
-              >
-                Test Direct MIDI Access
-              </button>
-              <button
-                onClick={initializeMIDI}
-                className="px-3 py-1 bg-green-600 hover:bg-green-700 rounded text-sm"
-              >
-                Manual MIDI Init
-              </button>
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-            <div className="flex items-center">
-              <div className={`w-3 h-3 rounded-full mr-2 ${isSupported ? 'bg-green-500' : 'bg-red-500'}`}></div>
-              <span>WebMIDI Support: {isSupported ? 'Yes' : 'No'}</span>
-            </div>
-            <div className="flex items-center">
-              <div className={`w-3 h-3 rounded-full mr-2 ${isInitialized ? 'bg-green-500' : 'bg-yellow-500'}`}></div>
-              <span>Initialized: {isInitialized ? 'Yes' : 'Initializing...'}</span>
-            </div>
-            <div className="flex items-center">
-              <div className={`w-3 h-3 rounded-full mr-2 ${connectedDevices.length > 0 ? 'bg-green-500' : 'bg-gray-500'}`}></div>
-              <span>Connected Devices: {connectedDevices.length}</span>
-            </div>
-          </div>
-
-          {/* Device List */}
-          {devices.length > 0 && (
-            <div>
-              <h3 className="text-lg font-medium mb-2">Available Devices:</h3>
-              <div className="space-y-2">
-                {devices.map(device => (
-                  <div key={device.id} className="flex items-center justify-between bg-gray-700 p-3 rounded">
-                    <div>
-                      <span className="font-medium">{device.name}</span>
-                      <span className="text-gray-400 ml-2">({device.manufacturer})</span>
-                      <span className={`ml-2 px-2 py-1 text-xs rounded ${
-                        device.state === 'connected' ? 'bg-green-600' : 'bg-gray-600'
-                      }`}>
-                        {device.state}
-                      </span>
-                    </div>
-                    <div>
-                      {device.state === 'connected' ? (
-                        <button
-                          onClick={() => disconnectFromDevice(device.id)}
-                          className="px-3 py-1 bg-red-600 hover:bg-red-700 rounded text-sm"
-                        >
-                          Disconnect
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => connectToDevice(device.id)}
-                          disabled={isConnecting}
-                          className="px-3 py-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 rounded text-sm"
-                        >
-                          {isConnecting ? 'Connecting...' : 'Connect'}
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Debug Info */}
-          <div className="mt-4 grid grid-cols-1 md:grid-cols-1 gap-4">
-            {/* Last Note Display */}
-            {lastNote && (
-              <div className="p-3 bg-gray-700 rounded">
-                <strong>Last Note:</strong> {midiNoteToName(lastNote.note)} 
-                (MIDI {lastNote.note}) - {lastNote.type} 
-                <span className="text-gray-400 ml-2">
-                  vel: {lastNote.velocity}
-                </span>
-                <div className="text-xs text-gray-500 mt-1">
-                  In range: {isInCurrentRange(lastNote.note) ? 'Yes' : 'No'}
-                </div>
-              </div>
-            )}
+        {/* Tab Navigation */}
+        <div className="bg-gray-800 rounded-lg mb-6">
+          <div className="flex border-b border-gray-600">
+            <button
+              onClick={() => setActiveTab('practice')}
+              className={`px-6 py-3 font-medium transition-colors ${
+                activeTab === 'practice'
+                  ? 'text-blue-400 border-b-2 border-blue-400 bg-gray-700'
+                  : 'text-gray-300 hover:text-white hover:bg-gray-700'
+              }`}
+            >
+              Practice
+            </button>
+            <button
+              onClick={() => setActiveTab('create')}
+              className={`px-6 py-3 font-medium transition-colors ${
+                activeTab === 'create'
+                  ? 'text-blue-400 border-b-2 border-blue-400 bg-gray-700'
+                  : 'text-gray-300 hover:text-white hover:bg-gray-700'
+              }`}
+            >
+              Create Practice Song
+            </button>
+            <button
+              onClick={() => setActiveTab('midi-status')}
+              className={`px-6 py-3 font-medium transition-colors ${
+                activeTab === 'midi-status'
+                  ? 'text-blue-400 border-b-2 border-blue-400 bg-gray-700'
+                  : 'text-gray-300 hover:text-white hover:bg-gray-700'
+              }`}
+            >
+              MIDI Status
+            </button>
           </div>
         </div>
 
-        {/* Sequential Practice Mode */}
-        <div className="bg-gray-800 rounded-lg p-4 mb-6">
-          <h2 className="text-xl font-semibold mb-3">Sequential Practice Mode</h2>
-          
-          {/* Song Management */}
-          <div className="space-y-4">
-            {/* Manual Song Input */}
-            <SongInput onSongCreate={handleSongCreate} />
-
-            {/* MIDI File Upload */}
-            <MIDIFileUploader onMIDISongCreate={handleMIDISongCreate} />
-
-            {/* Storage Management (Development) */}
-            {process.env.NODE_ENV === 'development' && (
-              <div className="bg-gray-700 rounded-lg p-3">
-                <h4 className="text-sm font-medium text-gray-300 mb-2">Development Tools</h4>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => {
-                      const info = getStorageInfo();
-                      if (confirm(`Clear all stored songs?\n\nCurrent storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs (${info.totalSize})`)) {
-                        clearAllStoredSongs();
-                        setMidiSongs([]);
-                        setSongs([]);
-                        setSelectedSong(null);
-                        alert('✅ All stored songs cleared!');
-                      }
-                    }}
-                    className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-sm"
+        {/* Tab Content */}
+        {activeTab === 'midi-status' && (
+          <div className="space-y-6">
+            {/* MIDI Status */}
+            <div className="bg-gray-800 rounded-lg p-4">
+              <h2 className="text-xl font-semibold mb-3">MIDI Status</h2>
+              
+              {/* Instrument Selection */}
+              <div className="bg-gray-700 p-3 rounded mb-4">
+                <h3 className="font-medium mb-2">Instrument Settings:</h3>
+                <div className="flex flex-wrap gap-2">
+                  <label className="text-sm text-gray-300">Select your instrument:</label>
+                  <select
+                    value={selectedInstrument}
+                    onChange={(e) => setSelectedInstrument(e.target.value as InstrumentType)}
+                    className="bg-gray-600 text-white px-3 py-1 rounded text-sm"
                   >
-                    🗑️ Clear Storage
+                    <option value="tin-whistle">Tin Whistle</option>
+                    <option value="flute">Flute</option>
+                    <option value="violin">Violin</option>
+                    <option value="guitar">Guitar</option>
+                    <option value="saxophone">Saxophone</option>
+                    <option value="full-keyboard">Piano/Keyboard</option>
+                    <option value="custom">Custom Range</option>
+                  </select>
+                  <span className="text-xs text-gray-400 ml-2">
+                    Range: {getCurrentInstrumentRange().MIN}-{getCurrentInstrumentRange().MAX}
+                  </span>
+                </div>
+                
+                {/* Custom Range Configuration */}
+                {selectedInstrument === 'custom' && (
+                  <div className="mt-3 p-3 bg-gray-600 rounded">
+                    <h4 className="text-sm font-medium mb-2">Custom Range Configuration:</h4>
+                    <div className="flex gap-4 items-center">
+                      <div className="flex items-center gap-2">
+                        <label className="text-xs text-gray-300">Min Note:</label>
+                        <input
+                          type="number"
+                          min="0"
+                          max="127"
+                          value={customRangeMin}
+                          onChange={(e) => setCustomRangeMin(Number(e.target.value))}
+                          className="bg-gray-700 text-white px-2 py-1 rounded text-sm w-16"
+                        />
+                        <span className="text-xs text-gray-400">({midiNoteToName(customRangeMin)})</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <label className="text-xs text-gray-300">Max Note:</label>
+                        <input
+                          type="number"
+                          min="0"
+                          max="127"
+                          value={customRangeMax}
+                          onChange={(e) => setCustomRangeMax(Number(e.target.value))}
+                          className="bg-gray-700 text-white px-2 py-1 rounded text-sm w-16"
+                        />
+                        <span className="text-xs text-gray-400">({midiNoteToName(customRangeMax)})</span>
+                      </div>
+                    </div>
+                    <div className="mt-2 text-xs text-gray-400">
+                      Enter MIDI note numbers (0-127). Middle C = 60, A4 = 69.
+                    </div>
+                  </div>
+                )}
+              </div>
+              
+              {/* Debug Information */}
+              <div className="bg-gray-700 p-3 rounded mb-4 text-sm">
+                <h3 className="font-medium mb-2">Debug Information:</h3>
+                <div className="space-y-1">
+                  <div>Browser: {navigator.userAgent.includes('Chrome') ? 'Chrome/Chromium' : 'Other'}</div>
+                  <div>WebMIDI API Available: {typeof navigator.requestMIDIAccess !== 'undefined' ? 'Yes' : 'No'}</div>
+                  <div>HTTPS: {window.location.protocol === 'https:' ? 'Yes' : 'No (localhost OK)'}</div>
+                  <div>Is Supported: {isSupported ? 'Yes' : 'No'}</div>
+                  <div>Is Initialized: {isInitialized ? 'Yes' : 'No'}</div>
+                  <div>Error: {error || 'None'}</div>
+                  <div>Selected Instrument: {selectedInstrument}</div>
+                </div>
+                <div className="flex gap-2 mt-2">
+                  <button
+                    onClick={testMIDIAccess}
+                    className="px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded text-sm"
+                  >
+                    Test Direct MIDI Access
                   </button>
                   <button
-                    onClick={() => {
-                      const info = getStorageInfo();
-                      alert(`Storage Info:\n\n📁 MIDI Songs: ${info.midiSongs}\n📝 Manual Songs: ${info.manualSongs}\n💾 Total Size: ${info.totalSize}`);
-                    }}
-                    className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm"
+                    onClick={initializeMIDI}
+                    className="px-3 py-1 bg-green-600 hover:bg-green-700 rounded text-sm"
                   >
-                    📊 Storage Info
+                    Manual MIDI Init
                   </button>
                 </div>
               </div>
-            )}
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div className="flex items-center">
+                  <div className={`w-3 h-3 rounded-full mr-2 ${isSupported ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                  <span>WebMIDI Support: {isSupported ? 'Yes' : 'No'}</span>
+                </div>
+                <div className="flex items-center">
+                  <div className={`w-3 h-3 rounded-full mr-2 ${isInitialized ? 'bg-green-500' : 'bg-yellow-500'}`}></div>
+                  <span>Initialized: {isInitialized ? 'Yes' : 'Initializing...'}</span>
+                </div>
+                <div className="flex items-center">
+                  <div className={`w-3 h-3 rounded-full mr-2 ${connectedDevices.length > 0 ? 'bg-green-500' : 'bg-gray-500'}`}></div>
+                  <span>Connected Devices: {connectedDevices.length}</span>
+                </div>
+              </div>
 
-            {/* Song Selection */}
-            <div>
-              <h4 className="text-sm font-medium text-gray-300 mb-2">Select a song to practice:</h4>
+              {/* Device List */}
+              {devices.length > 0 && (
+                <div>
+                  <h3 className="text-lg font-medium mb-2">Available Devices:</h3>
+                  <div className="space-y-2">
+                    {devices.map(device => (
+                      <div key={device.id} className="flex items-center justify-between bg-gray-700 p-3 rounded">
+                        <div>
+                          <span className="font-medium">{device.name}</span>
+                          <span className="text-gray-400 ml-2">({device.manufacturer})</span>
+                          <span className={`ml-2 px-2 py-1 text-xs rounded ${
+                            device.state === 'connected' ? 'bg-green-600' : 'bg-gray-600'
+                          }`}>
+                            {device.state}
+                          </span>
+                        </div>
+                        <div>
+                          {device.state === 'connected' ? (
+                            <button
+                              onClick={() => disconnectFromDevice(device.id)}
+                              className="px-3 py-1 bg-red-600 hover:bg-red-700 rounded text-sm"
+                            >
+                              Disconnect
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => connectToDevice(device.id)}
+                              disabled={isConnecting}
+                              className="px-3 py-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 rounded text-sm"
+                            >
+                              {isConnecting ? 'Connecting...' : 'Connect'}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Debug Info */}
+              <div className="mt-4 grid grid-cols-1 md:grid-cols-1 gap-4">
+                {/* Last Note Display */}
+                {lastNote && (
+                  <div className="p-3 bg-gray-700 rounded">
+                    <strong>Last Note:</strong> {midiNoteToName(lastNote.note)} 
+                    (MIDI {lastNote.note}) - {lastNote.type} 
+                    <span className="text-gray-400 ml-2">
+                      vel: {lastNote.velocity}
+                    </span>
+                    <div className="text-xs text-gray-500 mt-1">
+                      In range: {isInCurrentRange(lastNote.note) ? 'Yes' : 'No'}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'create' && (
+          <div className="space-y-6">
+            {/* Create Practice Song */}
+            <div className="bg-gray-800 rounded-lg p-4">
+              <h2 className="text-xl font-semibold mb-3">Create Practice Song (Manual)</h2>
+              <SongInput onSongCreate={handleSongCreate} />
+            </div>
+
+            <div className="bg-gray-800 rounded-lg p-4">
+              <h2 className="text-xl font-semibold mb-3">Import MIDI File</h2>
+              <MIDIFileUploader onMIDISongCreate={handleMIDISongCreate} />
+            </div>
+
+            {/* Storage Management (Development) */}
+            {process.env.NODE_ENV === 'development' && (
+              <div className="bg-gray-800 rounded-lg p-4">
+                <h2 className="text-xl font-semibold mb-3">Development Tools</h2>
+                <div className="bg-gray-700 rounded-lg p-3">
+                  <h4 className="text-sm font-medium text-gray-300 mb-2">Storage Management</h4>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => {
+                        const info = getStorageInfo();
+                        if (confirm(`Clear all stored songs?\n\nCurrent storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs (${info.totalSize})`)) {
+                          clearAllStoredSongs();
+                          setMidiSongs([]);
+                          setSongs([]);
+                          setSelectedSong(null);
+                          alert('✅ All stored songs cleared!');
+                        }
+                      }}
+                      className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-sm"
+                    >
+                      🗑️ Clear Storage
+                    </button>
+                    <button
+                      onClick={() => {
+                        const info = getStorageInfo();
+                        alert(`Storage Info:\n\n📁 MIDI Songs: ${info.midiSongs}\n📝 Manual Songs: ${info.manualSongs}\n💾 Total Size: ${info.totalSize}`);
+                      }}
+                      className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm"
+                    >
+                      📊 Storage Info
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'practice' && (
+          <div className="space-y-6">
+            {/* Sequential Practice Mode */}
+            <div className="bg-gray-800 rounded-lg p-4">
+              <h2 className="text-xl font-semibold mb-3">Sequential Practice Mode</h2>
+              
+              {/* Song Selection */}
+              <div>
+                <h4 className="text-sm font-medium text-gray-300 mb-2">Select a song to practice:</h4>
               
               {/* Built-in Songs Section */}
               {builtInSongs.length > 0 && (
@@ -1673,6 +1747,7 @@ function App() {
             )}
           </div>
         </div>
+        )}
       </main>
 
       {/* MIDI Preview Modal */}
