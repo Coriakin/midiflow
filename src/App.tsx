@@ -255,20 +255,45 @@ function App() {
           
           // Check if this matches the current target note
           if (currentTargetNote !== null) {
-            const isCorrect = message.note === currentTargetNote;
+            // Allow for slight MIDI note variations (±1 semitone) for tin whistles
+            const isCorrect = Math.abs(message.note - currentTargetNote) <= 0; // Exact match for now, can adjust if needed
+            console.log(`Note played: ${midiNoteToName(message.note)} (${message.note}), Target: ${midiNoteToName(currentTargetNote)} (${currentTargetNote}), Correct: ${isCorrect}`);
             setIsCorrectNote(isCorrect);
             
             if (isCorrect) {
-              // Move to next note in sequence after a brief highlight
-              setTimeout(() => {
-                if (practiceSequence.length > 0 && currentNoteIndex < practiceSequence.length - 1) {
-                  const nextIndex = currentNoteIndex + 1;
-                  setCurrentNoteIndex(nextIndex);
-                  setCurrentTargetNote(practiceSequence[nextIndex]);
-                  setIsCorrectNote(null); // Reset for next note
-                }
-              }, 500); // Brief green highlight
+              console.log(`Correct note! Current index: ${currentNoteIndex}, Sequence length: ${practiceSequence.length}`);
+              
+              // Move to next note in sequence immediately, but show green feedback briefly
+              if (practiceSequence.length > 0 && currentNoteIndex < practiceSequence.length - 1) {
+                const nextIndex = currentNoteIndex + 1;
+                const nextNote = practiceSequence[nextIndex];
+                
+                console.log(`Advancing to next note: ${midiNoteToName(nextNote)} (${nextNote}) at index ${nextIndex}`);
+                
+                // Update state immediately to prevent getting stuck
+                setCurrentNoteIndex(nextIndex);
+                setCurrentTargetNote(nextNote);
+                
+                // Show green feedback briefly, then reset for next note
+                setTimeout(() => {
+                  setIsCorrectNote(null);
+                }, 500);
+              } else if (currentNoteIndex >= practiceSequence.length - 1) {
+                console.log('Practice sequence completed!');
+                // Sequence completed
+                setTimeout(() => {
+                  setIsCorrectNote(null);
+                  // Optionally reset to beginning or stop
+                  setCurrentTargetNote(null);
+                  setCurrentNoteIndex(0);
+                  setPracticeSequence([]);
+                }, 1000);
+              }
+            } else {
+              console.log(`Incorrect note played. Expected: ${midiNoteToName(currentTargetNote)}, Got: ${midiNoteToName(message.note)}`);
             }
+          } else {
+            console.log(`Free play note: ${midiNoteToName(message.note)} (${message.note})`);
           }
         }
         
@@ -365,6 +390,18 @@ function App() {
       setIsCorrectNote(null);
       setLastPlayedNote(null);
       console.log('Reset practice sequence to beginning');
+    }
+  };
+
+  // Skip to next note (for debugging)
+  const skipToNextNote = () => {
+    if (practiceSequence.length > 0 && currentNoteIndex < practiceSequence.length - 1) {
+      const nextIndex = currentNoteIndex + 1;
+      const nextNote = practiceSequence[nextIndex];
+      setCurrentNoteIndex(nextIndex);
+      setCurrentTargetNote(nextNote);
+      setIsCorrectNote(null);
+      console.log(`Manually skipped to note: ${midiNoteToName(nextNote)} (${nextNote}) at index ${nextIndex}`);
     }
   };
 
@@ -658,6 +695,14 @@ function App() {
                       Reset
                     </button>
                     <button
+                      onClick={skipToNextNote}
+                      className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-500"
+                      disabled={practiceSequence.length === 0 || currentNoteIndex >= practiceSequence.length - 1}
+                      title="Skip to next note (for debugging)"
+                    >
+                      Skip Note
+                    </button>
+                    <button
                       onClick={stopPracticeSequence}
                       className="px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-500"
                       disabled={practiceSequence.length === 0}
@@ -670,9 +715,14 @@ function App() {
                       Progress: {currentNoteIndex + 1} of {practiceSequence.length} notes
                       {currentTargetNote && (
                         <span className="ml-2 text-yellow-400">
-                          • Current: {midiNoteToName(currentTargetNote)}
+                          • Current: {midiNoteToName(currentTargetNote)} (MIDI {currentTargetNote})
                         </span>
                       )}
+                      <div className="mt-1 text-xs text-gray-400">
+                        Sequence: {practiceSequence.map((note, idx) => 
+                          `${midiNoteToName(note)}${idx === currentNoteIndex ? '←' : ''}`
+                        ).join(' → ')}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -698,6 +748,14 @@ function App() {
                   Twinkle Start
                 </button>
                 <button
+                  onClick={skipToNextNote}
+                  className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-500"
+                  disabled={practiceSequence.length === 0 || currentNoteIndex >= practiceSequence.length - 1}
+                  title="Skip to next note (for debugging)"
+                >
+                  Skip Note
+                </button>
+                <button
                   onClick={stopPracticeSequence}
                   className="px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-500"
                   disabled={practiceSequence.length === 0}
@@ -710,9 +768,14 @@ function App() {
                   Progress: {currentNoteIndex + 1} of {practiceSequence.length} notes
                   {currentTargetNote && (
                     <span className="ml-2 text-yellow-400">
-                      • Current: {midiNoteToName(currentTargetNote)}
+                      • Current: {midiNoteToName(currentTargetNote)} (MIDI {currentTargetNote})
                     </span>
                   )}
+                  <div className="mt-1 text-xs text-gray-400">
+                    Sequence: {practiceSequence.map((note, idx) => 
+                      `${midiNoteToName(note)}${idx === currentNoteIndex ? '←' : ''}`
+                    ).join(' → ')}
+                  </div>
                 </div>
               )}
             </div>

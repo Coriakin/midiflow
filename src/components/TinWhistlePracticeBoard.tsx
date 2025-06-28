@@ -165,6 +165,11 @@ export const TinWhistlePracticeBoard: React.FC<TinWhistlePracticeBoardProps> = (
               </div>
             </div>
           )}
+          
+          {/* Debug info for troubleshooting */}
+          <div className="mt-4 text-xs text-gray-500 border-t border-gray-700 pt-2">
+            <div>Debug: Target={currentTargetNote}, Last={lastPlayedNote}, Correct={isCorrectNote?.toString()}</div>
+          </div>
         </div>
       </div>
     </div>
