@@ -5,7 +5,7 @@
  * without requiring a real MIDI controller. It appears above the Practice Area in development mode.
  * 
  * Features:
- * - Adjustable playback speed (0.25x to 2.0x)
+ * - Adjustable playback speed (0.25x to 2.0x, with 0.25x as normal)
  * - Configurable failure rate (0-100%) to simulate wrong notes
  * - Start, Stop, Pause, Resume, and Restart controls
  * - Automatic sequence detection from current practice session
@@ -57,7 +57,7 @@ export const SimulatedMIDIPlayer: React.FC<SimulatedMIDIPlayerProps> = ({
   const [playerState, setPlayerState] = useState<SimulatedPlayerState>({
     isPlaying: false,
     isPaused: false,
-    speed: 1.0,
+    speed: 0.25, // 0.25x is now the default normal speed
     failureRate: 0,
     sequence: [],
     lastPlayedIndex: -1
@@ -307,11 +307,13 @@ export const SimulatedMIDIPlayer: React.FC<SimulatedMIDIPlayerProps> = ({
                 className="w-full bg-purple-800 text-white border border-purple-600 rounded px-2 py-1 text-sm"
                 disabled={playerState.isPlaying}
               >
-                <option value={0.25}>0.25x (Very Slow)</option>
-                <option value={0.5}>0.5x (Slow)</option>
-                <option value={1.0}>1.0x (Normal)</option>
-                <option value={1.5}>1.5x (Fast)</option>
-                <option value={2.0}>2.0x (Very Fast)</option>
+                <option value={0.125}>0.5x (Very Slow)</option>
+                <option value={0.1875}>0.75x (Slow)</option>
+                <option value={0.25}>1x (Normal)</option>
+                <option value={0.375}>1.5x (Slightly Fast)</option>
+                <option value={0.5}>2x (Fast)</option>
+                <option value={1.0}>4x (Very Fast)</option>
+                <option value={1.5}>6x (Extremely Fast)</option>
               </select>
             </div>
 
