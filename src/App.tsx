@@ -6,6 +6,7 @@ import { SongInput } from './components/SongInput';
 import { MIDIFileUploader } from './components/MIDIFileUploader';
 import { MIDIPreview } from './components/MIDIPreview';
 import { MarkdownRenderer } from './components/MarkdownRenderer';
+import { SimulatedMIDIPlayer } from './components/SimulatedMIDIPlayer';
 import type { MIDIMessage, InstrumentType, Song, MIDISong, AnySong } from './types/midi';
 import { midiNoteToName, INSTRUMENT_RANGES, isMIDISong } from './types/midi';
 import { extractNotesFromArrayBuffer } from './lib/midi/midiFileParser';
@@ -517,70 +518,71 @@ function App() {
     return noteNumber >= range.MIN && noteNumber <= range.MAX;
   };
 
-  // Listen for MIDI messages for sequential practice
-  useEffect(() => {
-    const handleMIDIMessage = (message: MIDIMessage) => {
-      setLastNote(message);
+  // Unified MIDI message handler for both real and simulated MIDI
+  const handleMIDIMessage = (message: MIDIMessage) => {
+    setLastNote(message);
+    
+    // Only handle note on messages in the current instrument range
+    if (message.type === 'noteon' && isInCurrentRange(message.note)) {
+      console.log(`MIDI note: ${midiNoteToName(message.note)} (${message.note})`);
       
-      // Only handle note on messages in the current instrument range
-      if (message.type === 'noteon' && isInCurrentRange(message.note)) {
-        console.log(`MIDI note: ${midiNoteToName(message.note)} (${message.note})`);
+      setLastPlayedNote(message.note);
+      
+      // For tin whistle, handle sequential practice logic
+      if (selectedInstrument === 'tin-whistle' && currentTargetNote !== null) {
+        const isCorrect = message.note === currentTargetNote;
+        console.log(`🎯 App: Note played: ${midiNoteToName(message.note)} (${message.note}), Target: ${midiNoteToName(currentTargetNote)} (${currentTargetNote}), Index: ${currentNoteIndex}, Correct: ${isCorrect}`);
+        setIsCorrectNote(isCorrect);
         
-        setLastPlayedNote(message.note);
-        
-        // For tin whistle, handle sequential practice logic
-        if (selectedInstrument === 'tin-whistle' && currentTargetNote !== null) {
-          const isCorrect = message.note === currentTargetNote;
-          console.log(`Note played: ${midiNoteToName(message.note)} (${message.note}), Target: ${midiNoteToName(currentTargetNote)} (${currentTargetNote}), Correct: ${isCorrect}`);
-          setIsCorrectNote(isCorrect);
+        if (isCorrect) {
+          console.log(`✅ Correct note! Current index: ${currentNoteIndex}, Sequence length: ${practiceSequence.length}`);
           
-          if (isCorrect) {
-            console.log(`Correct note! Current index: ${currentNoteIndex}, Sequence length: ${practiceSequence.length}`);
+          // Move to next note in sequence immediately, but show green feedback briefly
+          if (practiceSequence.length > 0 && currentNoteIndex < practiceSequence.length - 1) {
+            const nextIndex = currentNoteIndex + 1;
+            const nextNote = practiceSequence[nextIndex];
             
-            // Move to next note in sequence immediately, but show green feedback briefly
-            if (practiceSequence.length > 0 && currentNoteIndex < practiceSequence.length - 1) {
-              const nextIndex = currentNoteIndex + 1;
-              const nextNote = practiceSequence[nextIndex];
-              
-              console.log(`Advancing to next note: ${midiNoteToName(nextNote)} (${nextNote}) at index ${nextIndex}`);
-              
-              // Update state immediately to prevent getting stuck
-              setCurrentNoteIndex(nextIndex);
-              setCurrentTargetNote(nextNote);
-              
-              // Show green feedback briefly, then reset for next note
-              setTimeout(() => {
-                setIsCorrectNote(null);
-              }, 500);
-            } else if (currentNoteIndex >= practiceSequence.length - 1) {
-              console.log('Practice sequence completed!');
-              
-              // Determine sequence name for completion message
-              let sequenceName = 'sequence';
-              if (selectedSong) {
-                sequenceName = selectedSong.title;
-              } else if (practiceSequence.length === 7 && practiceSequence[0] === 62) {
-                sequenceName = 'D Major Scale';
-              }
-              
-              // Show completion notification
-              showPracticeCompletion(sequenceName);
-              
-              // Sequence completed - reset after showing green feedback
-              setTimeout(() => {
-                setIsCorrectNote(null);
-                setCurrentTargetNote(null);
-                setCurrentNoteIndex(0);
-                setPracticeSequence([]);
-              }, 1000);
+            console.log(`⏭️ Advancing to next note: ${midiNoteToName(nextNote)} (${nextNote}) at index ${nextIndex}`);
+            
+            // Update state immediately to prevent getting stuck
+            setCurrentNoteIndex(nextIndex);
+            setCurrentTargetNote(nextNote);
+            
+            // Show green feedback briefly, then reset for next note
+            setTimeout(() => {
+              setIsCorrectNote(null);
+            }, 500);
+          } else if (currentNoteIndex >= practiceSequence.length - 1) {
+            console.log('Practice sequence completed!');
+            
+            // Determine sequence name for completion message
+            let sequenceName = 'sequence';
+            if (selectedSong) {
+              sequenceName = selectedSong.title;
+            } else if (practiceSequence.length === 7 && practiceSequence[0] === 62) {
+              sequenceName = 'D Major Scale';
             }
-          } else {
-            console.log(`Incorrect note played. Expected: ${midiNoteToName(currentTargetNote)}, Got: ${midiNoteToName(message.note)}`);
+            
+            // Show completion notification
+            showPracticeCompletion(sequenceName);
+            
+            // Sequence completed - reset after showing green feedback
+            setTimeout(() => {
+              setIsCorrectNote(null);
+              setCurrentTargetNote(null);
+              setCurrentNoteIndex(0);
+              setPracticeSequence([]);
+            }, 1000);
           }
+        } else {
+          console.log(`❌ Incorrect note played. Expected: ${midiNoteToName(currentTargetNote)}, Got: ${midiNoteToName(message.note)}`);
         }
       }
-    };
+    }
+  };
 
+  // Listen for real MIDI messages for sequential practice
+  useEffect(() => {
     addMessageListener(handleMIDIMessage);
     return () => removeMessageListener(handleMIDIMessage);
   }, [addMessageListener, removeMessageListener, selectedInstrument, currentTargetNote, practiceSequence, currentNoteIndex, selectedSong]);
@@ -712,7 +714,8 @@ function App() {
     setCurrentTargetNote(notes[0]);
     setIsCorrectNote(null);
     setLastPlayedNote(null);
-    console.log('Started practice sequence:', notes.map(n => midiNoteToName(n)).join(' -> '));
+    console.log('🎯 App: Started practice sequence:', notes.map((n, i) => `${i}:${midiNoteToName(n)}(${n})`).join(' '));
+    console.log('🎯 App: First note target:', midiNoteToName(notes[0]), `(${notes[0]})`);
   };
 
   // Stop practice sequence
@@ -1712,6 +1715,17 @@ function App() {
               </div>
             )}
           </div>
+
+          {/* Simulated MIDI Player - Development Tool */}
+          {process.env.NODE_ENV === 'development' && (
+            <SimulatedMIDIPlayer
+              onMIDIMessage={handleMIDIMessage}
+              practiceSequence={practiceSequence}
+              currentNoteIndex={currentNoteIndex}
+              tempo={Math.round((selectedSong?.tempo || 120) * tempoMultiplier / 100)}
+              isVisible={true}
+            />
+          )}
 
           {/* Practice Area */}
           <div className="bg-gray-800 rounded-lg p-4">
