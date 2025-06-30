@@ -45,8 +45,8 @@ interface SequentialPracticeProps {
 }
 
 /**
- * Sequential tin whistle practice with timeline and metronome
- * Notes are spaced according to musical timing with smooth scrolling
+ * Sequential tin whistle practice with static note layout and timing feedback
+ * Notes are displayed in a comfortable grid format for stress-free learning
  */
 export const TinWhistleSequentialPractice: React.FC<SequentialPracticeProps> = ({
   sequence,
@@ -56,183 +56,107 @@ export const TinWhistleSequentialPractice: React.FC<SequentialPracticeProps> = (
   className = ''
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [timelinePosition, setTimelinePosition] = useState(0);
-  const [metronomePosition, setMetronomePosition] = useState(0);
   const [completedNotes, setCompletedNotes] = useState<Set<number>>(new Set());
   const [correctNoteFeedback, setCorrectNoteFeedback] = useState<Set<number>>(new Set());
-  const [isPaused, setIsPaused] = useState(false);
-  const [pausedTime, setPausedTime] = useState(0);
+  const [incorrectNoteFeedback, setIncorrectNoteFeedback] = useState<Set<number>>(new Set());
   const [hasStarted, setHasStarted] = useState(false);
-  const [isCompleted, setIsCompleted] = useState(false);
-  const pauseTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  // Calculate pixels per beat based on tempo
-  const beatsPerSecond = tempo / 60;
-  const pixelsPerBeat = 120; // Adjust this to control note spacing
-  const pixelsPerSecond = pixelsPerBeat * beatsPerSecond;
-
-  // Calculate song end time (last note start + duration)
-  const songEndTime = sequence.length > 0 
-    ? sequence[sequence.length - 1].startTime + sequence[sequence.length - 1].duration 
-    : 0;
-  const maxTimelinePosition = songEndTime * pixelsPerBeat;
-
-  // Calculate vertical offsets for overlapping notes to prevent stacking
-  const calculateNotePositions = (sequence: NoteWithTiming[]) => {
-    const positions: Array<{ horizontalPos: number; verticalOffset: number }> = [];
-    const stackHeight = 140; // pixels between stacked notes for better separation
-    const noteVisualWidth = 120; // actual visual width of a note (fingering chart + padding)
-    const minOverlapThreshold = 40; // minimum overlap in pixels to trigger stacking
-    
-    sequence.forEach((noteItem, index) => {
-      const horizontalPos = noteItem.startTime * pixelsPerBeat;
-      let verticalOffset = 0;
-      
-      // Check for visual collisions with previous notes
-      for (let i = 0; i < index; i++) {
-        const prevNote = sequence[i];
-        const prevHorizontalPos = prevNote.startTime * pixelsPerBeat;
-        
-        // Calculate the visual overlap between note centers
-        const distance = Math.abs(horizontalPos - prevHorizontalPos);
-        
-        // Only stack if notes are visually too close (would overlap significantly)
-        if (distance < noteVisualWidth && distance < minOverlapThreshold) {
-          // Check if this position would conflict with the previous note's vertical position
-          if (positions[i].verticalOffset === verticalOffset) {
-            verticalOffset = positions[i].verticalOffset + stackHeight;
-          }
-        }
-      }
-      
-      positions.push({ horizontalPos, verticalOffset });
-    });
-    
-    return positions;
-  };
-
-  const notePositions = calculateNotePositions(sequence);
-
-  // Timeline animation
-  useEffect(() => {
-    let animationFrame: number;
-    let startTime: number | null = null;
-    let accumulatedTime = 0;
-
-    const animate = (timestamp: number) => {
-      if (!startTime) startTime = timestamp;
-      
-      // Only animate if we've started, are not paused, and haven't completed
-      if (hasStarted && !isPaused && !isCompleted) {
-        const elapsed = (timestamp - startTime) / 1000; // seconds
-        const totalElapsed = accumulatedTime + elapsed;
-
-        // Calculate current timeline position
-        const newPosition = Math.min(totalElapsed * pixelsPerSecond, maxTimelinePosition);
-        setTimelinePosition(newPosition);
-
-        // Calculate metronome position
-        setMetronomePosition(newPosition);
-
-        // Check if we've reached the end
-        if (newPosition >= maxTimelinePosition) {
-          setIsCompleted(true);
-        }
-      } else if (isPaused) {
-        // When paused, update accumulated time and reset start time
-        accumulatedTime = pausedTime;
-        startTime = timestamp;
-      }
-
-      animationFrame = requestAnimationFrame(animate);
-    };
-
-    animationFrame = requestAnimationFrame(animate);
-
-    return () => {
-      cancelAnimationFrame(animationFrame);
-      // Clean up any existing pause timeout
-      if (pauseTimeoutRef.current) {
-        clearTimeout(pauseTimeoutRef.current);
-      }
-    };
-  }, [tempo, pixelsPerSecond, beatsPerSecond, isPaused, pausedTime, hasStarted, isCompleted, maxTimelinePosition]);
+  const [isCompleted, setIsCompleted] = useState(false);  // Calculate vertical offsets for overlapping notes to prevent stacking (removed - no longer needed)
+  // We'll use a simple grid layout instead
 
   // Reset state when sequence changes
   useEffect(() => {
     setHasStarted(false);
-    setIsPaused(false);
     setIsCompleted(false);
-    setPausedTime(0);
-    setTimelinePosition(0);
-    setMetronomePosition(0);
     setCompletedNotes(new Set());
     setCorrectNoteFeedback(new Set());
+    setIncorrectNoteFeedback(new Set());
   }, [sequence]);
-  useEffect(() => {
-    if (currentNoteIndex < sequence.length && containerRef.current) {
-      const currentNote = sequence[currentNoteIndex];
-      const notePosition = currentNote.startTime * pixelsPerBeat;
-      const containerWidth = containerRef.current.clientWidth;
-      const scrollTarget = Math.max(0, notePosition - containerWidth / 3); // Keep note in left third
 
-      containerRef.current.scrollTo({
-        left: scrollTarget,
-        behavior: 'smooth'
-      });
+  // Auto-scroll to keep current note in view
+  useEffect(() => {
+    if (containerRef.current && sequence.length > 0) {
+      // Add a small delay to ensure DOM has updated after note change
+      const scrollTimeout = setTimeout(() => {
+        const container = containerRef.current;
+        if (!container) return;
+        
+        // Find the current note element
+        const currentNoteElement = container.querySelector(`[data-note-index="${currentNoteIndex}"]`) as HTMLElement;
+        
+        if (currentNoteElement) {
+          const containerRect = container.getBoundingClientRect();
+          const noteRect = currentNoteElement.getBoundingClientRect();
+          
+          // Calculate the position to center the current note
+          const containerCenter = containerRect.width / 2;
+          const noteCenter = noteRect.left - containerRect.left + noteRect.width / 2;
+          const scrollOffset = noteCenter - containerCenter;
+          
+          // Add padding to show some context around the current note
+          const finalScrollPosition = container.scrollLeft + scrollOffset;
+          
+          // Smooth scroll to center the current note
+          container.scrollTo({
+            left: Math.max(0, finalScrollPosition), // Prevent negative scroll
+            behavior: 'smooth'
+          });
+        }
+      }, 100); // Small delay to ensure DOM is ready
+      
+      return () => clearTimeout(scrollTimeout);
     }
-  }, [currentNoteIndex, sequence, pixelsPerBeat]);
+  }, [currentNoteIndex, sequence.length]);
 
-  // Handle correct note feedback timing
+  // Auto-scroll to keep current note centered
   useEffect(() => {
-    if (isCorrectNote === true && currentNoteIndex >= 0) {
-      // Start the timeline if this is the first note
-      if (!hasStarted) {
-        setHasStarted(true);
-      }
-
-      // Clear any existing pause timeout
-      if (pauseTimeoutRef.current) {
-        clearTimeout(pauseTimeoutRef.current);
-        pauseTimeoutRef.current = null;
-      }
-
-      // Resume timeline if it was paused
-      if (isPaused) {
-        setIsPaused(false);
-      }
-
-      // Add to completed notes
-      setCompletedNotes(prev => new Set([...prev, currentNoteIndex]));
-      
-      // Show green feedback for 2 seconds
-      setCorrectNoteFeedback(prev => new Set([...prev, currentNoteIndex]));
-      
-      setTimeout(() => {
-        setCorrectNoteFeedback(prev => {
-          const newSet = new Set(prev);
-          newSet.delete(currentNoteIndex);
-          return newSet;
+    if (containerRef.current && currentNoteIndex >= 0 && hasStarted) {
+      const currentNoteElement = containerRef.current.querySelector(`[data-note-index="${currentNoteIndex}"]`) as HTMLElement;
+      if (currentNoteElement) {
+        currentNoteElement.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center',
+          inline: 'center'
         });
-      }, 2000);
-    } else if (isCorrectNote === false) {
-      // Incorrect note played - only pause if we've already started
-      if (hasStarted && !isPaused) {
-        setPausedTime(timelinePosition / pixelsPerSecond);
-        setIsPaused(true);
       }
-
-      // Set a timeout to auto-resume after 3 seconds if no correct note is played
-      if (pauseTimeoutRef.current) {
-        clearTimeout(pauseTimeoutRef.current);
-      }
-      
-      pauseTimeoutRef.current = setTimeout(() => {
-        setIsPaused(false);
-        pauseTimeoutRef.current = null;
-      }, 3000);
     }
-  }, [isCorrectNote, currentNoteIndex, isPaused, timelinePosition, pixelsPerSecond, hasStarted]);
+  }, [currentNoteIndex, hasStarted]);
+
+  // Handle correct/incorrect note feedback timing
+  useEffect(() => {
+    if (currentNoteIndex >= 0) {
+      if (isCorrectNote === true) {
+        // Start the practice if this is the first note
+        if (!hasStarted) {
+          setHasStarted(true);
+        }
+
+        // Add to completed notes
+        setCompletedNotes(prev => new Set([...prev, currentNoteIndex]));
+        
+        // Show green feedback for 2 seconds
+        setCorrectNoteFeedback(prev => new Set([...prev, currentNoteIndex]));
+        
+        setTimeout(() => {
+          setCorrectNoteFeedback(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(currentNoteIndex);
+            return newSet;
+          });
+        }, 2000);
+      } else if (isCorrectNote === false) {
+        // Show red feedback for incorrect note for 1 second (during auto-recovery period)
+        setIncorrectNoteFeedback(prev => new Set([...prev, currentNoteIndex]));
+        
+        setTimeout(() => {
+          setIncorrectNoteFeedback(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(currentNoteIndex);
+            return newSet;
+          });
+        }, 1000);
+      }
+    }
+  }, [isCorrectNote, currentNoteIndex, hasStarted]);
 
   // Render fingering chart for a note
   const renderFingeringChart = (note: number, size: 'small' | 'large' = 'small') => {
@@ -256,17 +180,14 @@ export const TinWhistleSequentialPractice: React.FC<SequentialPracticeProps> = (
     );
   };
 
-  // Calculate metronome pulse intensity
+  // Calculate metronome pulse intensity (simplified without timeline)
   const getCurrentBeat = () => {
-    if (!hasStarted || isPaused || isCompleted) {
-      return pausedTime * beatsPerSecond;
-    }
-    const currentTime = timelinePosition / pixelsPerSecond;
-    return currentTime * beatsPerSecond;
+    // Use a simple beat counter based on practice progress
+    return currentNoteIndex;
   };
 
   const currentBeat = getCurrentBeat();
-  const metronomeIntensity = (!hasStarted || isPaused || isCompleted) ? 0 : Math.abs(Math.sin((currentBeat % 1) * Math.PI));
+  const metronomeIntensity = !hasStarted || isCompleted ? 0 : Math.abs(Math.sin((currentBeat % 1) * Math.PI));
 
   return (
     <div className={`relative bg-gray-900 rounded-lg border border-gray-600 overflow-hidden ${className}`}>
@@ -283,13 +204,9 @@ export const TinWhistleSequentialPractice: React.FC<SequentialPracticeProps> = (
               <span className="text-green-400 text-sm font-normal">
                 ✅ Song Complete!
               </span>
-            ) : isPaused ? (
-              <span className="text-red-400 text-sm font-normal animate-pulse">
-                ⏸️ PAUSED - Play correct note to continue
-              </span>
             ) : null}
           </h3>
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-6">
             {/* Metronome */}
             <div className="flex items-center space-x-2">
               <span className="text-sm text-gray-300">♩ = {tempo}</span>
@@ -299,22 +216,20 @@ export const TinWhistleSequentialPractice: React.FC<SequentialPracticeProps> = (
                     ? 'bg-blue-500 opacity-50'
                     : isCompleted
                       ? 'bg-green-500 opacity-70'
-                      : isPaused 
-                        ? 'bg-red-500 opacity-50'
-                        : metronomeIntensity > 0.8 ? 'bg-yellow-400 scale-125' : 'bg-yellow-600'
+                      : metronomeIntensity > 0.8 ? 'bg-yellow-400 scale-125' : 'bg-yellow-600'
                 }`}
                 style={{
-                  opacity: !hasStarted || isPaused || isCompleted ? 0.5 : 0.3 + (metronomeIntensity * 0.7),
-                  transform: !hasStarted || isPaused || isCompleted ? 'scale(1)' : `scale(${1 + metronomeIntensity * 0.25})`
+                  opacity: !hasStarted || isCompleted ? 0.5 : 0.3 + (metronomeIntensity * 0.7),
+                  transform: !hasStarted || isCompleted ? 'scale(1)' : `scale(${1 + metronomeIntensity * 0.25})`
                 }}
               />
               <span className="text-xs text-gray-500">
                 Beat {Math.floor(currentBeat) + 1}
                 {!hasStarted && <span className="text-blue-400 ml-1">(WAITING)</span>}
                 {hasStarted && isCompleted && <span className="text-green-400 ml-1">(COMPLETE)</span>}
-                {hasStarted && isPaused && !isCompleted && <span className="text-red-400 ml-1">(PAUSED)</span>}
               </span>
             </div>
+            
             {/* Progress */}
             <div className="text-sm text-gray-300">
               {currentNoteIndex + 1} / {sequence.length}
@@ -323,135 +238,83 @@ export const TinWhistleSequentialPractice: React.FC<SequentialPracticeProps> = (
         </div>
       </div>
 
-      {/* Main practice area */}
+      {/* Main practice area - Horizontally scrollable note layout */}
       <div 
         ref={containerRef}
-        className="relative overflow-x-auto overflow-y-auto bg-gray-900"
-        style={{ height: '500px', scrollBehavior: 'smooth' }}
+        className="relative bg-gray-900 p-6 overflow-x-auto overflow-y-hidden"
+        style={{ minHeight: '400px' }}
       >
-        {/* Timeline background */}
-        <div className="absolute top-0 left-0 h-full bg-gray-800 border-b border-gray-600" 
-             style={{ width: `${maxTimelinePosition + 200}px`, minHeight: '500px' }}>
-          
-          {/* Beat markers */}
-          {Array.from({ length: Math.ceil(songEndTime) + 2 }, (_, i) => (
-            <div
-              key={i}
-              className="absolute top-0 border-l border-gray-600 opacity-30"
-              style={{ left: `${i * pixelsPerBeat}px`, height: '100%' }}
-            >
-              <div className="text-xs text-gray-500 mt-1 ml-1">{i + 1}</div>
-            </div>
-          ))}
-
-          {/* Timeline progress line */}
-          <div
-            className={`absolute top-0 w-1 shadow-lg transition-colors duration-300 ${
-              !hasStarted 
-                ? 'bg-blue-500' 
-                : isCompleted
-                  ? 'bg-green-500'
-                  : isPaused 
-                    ? 'bg-red-500' 
-                    : 'bg-cyan-400'
-            }`}
-            style={{
-              left: `${timelinePosition}px`,
-              height: '100%',
-              boxShadow: !hasStarted
-                ? '0 0 10px rgba(59, 130, 246, 0.6)'
-                : isCompleted
-                  ? '0 0 10px rgba(34, 197, 94, 0.6)'
-                  : isPaused 
-                    ? '0 0 10px rgba(239, 68, 68, 0.6)' 
-                    : '0 0 10px rgba(34, 211, 238, 0.6)'
-            }}
-          />
-
-          {/* Notes */}
-          <div className="absolute top-12 left-0 right-0" style={{ minHeight: '450px' }}>
-            {sequence.map((noteItem, index) => {
-              const isCurrentNote = index === currentNoteIndex;
-              const isCompleted = completedNotes.has(index);
-              const showGreenFeedback = correctNoteFeedback.has(index);
-              const isPastNote = index < currentNoteIndex;
-              const position = notePositions[index];
-              const isStacked = position.verticalOffset > 0;
-              
-              return (
-                <div
-                  key={index}
-                  className={`absolute flex flex-col items-center transition-all duration-300 ${
-                    isStacked ? 'border-l-2 border-blue-400 pl-1' : ''
-                  }`}
-                  style={{ 
-                    left: `${position.horizontalPos}px`,
-                    top: `${position.verticalOffset}px`
-                  }}
-                >
-                  {/* Stack indicator only for actually stacked notes */}
-                  {isStacked && (
-                    <div className="text-xs text-blue-300 mb-1 bg-blue-900 bg-opacity-50 px-1 py-0.5 rounded text-center">
-                      ↕ {Math.floor(position.verticalOffset / 140) + 1}
-                    </div>
-                  )}
-
-                  {/* Note name */}
-                  <div className={`text-sm font-medium mb-2 px-3 py-1 rounded shadow-md relative ${
-                    isCurrentNote 
+        {/* Horizontally arranged practice notes */}
+        <div className="flex gap-6 items-start" style={{ minWidth: 'max-content' }}>
+          {sequence.map((noteItem, index) => {
+            const isCurrentNote = index === currentNoteIndex;
+            const isCompleted = completedNotes.has(index);
+            const showGreenFeedback = correctNoteFeedback.has(index);
+            const showRedFeedback = incorrectNoteFeedback.has(index);
+            const isPastNote = index < currentNoteIndex;
+            
+            return (
+              <div
+                key={index}
+                data-note-index={index}
+                className={`flex flex-col items-center transition-all duration-500 p-4 rounded-lg flex-shrink-0 ${
+                  showRedFeedback
+                    ? 'bg-red-600 ring-4 ring-red-400 shadow-lg scale-110'
+                    : isCurrentNote
+                      ? 'bg-blue-600 ring-4 ring-yellow-400 shadow-lg scale-110'
+                      : isPastNote || isCompleted
+                        ? 'bg-gray-700 opacity-60'
+                        : 'bg-gray-800'
+                }`}
+                style={{ minWidth: '140px' }}
+              >
+                {/* Note name */}
+                <div className={`text-sm font-medium mb-2 px-3 py-1 rounded shadow-md ${
+                  showRedFeedback
+                    ? 'bg-red-500 text-white border-2 border-red-300'
+                    : isCurrentNote 
                       ? 'bg-yellow-500 text-black border-2 border-yellow-300' 
                       : isPastNote || isCompleted
                         ? 'bg-gray-700 text-gray-400 border border-gray-600'
                         : 'bg-gray-600 text-white border border-gray-500'
-                  }`}>
-                    <span className={noteItem.note >= 74 ? 'border-b-2 border-orange-400' : ''}>
-                      {midiNoteToName(noteItem.note)}
-                    </span>
-                  </div>
+                }`}>
+                  <span className={noteItem.note >= 74 ? 'border-b-2 border-orange-400' : ''}>
+                    {midiNoteToName(noteItem.note)}
+                  </span>
+                </div>
 
-                  {/* Fingering chart */}
-                  <div className={`transition-all duration-500 ${
-                    showGreenFeedback
-                      ? 'bg-green-500 p-3 rounded-lg shadow-lg scale-110 border-2 border-green-300'
+                {/* Fingering chart */}
+                <div className={`transition-all duration-500 ${
+                  showGreenFeedback
+                    ? 'bg-green-500 p-3 rounded-lg shadow-lg scale-110 border-2 border-green-300'
+                    : showRedFeedback
+                      ? 'bg-red-500 p-3 rounded-lg shadow-lg scale-110 border-2 border-red-300'
                       : isCurrentNote
-                        ? 'bg-blue-600 p-3 rounded-lg shadow-lg ring-4 ring-yellow-400'
+                        ? 'bg-blue-600 p-3 rounded-lg shadow-lg'
                         : isPastNote || isCompleted
                           ? 'opacity-40 filter grayscale bg-gray-800 p-2 rounded'
                           : 'bg-gray-700 p-2 rounded border border-gray-600'
-                  }`}>
-                    {renderFingeringChart(noteItem.note, isCurrentNote ? 'large' : 'small')}
-                  </div>
-
-                  {/* Note timing info - only show for stacked or current notes to reduce clutter */}
-                  {(isStacked || isCurrentNote) && (
-                    <div className="text-xs text-gray-400 mt-1">
-                      {noteItem.startTime.toFixed(1)}s
-                    </div>
-                  )}
+                }`}>
+                  {renderFingeringChart(noteItem.note, isCurrentNote ? 'large' : 'small')}
                 </div>
-              );
-            })}
-          </div>
 
-          {/* Current metronome beat indicator */}
-          <div
-            className="absolute top-2 w-2 h-2 bg-yellow-400 rounded-full"
-            style={{
-              left: `${metronomePosition}px`,
-              opacity: metronomeIntensity,
-              transform: `scale(${1 + metronomeIntensity})`
-            }}
-          />
+                {/* Note sequence position */}
+                <div className="text-xs text-gray-400 mt-2">
+                  {index + 1} / {sequence.length}
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
 
       {/* Footer with instructions */}
       <div className="bg-gray-800 p-3 border-t border-gray-600">
         <div className="text-sm text-gray-300 text-center">
-          🎵 Play the first note to start the timeline • ⏱️ Timeline pauses on wrong notes
+          🎵 Play each note in sequence • Practice at your own pace
           <br />
           <span className="text-xs text-gray-400">
-            Follow the moving timeline and play when it reaches each note • Metronome helps you keep time
+            Practice view automatically scrolls to keep current note centered • Incorrect notes auto-recover after 1 second
           </span>
         </div>
       </div>

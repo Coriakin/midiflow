@@ -8,7 +8,7 @@ import { MIDIPreview } from './components/MIDIPreview';
 import { MarkdownRenderer } from './components/MarkdownRenderer';
 import { SimulatedMIDIPlayer } from './components/SimulatedMIDIPlayer';
 import type { MIDIMessage, InstrumentType, Song, MIDISong, AnySong } from './types/midi';
-import { midiNoteToName, INSTRUMENT_RANGES, isMIDISong } from './types/midi';
+import { midiNoteToName, INSTRUMENT_RANGES } from './types/midi';
 import { extractNotesFromArrayBuffer } from './lib/midi/midiFileParser';
 import { 
   saveMidiSongsToStorage, 
@@ -105,24 +105,12 @@ function App() {
   const [editingSongId, setEditingSongId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState<string>('');
 
-  // Tempo control state
-  const [tempoMultiplier, setTempoMultiplier] = useState<number>(100); // 100% = normal speed
-
   // Tab state
   const [activeTab, setActiveTab] = useState<'practice' | 'create' | 'midi-status' | 'about'>('practice');
 
   // About content state
   const [aboutContent, setAboutContent] = useState<string>('');
   const [aboutError, setAboutError] = useState<string | null>(null);
-
-  // Update tempo multiplier when a song is selected
-  useEffect(() => {
-    if (selectedSong?.tempoMultiplier) {
-      setTempoMultiplier(selectedSong.tempoMultiplier);
-    } else {
-      setTempoMultiplier(100); // Default to 100% for songs without saved tempo
-    }
-  }, [selectedSong]);
 
   // Built-in songs for quick testing
   const builtInSongs: Song[] = [
@@ -576,6 +564,63 @@ function App() {
           }
         } else {
           console.log(`❌ Incorrect note played. Expected: ${midiNoteToName(currentTargetNote)}, Got: ${midiNoteToName(message.note)}`);
+          
+          // Auto-recovery: After 1 second, simulate playing the correct note to keep simulation progressing
+          setTimeout(() => {
+            console.log(`🔧 Auto-recovery: Simulating correct note ${midiNoteToName(currentTargetNote)} after incorrect input`);
+            
+            // Simulate the correct note being played
+            const correctMessage: MIDIMessage = {
+              type: 'noteon',
+              note: currentTargetNote,
+              velocity: 64,
+              timestamp: performance.now()
+            };
+            
+            // Process the simulated correct note
+            setLastPlayedNote(correctMessage.note);
+            setIsCorrectNote(true);
+            
+            console.log(`✅ Auto-recovery: Correct note simulated! Current index: ${currentNoteIndex}, Sequence length: ${practiceSequence.length}`);
+            
+            // Move to next note in sequence
+            if (practiceSequence.length > 0 && currentNoteIndex < practiceSequence.length - 1) {
+              const nextIndex = currentNoteIndex + 1;
+              const nextNote = practiceSequence[nextIndex];
+              
+              console.log(`⏭️ Auto-recovery: Advancing to next note: ${midiNoteToName(nextNote)} (${nextNote}) at index ${nextIndex}`);
+              
+              // Update state immediately to prevent getting stuck
+              setCurrentNoteIndex(nextIndex);
+              setCurrentTargetNote(nextNote);
+              
+              // Show green feedback briefly, then reset for next note
+              setTimeout(() => {
+                setIsCorrectNote(null);
+              }, 500);
+            } else if (currentNoteIndex >= practiceSequence.length - 1) {
+              console.log('Auto-recovery: Practice sequence completed!');
+              
+              // Determine sequence name for completion message
+              let sequenceName = 'sequence';
+              if (selectedSong) {
+                sequenceName = selectedSong.title;
+              } else if (practiceSequence.length === 7 && practiceSequence[0] === 62) {
+                sequenceName = 'D Major Scale';
+              }
+              
+              // Show completion notification
+              showPracticeCompletion(sequenceName);
+              
+              // Sequence completed - reset after showing green feedback
+              setTimeout(() => {
+                setIsCorrectNote(null);
+                setCurrentTargetNote(null);
+                setCurrentNoteIndex(0);
+                setPracticeSequence([]);
+              }, 1000);
+            }
+          }, 1000); // 1 second delay before auto-recovery
         }
       }
     }
@@ -680,31 +725,6 @@ function App() {
     }
     
     cancelEditing();
-  };
-
-  // Update tempo multiplier for the current song and persist it
-  const updateSongTempoMultiplier = (newTempoMultiplier: number) => {
-    if (!selectedSong) return;
-    
-    setTempoMultiplier(newTempoMultiplier);
-    
-    // Update the song in the appropriate array
-    if (isMIDISong(selectedSong)) {
-      setMidiSongs(prev => prev.map(song => 
-        song.id === selectedSong.id 
-          ? { ...song, tempoMultiplier: newTempoMultiplier }
-          : song
-      ));
-    } else {
-      setSongs(prev => prev.map(song => 
-        song.id === selectedSong.id 
-          ? { ...song, tempoMultiplier: newTempoMultiplier }
-          : song
-      ));
-    }
-    
-    // Update the selected song reference
-    setSelectedSong(prev => prev ? { ...prev, tempoMultiplier: newTempoMultiplier } : null);
   };
 
   // Start a practice sequence for tin whistle
@@ -1315,12 +1335,6 @@ function App() {
                                 <span>{song.notes.length} notes</span>
                                 <span>•</span>
                                 <span>{song.tempo} BPM</span>
-                                {song.tempoMultiplier && song.tempoMultiplier !== 100 && (
-                                  <>
-                                    <span>•</span>
-                                    <span className="text-green-400">{song.tempoMultiplier}% speed</span>
-                                  </>
-                                )}
                                 <span>•</span>
                                 <span className="text-purple-400">Track {song.selectedTrack + 1}</span>
                               </div>
@@ -1486,12 +1500,6 @@ function App() {
                                 <span>{song.notes.length} notes</span>
                                 <span>•</span>
                                 <span>{song.tempo} BPM</span>
-                                {song.tempoMultiplier && song.tempoMultiplier !== 100 && (
-                                  <>
-                                    <span>•</span>
-                                    <span className="text-green-400">{song.tempoMultiplier}% speed</span>
-                                  </>
-                                )}
                                 <span>•</span>
                                 <span className="text-yellow-400">Manual</span>
                               </div>
@@ -1557,58 +1565,6 @@ function App() {
             {selectedInstrument === 'tin-whistle' && selectedSong && (
               <div className="bg-gray-700 rounded-lg p-4">
                 <h4 className="text-sm font-medium text-gray-300 mb-3">Practice Controls:</h4>
-                
-                {/* Tempo Control Buttons */}
-                <div className="mb-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <label className="text-xs font-medium text-gray-300">Practice Speed:</label>
-                    <span className="text-xs text-gray-400">
-                      {tempoMultiplier}% ({Math.round((selectedSong.tempo || 120) * tempoMultiplier / 100)} BPM)
-                    </span>
-                  </div>
-                  <div className="flex gap-1 flex-wrap">
-                    <button
-                      onClick={() => updateSongTempoMultiplier(25)}
-                      className={`px-3 py-1 rounded text-xs transition-colors ${
-                        tempoMultiplier === 25 
-                          ? 'bg-blue-600 text-white' 
-                          : 'bg-gray-600 text-gray-300 hover:bg-gray-500'
-                      }`}
-                    >
-                      25%
-                    </button>
-                    <button
-                      onClick={() => updateSongTempoMultiplier(50)}
-                      className={`px-3 py-1 rounded text-xs transition-colors ${
-                        tempoMultiplier === 50 
-                          ? 'bg-blue-600 text-white' 
-                          : 'bg-gray-600 text-gray-300 hover:bg-gray-500'
-                      }`}
-                    >
-                      50%
-                    </button>
-                    <button
-                      onClick={() => updateSongTempoMultiplier(75)}
-                      className={`px-3 py-1 rounded text-xs transition-colors ${
-                        tempoMultiplier === 75 
-                          ? 'bg-blue-600 text-white' 
-                          : 'bg-gray-600 text-gray-300 hover:bg-gray-500'
-                      }`}
-                    >
-                      75%
-                    </button>
-                    <button
-                      onClick={() => updateSongTempoMultiplier(100)}
-                      className={`px-3 py-1 rounded text-xs transition-colors ${
-                        tempoMultiplier === 100 
-                          ? 'bg-green-600 text-white' 
-                          : 'bg-gray-600 text-gray-300 hover:bg-gray-500'
-                      }`}
-                    >
-                      100%
-                    </button>
-                  </div>
-                </div>
 
                 <div className="flex gap-2 flex-wrap">
                   <button
@@ -1722,7 +1678,7 @@ function App() {
               onMIDIMessage={handleMIDIMessage}
               practiceSequence={practiceSequence}
               currentNoteIndex={currentNoteIndex}
-              tempo={Math.round((selectedSong?.tempo || 120) * tempoMultiplier / 100)}
+              tempo={selectedSong?.tempo || 120}
               isVisible={true}
             />
           )}
@@ -1741,7 +1697,7 @@ function App() {
                     <TinWhistleSequentialPractice
                       sequence={selectedSong.notesWithTiming}
                       currentNoteIndex={currentNoteIndex}
-                      tempo={Math.round((selectedSong.tempo || 120) * tempoMultiplier / 100)}
+                      tempo={selectedSong.tempo || 120}
                       lastPlayedNote={lastPlayedNote}
                       isCorrectNote={isCorrectNote}
                       className="h-auto"
