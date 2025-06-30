@@ -760,18 +760,6 @@ function App() {
     }
   };
 
-  // Skip to next note (for debugging)
-  const skipToNextNote = () => {
-    if (practiceSequence.length > 0 && currentNoteIndex < practiceSequence.length - 1) {
-      const nextIndex = currentNoteIndex + 1;
-      const nextNote = practiceSequence[nextIndex];
-      setCurrentNoteIndex(nextIndex);
-      setCurrentTargetNote(nextNote);
-      setIsCorrectNote(null);
-      console.log(`Manually skipped to note: ${midiNoteToName(nextNote)} (${nextNote}) at index ${nextIndex}`);
-    }
-  };
-
   // Show practice completion notification
   const showPracticeCompletion = (sequenceName: string) => {
     const messages = [
@@ -1226,7 +1214,10 @@ function App() {
                       {builtInSongs.map(song => (
                         <div
                           key={song.id}
-                          onClick={() => setSelectedSong(song)}
+                          onClick={() => {
+                            setSelectedSong(song);
+                            startPracticeSequence(song.notes);
+                          }}
                           className={`flex items-center justify-between p-2 rounded cursor-pointer transition-colors ${
                             selectedSong?.id === song.id
                               ? 'bg-blue-600 text-white'
@@ -1326,7 +1317,10 @@ function App() {
                               ) : (
                                 <div 
                                   className="font-medium truncate cursor-pointer"
-                                  onClick={() => setSelectedSong(song)}
+                                  onClick={() => {
+                                    setSelectedSong(song);
+                                    startPracticeSequence(song.notes);
+                                  }}
                                 >
                                   {song.title}
                                 </div>
@@ -1491,7 +1485,10 @@ function App() {
                               ) : (
                                 <div 
                                   className="font-medium truncate cursor-pointer"
-                                  onClick={() => setSelectedSong(song)}
+                                  onClick={() => {
+                                    setSelectedSong(song);
+                                    startPracticeSequence(song.notes);
+                                  }}
                                 >
                                   {song.title}
                                 </div>
@@ -1568,25 +1565,11 @@ function App() {
 
                 <div className="flex gap-2 flex-wrap">
                   <button
-                    onClick={() => startPracticeSequence(selectedSong.notes)}
-                    className="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-500"
-                  >
-                    Start Practice
-                  </button>
-                  <button
                     onClick={resetPracticeSequence}
                     className="px-3 py-1 bg-yellow-600 text-white rounded text-sm hover:bg-yellow-500"
                     disabled={practiceSequence.length === 0}
                   >
                     Reset
-                  </button>
-                  <button
-                    onClick={skipToNextNote}
-                    className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-500"
-                    disabled={practiceSequence.length === 0 || currentNoteIndex >= practiceSequence.length - 1}
-                    title="Skip to next note (for debugging)"
-                  >
-                    Skip Note
                   </button>
                   <button
                     onClick={stopPracticeSequence}
@@ -1636,14 +1619,6 @@ function App() {
                     className="px-3 py-1 bg-purple-600 text-white rounded text-sm hover:bg-purple-500"
                   >
                     Twinkle Twinkle (Full)
-                  </button>
-                  <button
-                    onClick={skipToNextNote}
-                    className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-500"
-                    disabled={practiceSequence.length === 0 || currentNoteIndex >= practiceSequence.length - 1}
-                    title="Skip to next note (for debugging)"
-                  >
-                    Skip Note
                   </button>
                   <button
                     onClick={stopPracticeSequence}
