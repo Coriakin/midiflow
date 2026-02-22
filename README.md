@@ -9,14 +9,22 @@ Real-time, timeline-based MIDI practice for tin whistle and other instruments. P
 
 ## Quick start
 1. **Prerequisites**: Chrome/Chromium and a MIDI source (hardware or virtual).
-2. **Install & run**:
+2. **Install**:
    ```bash
    npm install
+   ```
+3. **Run in foreground (recommended for dev)**:
+   ```bash
+   ./run-dev.sh
+   ```
+   This script stops stale MIDIFlow dev server processes scoped to this repo, then starts the app in the foreground so you can use `Ctrl+C` to stop it. (Equivalent direct path: `./scripts/run-dev.sh`.)
+4. **Alternative manual run**:
+   ```bash
    npm run dev
    ```
-3. **Connect a device** from the Settings tab and confirm the green header indicator.
-4. **Create/import songs** on the Practice Song tab (manual note entry or .mid drag-and-drop).
-5. **Practice** using the Practice tab: select a song, adjust tempo, and follow the timeline.
+5. **Connect a device** from the Settings tab and confirm the green header indicator.
+6. **Create/import songs** on the Practice Song tab (manual note entry or .mid drag-and-drop).
+7. **Practice** using the Practice tab: select a song, adjust tempo, and follow the timeline.
 
 ## Browser support
 - Chrome/Chromium: full WebMIDI/Web Audio support.
