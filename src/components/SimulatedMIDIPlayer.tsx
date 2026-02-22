@@ -338,7 +338,6 @@ export const SimulatedMIDIPlayer: React.FC<SimulatedMIDIPlayerProps> = ({
                 value={playerState.failureRate}
                 onChange={(e) => setPlayerState(prev => ({ ...prev, failureRate: parseInt(e.target.value) }))}
                 className="w-full"
-                disabled={playerState.isPlaying}
               />
             </div>
           </div>

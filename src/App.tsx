@@ -604,6 +604,7 @@ function App() {
             };
             
             // Process the simulated correct note
+            handleSimulatedNotePlayed(correctMessage.note, correctMessage.velocity);
             setLastPlayedNote(correctMessage.note);
             setIsCorrectNote(true);
             
