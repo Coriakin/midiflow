@@ -7,7 +7,7 @@ A focused, pedagogical tin whistle practice tool with timeline-based sequential 
 ### What's Implemented
 
 #### � Tab-Based Interface Design
-- ✅ **Clean Tab Navigation** - Three focused sections: Practice, Create Practice Song, MIDI Status
+- ✅ **Clean Tab Navigation** - Three focused sections: Practice, Create Practice Song, Settings
 - ✅ **Compact Status Bar** - MIDI connection status always visible in header
 - ✅ **Organized Content** - Each tab has specific functionality without clutter
 - ✅ **Responsive Design** - Works well on different screen sizes
@@ -19,7 +19,7 @@ A focused, pedagogical tin whistle practice tool with timeline-based sequential 
 - ✅ Real-time MIDI message parsing (Note On/Off)
 - ✅ Device hot-plugging support (connect/disconnect during use)
 - ✅ Graceful error handling and fallbacks
-- ✅ Complete debugging interface in MIDI Status tab
+- ✅ Complete debugging interface in Settings tab
 
 #### 🎵 Focused Practice System
 - ✅ **Sequential Practice Mode Only** - Focused, step-by-step learning approach
@@ -102,7 +102,7 @@ A focused, pedagogical tin whistle practice tool with timeline-based sequential 
    - Debugging utilities for localStorage
    - Song persistence verification
 
-#### **MIDI Status Tab**
+#### **Settings Tab**
 1. **Instrument Configuration**
    - Instrument selection (tin whistle, flute, violin, etc.)
    - Note range display and custom range setup
@@ -195,10 +195,10 @@ npm run dev
 #### 1. **Initial Setup**
 - Open the app in Chrome
 - Check the header status bar for MIDI connection indicators
-- Navigate to **MIDI Status** tab if you need device troubleshooting
+- Navigate to **Settings** tab if you need device troubleshooting
 
 #### 2. **Connect MIDI Device**
-- Go to **MIDI Status** tab
+- Go to **Settings** tab
 - Your device should appear in the "Available Devices" list
 - Click "Connect" next to your device
 - Watch for the green "Connected Devices: 1" indicator in the header
@@ -221,7 +221,7 @@ npm run dev
 ### Tab-Based Interface
 - **Practice Tab**: Song selection, tempo control, and sequential practice interface
 - **Create Practice Song Tab**: Manual song creation and MIDI file import
-- **MIDI Status Tab**: Complete device management and debugging information
+- **Settings Tab**: Complete device management and debugging information
 - **Header Status Bar**: Always-visible MIDI connection indicators
 
 ### Key Components

@@ -107,7 +107,7 @@ function App() {
   const [editingTitle, setEditingTitle] = useState<string>('');
 
   // Tab state
-  const [activeTab, setActiveTab] = useState<'practice' | 'd-scale' | 'midi-status' | 'about'>('practice');
+  const [activeTab, setActiveTab] = useState<'practice' | 'd-scale' | 'settings' | 'about'>('practice');
   const [practiceSubTab, setPracticeSubTab] = useState<'library' | 'create'>('library');
   const isDScaleTabActive = activeTab === 'd-scale';
 
@@ -960,14 +960,14 @@ function App() {
               D Scale
             </button>
             <button
-              onClick={() => setActiveTab('midi-status')}
+              onClick={() => setActiveTab('settings')}
               className={`px-6 py-3 font-medium transition-colors ${
-                activeTab === 'midi-status'
+                activeTab === 'settings'
                   ? 'text-blue-400 border-b-2 border-blue-400 bg-gray-700'
                   : 'text-gray-300 hover:text-white hover:bg-gray-700'
               }`}
             >
-              MIDI Status
+              Settings
             </button>
             <button
               onClick={() => setActiveTab('about')}
@@ -983,11 +983,11 @@ function App() {
         </div>
 
         {/* Tab Content */}
-        {activeTab === 'midi-status' && (
+        {activeTab === 'settings' && (
           <div className="space-y-6">
-            {/* MIDI Status */}
+            {/* Settings */}
             <div className="bg-gray-800 rounded-lg p-4">
-              <h2 className="text-xl font-semibold mb-3">MIDI Status</h2>
+              <h2 className="text-xl font-semibold mb-3">Settings</h2>
               
               {/* Instrument Selection */}
               <div className="bg-gray-700 p-3 rounded mb-4">
@@ -1148,6 +1148,46 @@ function App() {
                   </div>
                 )}
               </div>
+              {process.env.NODE_ENV === 'development' && (
+                <div className="bg-gray-800 rounded-lg p-4">
+                  <h2 className="text-xl font-semibold mb-3">Development Tools</h2>
+                  <div className="bg-gray-700 rounded-lg p-3">
+                    <h4 className="text-sm font-medium text-gray-300 mb-2">Storage Management</h4>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => {
+                          const info = getStorageInfo();
+                          if (confirm(`Clear all stored songs?
+
+Current storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs (${info.totalSize})`)) {
+                            clearAllStoredSongs();
+                            setMidiSongs([]);
+                            setSongs([]);
+                            setSelectedSong(null);
+                            alert('✅ All stored songs cleared!');
+                          }
+                        }}
+                        className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-sm"
+                      >
+                        🗑️ Clear Storage
+                      </button>
+                      <button
+                        onClick={() => {
+                          const info = getStorageInfo();
+                          alert(`Storage Info:
+
+📁 MIDI Songs: ${info.midiSongs}
+📝 Manual Songs: ${info.manualSongs}
+💾 Total Size: ${info.totalSize}`);
+                        }}
+                        className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm"
+                      >
+                        📊 Storage Info
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -1643,46 +1683,6 @@ function App() {
                   <h2 className="text-xl font-semibold mb-3">Import MIDI File</h2>
                   <MIDIFileUploader onMIDISongCreate={handleMIDISongCreate} />
                 </div>
-                {process.env.NODE_ENV === 'development' && (
-                  <div className="bg-gray-800 rounded-lg p-4">
-                    <h2 className="text-xl font-semibold mb-3">Development Tools</h2>
-                    <div className="bg-gray-700 rounded-lg p-3">
-                      <h4 className="text-sm font-medium text-gray-300 mb-2">Storage Management</h4>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => {
-                            const info = getStorageInfo();
-                            if (confirm(`Clear all stored songs?
-
-Current storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs (${info.totalSize})`)) {
-                              clearAllStoredSongs();
-                              setMidiSongs([]);
-                              setSongs([]);
-                              setSelectedSong(null);
-                              alert('✅ All stored songs cleared!');
-                            }
-                          }}
-                          className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-sm"
-                        >
-                          🗑️ Clear Storage
-                        </button>
-                        <button
-                          onClick={() => {
-                            const info = getStorageInfo();
-                            alert(`Storage Info:
-
-📁 MIDI Songs: ${info.midiSongs}
-📝 Manual Songs: ${info.manualSongs}
-💾 Total Size: ${info.totalSize}`);
-                          }}
-                          className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm"
-                        >
-                          📊 Storage Info
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )}
               </>
             )}
           </div>
