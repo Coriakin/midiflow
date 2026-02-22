@@ -7,6 +7,7 @@ import { MIDIFileUploader } from './components/MIDIFileUploader';
 import { MIDIPreview } from './components/MIDIPreview';
 import { MarkdownRenderer } from './components/MarkdownRenderer';
 import { SimulatedMIDIPlayer } from './components/SimulatedMIDIPlayer';
+import { DScalePracticePanel, D_SCALE_SEQUENCE } from './components/DScalePracticePanel';
 import type { MIDIMessage, InstrumentType, Song, MIDISong, AnySong } from './types/midi';
 import { midiNoteToName, INSTRUMENT_RANGES } from './types/midi';
 import { extractNotesFromArrayBuffer } from './lib/midi/midiFileParser';
@@ -106,7 +107,8 @@ function App() {
   const [editingTitle, setEditingTitle] = useState<string>('');
 
   // Tab state
-  const [activeTab, setActiveTab] = useState<'practice' | 'create' | 'midi-status' | 'about'>('practice');
+  const [activeTab, setActiveTab] = useState<'practice' | 'd-scale' | 'create' | 'midi-status' | 'about'>('practice');
+  const isDScaleTabActive = activeTab === 'd-scale';
 
   // About content state
   const [aboutContent, setAboutContent] = useState<string>('');
@@ -760,6 +762,12 @@ function App() {
     }
   };
 
+  const handleStartDScalePractice = () => {
+    setSelectedSong(null);
+    startPracticeSequence(D_SCALE_SEQUENCE);
+  };
+
+
   // Show practice completion notification
   const showPracticeCompletion = (sequenceName: string) => {
     const messages = [
@@ -939,6 +947,16 @@ function App() {
               }`}
             >
               Practice
+            </button>
+            <button
+              onClick={() => setActiveTab('d-scale')}
+              className={`px-6 py-3 font-medium transition-colors ${
+                isDScaleTabActive
+                  ? 'text-blue-400 border-b-2 border-blue-400 bg-gray-700'
+                  : 'text-gray-300 hover:text-white hover:bg-gray-700'
+              }`}
+            >
+              D Scale
             </button>
             <button
               onClick={() => setActiveTab('create')}
@@ -1207,10 +1225,10 @@ function App() {
                 <div className="mb-4">
                   <h5 className="text-xs font-medium text-green-400 mb-2 flex items-center">
                     <span className="w-2 h-2 bg-green-400 rounded-full mr-2"></span>
-                    Built-in Songs ({builtInSongs.length})
+                    Song Library ({builtInSongs.length})
                   </h5>
-                  <div className="bg-gray-700 rounded-lg p-3 max-h-48 overflow-y-auto">
-                    <div className="space-y-1">
+                  <div className="bg-gray-700 rounded-lg p-5 min-h-[300px] overflow-y-auto">
+                    <div className="space-y-2">
                       {builtInSongs.map(song => (
                         <div
                           key={song.id}
@@ -1597,54 +1615,6 @@ function App() {
               </div>
             )}
 
-            {/* Quick Practice Controls for Tin Whistle - only show when no song is selected */}
-            {selectedInstrument === 'tin-whistle' && !selectedSong && (
-              <div className="bg-gray-700 rounded-lg p-4">
-                <h4 className="text-sm font-medium text-gray-300 mb-2">Quick Practice:</h4>
-                <div className="flex gap-2 flex-wrap">
-                  <button
-                    onClick={() => startPracticeSequence([62, 64, 66, 67, 69, 71, 74])} // D major scale
-                    className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-500"
-                  >
-                    D Scale
-                  </button>
-                  <button
-                    onClick={() => {
-                      const twinkleSong = builtInSongs.find(song => song.id === 'twinkle-twinkle');
-                      if (twinkleSong) {
-                        setSelectedSong(twinkleSong); // Set selected song for timing data
-                        startPracticeSequence(twinkleSong.notes);
-                      }
-                    }}
-                    className="px-3 py-1 bg-purple-600 text-white rounded text-sm hover:bg-purple-500"
-                  >
-                    Twinkle Twinkle (Full)
-                  </button>
-                  <button
-                    onClick={stopPracticeSequence}
-                    className="px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-500"
-                    disabled={practiceSequence.length === 0}
-                  >
-                    Stop Practice
-                  </button>
-                </div>
-                {practiceSequence.length > 0 && (
-                  <div className="mt-2 text-sm text-gray-300">
-                    Progress: {currentNoteIndex + 1} of {practiceSequence.length} notes
-                    {currentTargetNote && (
-                      <span className="ml-2 text-yellow-400">
-                        • Current: {midiNoteToName(currentTargetNote)} (MIDI {currentTargetNote})
-                      </span>
-                    )}
-                    <div className="mt-1 text-xs text-gray-400">
-                      Sequence: {practiceSequence.map((note, idx) => 
-                        `${midiNoteToName(note)}${idx === currentNoteIndex ? '←' : ''}`
-                      ).join(' → ')}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
           </div>
 
           {/* Simulated MIDI Player - Development Tool */}
@@ -1722,6 +1692,32 @@ function App() {
             )}
           </div>
         </div>
+        )}
+
+        {activeTab === 'd-scale' && (
+          <div className="space-y-6">
+            <DScalePracticePanel
+              isActive={isDScaleTabActive}
+              practiceSequence={practiceSequence}
+              currentNoteIndex={currentNoteIndex}
+              currentTargetNote={currentTargetNote}
+              lastPlayedNote={lastPlayedNote}
+              isCorrectNote={isCorrectNote}
+              startPracticeSequence={handleStartDScalePractice}
+              resetPracticeSequence={resetPracticeSequence}
+              stopPracticeSequence={stopPracticeSequence}
+            />
+
+            {process.env.NODE_ENV === 'development' && (
+              <SimulatedMIDIPlayer
+                onMIDIMessage={handleMIDIMessage}
+                practiceSequence={practiceSequence}
+                currentNoteIndex={currentNoteIndex}
+                tempo={selectedSong?.tempo || 120}
+                isVisible={true}
+              />
+            )}
+          </div>
         )}
 
         {activeTab === 'about' && (
