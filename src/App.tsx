@@ -107,7 +107,8 @@ function App() {
   const [editingTitle, setEditingTitle] = useState<string>('');
 
   // Tab state
-  const [activeTab, setActiveTab] = useState<'practice' | 'd-scale' | 'create' | 'midi-status' | 'about'>('practice');
+  const [activeTab, setActiveTab] = useState<'practice' | 'd-scale' | 'midi-status' | 'about'>('practice');
+  const [practiceSubTab, setPracticeSubTab] = useState<'library' | 'create'>('library');
   const isDScaleTabActive = activeTab === 'd-scale';
 
   // About content state
@@ -959,16 +960,6 @@ function App() {
               D Scale
             </button>
             <button
-              onClick={() => setActiveTab('create')}
-              className={`px-6 py-3 font-medium transition-colors ${
-                activeTab === 'create'
-                  ? 'text-blue-400 border-b-2 border-blue-400 bg-gray-700'
-                  : 'text-gray-300 hover:text-white hover:bg-gray-700'
-              }`}
-            >
-              Create Practice Song
-            </button>
-            <button
               onClick={() => setActiveTab('midi-status')}
               className={`px-6 py-3 font-medium transition-colors ${
                 activeTab === 'midi-status'
@@ -1161,543 +1152,541 @@ function App() {
           </div>
         )}
 
-        {activeTab === 'create' && (
-          <div className="space-y-6">
-            {/* Create Practice Song */}
-            <div className="bg-gray-800 rounded-lg p-4">
-              <h2 className="text-xl font-semibold mb-3">Create Practice Song (Manual)</h2>
-              <SongInput onSongCreate={handleSongCreate} />
-            </div>
-
-            <div className="bg-gray-800 rounded-lg p-4">
-              <h2 className="text-xl font-semibold mb-3">Import MIDI File</h2>
-              <MIDIFileUploader onMIDISongCreate={handleMIDISongCreate} />
-            </div>
-
-            {/* Storage Management (Development) */}
-            {process.env.NODE_ENV === 'development' && (
-              <div className="bg-gray-800 rounded-lg p-4">
-                <h2 className="text-xl font-semibold mb-3">Development Tools</h2>
-                <div className="bg-gray-700 rounded-lg p-3">
-                  <h4 className="text-sm font-medium text-gray-300 mb-2">Storage Management</h4>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => {
-                        const info = getStorageInfo();
-                        if (confirm(`Clear all stored songs?\n\nCurrent storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs (${info.totalSize})`)) {
-                          clearAllStoredSongs();
-                          setMidiSongs([]);
-                          setSongs([]);
-                          setSelectedSong(null);
-                          alert('✅ All stored songs cleared!');
-                        }
-                      }}
-                      className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-sm"
-                    >
-                      🗑️ Clear Storage
-                    </button>
-                    <button
-                      onClick={() => {
-                        const info = getStorageInfo();
-                        alert(`Storage Info:\n\n📁 MIDI Songs: ${info.midiSongs}\n📝 Manual Songs: ${info.manualSongs}\n💾 Total Size: ${info.totalSize}`);
-                      }}
-                      className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm"
-                    >
-                      📊 Storage Info
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
         {activeTab === 'practice' && (
           <div className="space-y-6">
-            {/* Song Selection */}
-            <div className="bg-gray-800 rounded-lg p-4">
-              {/* Song Selection */}
-              <div>
-                <h4 className="text-sm font-medium text-gray-300 mb-2">Select a song to practice:</h4>
-              
-              {/* Built-in Songs Section */}
-              {builtInSongs.length > 0 && (
-                <div className="mb-4">
-                  <h5 className="text-xs font-medium text-green-400 mb-2 flex items-center">
-                    <span className="w-2 h-2 bg-green-400 rounded-full mr-2"></span>
-                    Song Library ({builtInSongs.length})
-                  </h5>
-                  <div className="bg-gray-700 rounded-lg p-5 min-h-[300px] overflow-y-auto">
-                    <div className="space-y-2">
-                      {builtInSongs.map(song => (
-                        <div
-                          key={song.id}
-                          onClick={() => {
-                            setSelectedSong(song);
-                            startPracticeSequence(song.notes);
-                          }}
-                          className={`flex items-center justify-between p-2 rounded cursor-pointer transition-colors ${
-                            selectedSong?.id === song.id
-                              ? 'bg-blue-600 text-white'
-                              : 'hover:bg-gray-600 text-gray-300'
-                          }`}
-                        >
-                          <div className="flex items-center space-x-3 flex-1 min-w-0">
-                            <div className={`w-3 h-3 rounded-full flex-shrink-0 ${
-                              selectedSong?.id === song.id ? 'bg-white' : 'bg-gray-500'
-                            }`}></div>
-                            <div className="flex-1 min-w-0">
-                              <div className="font-medium truncate">{song.title}</div>
-                              <div className="text-xs text-gray-400 flex items-center space-x-2">
-                                <span>{song.notes.length} notes</span>
-                                <span>•</span>
-                                <span>{song.tempo} BPM</span>
-                              </div>
-                            </div>
-                          </div>
-                          {selectedSong?.id === song.id && (
-                            <div className="flex-shrink-0 ml-2">
-                              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                              </svg>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* MIDI Songs Section */}
-              {(midiSongs.length > 0 || songs.length > 0) && (
-                <div className="mb-4">
-                  <h5 className="text-xs font-medium text-blue-400 mb-2 flex items-center">
-                    <span className="w-2 h-2 bg-blue-400 rounded-full mr-2"></span>
-                    Imported Songs ({midiSongs.length + songs.length})
-                  </h5>
-                  <div className="bg-gray-700 rounded-lg p-3 max-h-48 overflow-y-auto">
-                    <div className="space-y-1">
-                      {/* MIDI Songs */}
-                      {midiSongs.map(song => (
-                        <div
-                          key={song.id}
-                          className={`flex items-center justify-between p-2 rounded transition-colors ${
-                            selectedSong?.id === song.id
-                              ? 'bg-blue-600 text-white'
-                              : 'hover:bg-gray-600 text-gray-300'
-                          }`}
-                        >
-                          <div className="flex items-center space-x-3 flex-1 min-w-0">
-                            <div className={`w-3 h-3 rounded-full flex-shrink-0 ${
-                              selectedSong?.id === song.id ? 'bg-white' : 'bg-gray-500'
-                            }`}></div>
-                            <div className="flex-1 min-w-0">
-                              {editingSongId === song.id ? (
-                                <div className="flex items-center space-x-2">
-                                  <input
-                                    type="text"
-                                    value={editingTitle}
-                                    onChange={(e) => setEditingTitle(e.target.value)}
-                                    onKeyDown={(e) => {
-                                      if (e.key === 'Enter') saveEditing(song.id, true);
-                                      if (e.key === 'Escape') cancelEditing();
-                                    }}
-                                    className="bg-gray-600 text-white px-2 py-1 rounded text-sm flex-1"
-                                    autoFocus
-                                    onClick={(e) => e.stopPropagation()}
-                                  />
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      saveEditing(song.id, true);
-                                    }}
-                                    className="text-green-400 hover:text-green-300 p-1"
-                                    title="Save"
-                                  >
-                                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                    </svg>
-                                  </button>
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      cancelEditing();
-                                    }}
-                                    className="text-red-400 hover:text-red-300 p-1"
-                                    title="Cancel"
-                                  >
-                                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                      <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                                    </svg>
-                                  </button>
-                                </div>
-                              ) : (
-                                <div 
-                                  className="font-medium truncate cursor-pointer"
-                                  onClick={() => {
-                                    setSelectedSong(song);
-                                    startPracticeSequence(song.notes);
-                                  }}
-                                >
-                                  {song.title}
-                                </div>
-                              )}
-                              <div className="text-xs text-gray-400 flex items-center space-x-2">
-                                <span>{song.notes.length} notes</span>
-                                <span>•</span>
-                                <span>{song.tempo} BPM</span>
-                                <span>•</span>
-                                <span className="text-purple-400">Track {song.selectedTrack + 1}</span>
-                              </div>
-                            </div>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            {/* Track Selection Dropdown */}
-                            <select
-                              value={song.selectedTrack}
-                              onChange={(e) => {
-                                const newTrack = parseInt(e.target.value);
-                                try {
-                                  // Extract notes from the new track
-                                  const { notes, tempo, notesWithTiming } = extractNotesFromArrayBuffer(song.fileData!, newTrack);
-                                  const updatedSong = { 
-                                    ...song, 
-                                    selectedTrack: newTrack,
-                                    notes,
-                                    tempo,
-                                    notesWithTiming
-                                  };
-                                  // Update the song in the midiSongs array
-                                  setMidiSongs(prev => prev.map(s => s.id === song.id ? updatedSong : s));
-                                  // If this song is currently selected, update the selected song too
-                                  if (selectedSong?.id === song.id) {
-                                    setSelectedSong(updatedSong);
-                                  }
-                                } catch (error) {
-                                  console.error('Failed to extract notes from track:', error);
-                                }
-                              }}
-                              className="bg-gray-600 text-white px-2 py-1 rounded text-xs"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              {song.availableTracks.map((track, index) => (
-                                <option key={index} value={index}>
-                                  Track {index + 1}: {track.trackName || 'Unnamed'} ({track.noteCount} notes)
-                                </option>
-                              ))}
-                            </select>
-                            
-                            {/* MIDI Preview Button */}
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setPreviewSong(song);
-                                setShowPreview(true);
-                              }}
-                              className="bg-purple-600 hover:bg-purple-500 text-white px-2 py-1 rounded text-xs flex items-center space-x-1"
-                              title="Preview MIDI track"
-                            >
-                              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
-                              </svg>
-                              <span>Preview</span>
-                            </button>
-                            
-                            {/* Rename button */}
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                startEditing(song.id, song.title);
-                              }}
-                              className="bg-blue-600 hover:bg-blue-500 text-white px-2 py-1 rounded text-xs"
-                              title="Rename song"
-                            >
-                              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-                              </svg>
-                            </button>
-                            
-                            {/* Delete button */}
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (confirm(`Are you sure you want to delete "${song.title}"?`)) {
-                                  deleteMidiSong(song.id);
-                                }
-                              }}
-                              className="bg-red-600 hover:bg-red-500 text-white px-2 py-1 rounded text-xs"
-                              title="Delete song"
-                            >
-                              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" clipRule="evenodd" />
-                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414L7.586 12l-1.293 1.293a1 1 0 101.414 1.414L9 13.414l2.293 2.293a1 1 0 001.414-1.414L11.414 12l1.293-1.293z" clipRule="evenodd" />
-                              </svg>
-                            </button>
-                            
-                            {selectedSong?.id === song.id && (
-                              <div className="flex-shrink-0">
-                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                </svg>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                      
-                      {/* Manual Songs */}
-                      {songs.map(song => (
-                        <div
-                          key={song.id}
-                          className={`flex items-center justify-between p-2 rounded transition-colors ${
-                            selectedSong?.id === song.id
-                              ? 'bg-blue-600 text-white'
-                              : 'hover:bg-gray-600 text-gray-300'
-                          }`}
-                        >
-                          <div className="flex items-center space-x-3 flex-1 min-w-0">
-                            <div className={`w-3 h-3 rounded-full flex-shrink-0 ${
-                              selectedSong?.id === song.id ? 'bg-white' : 'bg-gray-500'
-                            }`}></div>
-                            <div className="flex-1 min-w-0">
-                              {editingSongId === song.id ? (
-                                <div className="flex items-center space-x-2">
-                                  <input
-                                    type="text"
-                                    value={editingTitle}
-                                    onChange={(e) => setEditingTitle(e.target.value)}
-                                    onKeyDown={(e) => {
-                                      if (e.key === 'Enter') saveEditing(song.id, false);
-                                      if (e.key === 'Escape') cancelEditing();
-                                    }}
-                                    className="bg-gray-600 text-white px-2 py-1 rounded text-sm flex-1"
-                                    autoFocus
-                                    onClick={(e) => e.stopPropagation()}
-                                  />
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      saveEditing(song.id, false);
-                                    }}
-                                    className="text-green-400 hover:text-green-300 p-1"
-                                    title="Save"
-                                  >
-                                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                    </svg>
-                                  </button>
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      cancelEditing();
-                                    }}
-                                    className="text-red-400 hover:text-red-300 p-1"
-                                    title="Cancel"
-                                  >
-                                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                      <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                                    </svg>
-                                  </button>
-                                </div>
-                              ) : (
-                                <div 
-                                  className="font-medium truncate cursor-pointer"
-                                  onClick={() => {
-                                    setSelectedSong(song);
-                                    startPracticeSequence(song.notes);
-                                  }}
-                                >
-                                  {song.title}
-                                </div>
-                              )}
-                              <div className="text-xs text-gray-400 flex items-center space-x-2">
-                                <span>{song.notes.length} notes</span>
-                                <span>•</span>
-                                <span>{song.tempo} BPM</span>
-                                <span>•</span>
-                                <span className="text-yellow-400">Manual</span>
-                              </div>
-                            </div>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            {/* Rename button */}
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                startEditing(song.id, song.title);
-                              }}
-                              className="bg-blue-600 hover:bg-blue-500 text-white px-2 py-1 rounded text-xs"
-                              title="Rename song"
-                            >
-                              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-                              </svg>
-                            </button>
-                            
-                            {/* Delete button */}
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (confirm(`Are you sure you want to delete "${song.title}"?`)) {
-                                  deleteManualSong(song.id);
-                                }
-                              }}
-                              className="bg-red-600 hover:bg-red-500 text-white px-2 py-1 rounded text-xs"
-                              title="Delete song"
-                            >
-                              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" clipRule="evenodd" />
-                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414L7.586 12l-1.293 1.293a1 1 0 101.414 1.414L9 13.414l2.293 2.293a1 1 0 001.414-1.414L11.414 12l1.293-1.293z" clipRule="evenodd" />
-                              </svg>
-                            </button>
-                            
-                            {selectedSong?.id === song.id && (
-                              <div className="flex-shrink-0">
-                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                </svg>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {(builtInSongs.length === 0 && midiSongs.length === 0 && songs.length === 0) && (
-                <div className="bg-gray-700 rounded-lg p-4">
-                  <div className="text-center text-gray-500 py-4">
-                    No songs available. Create a song or upload a MIDI file above to get started.
-                  </div>
-                </div>
-              )}
+            <div className="bg-gray-800 rounded-lg p-4 space-y-2">
+              <div className="flex flex-wrap gap-3">
+                <button
+                  onClick={() => setPracticeSubTab('library')}
+                  className={`px-4 py-2 rounded-md text-sm font-semibold transition-all ${practiceSubTab === 'library' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}`}
+                >
+                  Song Library
+                </button>
+                <button
+                  onClick={() => setPracticeSubTab('create')}
+                  className={`px-4 py-2 rounded-md text-sm font-semibold transition-all ${practiceSubTab === 'create' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}`}
+                >
+                  Create Practice Song
+                </button>
+              </div>
+              <p className="text-xs text-gray-400">
+                Switch between browsing the song library and creating a new practice song.
+              </p>
             </div>
 
-            {/* Practice Controls for Tin Whistle */}
-            {selectedInstrument === 'tin-whistle' && selectedSong && (
-              <div className="bg-gray-700 rounded-lg p-4">
-                <h4 className="text-sm font-medium text-gray-300 mb-3">Practice Controls:</h4>
-
-                <div className="flex gap-2 flex-wrap">
-                  <button
-                    onClick={resetPracticeSequence}
-                    className="px-3 py-1 bg-yellow-600 text-white rounded text-sm hover:bg-yellow-500"
-                    disabled={practiceSequence.length === 0}
-                  >
-                    Reset
-                  </button>
-                  <button
-                    onClick={stopPracticeSequence}
-                    className="px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-500"
-                    disabled={practiceSequence.length === 0}
-                  >
-                    Stop
-                  </button>
-                </div>
-                {practiceSequence.length > 0 && (
-                  <div className="mt-2 text-sm text-gray-300">
-                    Progress: {currentNoteIndex + 1} of {practiceSequence.length} notes
-                    {currentTargetNote && (
-                      <span className="ml-2 text-yellow-400">
-                        • Current: {midiNoteToName(currentTargetNote)} (MIDI {currentTargetNote})
-                      </span>
-                    )}
-                    <div className="mt-1 text-xs text-gray-400">
-                      Sequence: {practiceSequence.map((note, idx) => 
-                        `${midiNoteToName(note)}${idx === currentNoteIndex ? '←' : ''}`
-                      ).join(' → ')}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
-          </div>
-
-          {selectedSong && (
-            <>
-              {/* Simulated MIDI Player - Development Tool */}
-              {process.env.NODE_ENV === 'development' && (
-                <SimulatedMIDIPlayer
-                  onMIDIMessage={handleMIDIMessage}
-                  practiceSequence={practiceSequence}
-                  currentNoteIndex={currentNoteIndex}
-                  tempo={selectedSong?.tempo || 120}
-                  isVisible={true}
-                />
-              )}
-
-              {/* Practice Area */}
-              <div className="bg-gray-800 rounded-lg p-4">
-                <h2 className="text-xl font-semibold mb-3">Practice Area</h2>
-                
-                <div className="grid grid-cols-1 gap-4">
-                  {/* Main practice area */}
+            {practiceSubTab === 'library' && (
+              <>
+                <div className="bg-gray-800 rounded-lg p-4">
+                  {/* Song Selection */}
                   <div>
-                    {selectedInstrument === 'tin-whistle' ? (
-                      // Tin whistle practice area
-                      practiceSequence.length > 0 && selectedSong?.notesWithTiming ? (
-                        // Sequential practice with timeline (when timing data is available)
-                        <TinWhistleSequentialPractice
-                          sequence={selectedSong.notesWithTiming}
-                          currentNoteIndex={currentNoteIndex}
-                          tempo={selectedSong.tempo || 120}
-                          lastPlayedNote={lastPlayedNote}
-                          isCorrectNote={isCorrectNote}
-                          className="h-auto"
-                        />
-                      ) : (
-                        // Fallback static practice board (when no timing data)
-                        <TinWhistlePracticeBoard
-                          currentTargetNote={currentTargetNote}
-                          lastPlayedNote={lastPlayedNote}
-                          isCorrectNote={isCorrectNote}
-                          className="h-auto"
-                        />
-                      )
-                    ) : (
-                      // Simple note display for other instruments
-                      <div className="bg-gray-700 rounded-lg p-8 text-center">
-                        <h3 className="text-lg font-medium text-gray-300 mb-4">
-                          {selectedInstrument.charAt(0).toUpperCase() + selectedInstrument.slice(1).replace('-', ' ')} Practice
-                        </h3>
-                        {lastPlayedNote ? (
-                          <div className="text-4xl font-bold text-blue-400 mb-2">
-                            {midiNoteToName(lastPlayedNote)}
-                          </div>
-                        ) : (
-                          <div className="text-2xl text-gray-500 mb-2">
-                            Play a note
-                          </div>
+                    <h4 className="text-sm font-medium text-gray-300 mb-2">Select a song to practice:</h4>
+                  
+                  {/* Built-in Songs Section */}
+                  {builtInSongs.length > 0 && (
+                    <div className="mb-4">
+                      <h5 className="text-xs font-medium text-green-400 mb-2 flex items-center">
+                        <span className="w-2 h-2 bg-green-400 rounded-full mr-2"></span>
+                        Song Library ({builtInSongs.length})
+                      </h5>
+                      <div className="bg-gray-700 rounded-lg p-5 min-h-[300px] overflow-y-auto">
+                        <div className="space-y-2">
+                          {builtInSongs.map(song => (
+                            <div
+                              key={song.id}
+                              onClick={() => {
+                                setSelectedSong(song);
+                                startPracticeSequence(song.notes);
+                              }}
+                              className={`flex items-center justify-between p-2 rounded cursor-pointer transition-colors ${selectedSong?.id === song.id ? 'bg-blue-600 text-white' : 'hover:bg-gray-600 text-gray-300'}`}
+                            >
+                              <div className="flex items-center space-x-3 flex-1 min-w-0">
+                                <div className={`w-3 h-3 rounded-full flex-shrink-0 ${selectedSong?.id === song.id ? 'bg-white' : 'bg-gray-500'}`}></div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="font-medium truncate">{song.title}</div>
+                                  <div className="text-xs text-gray-400 flex items-center space-x-2">
+                                    <span>{song.notes.length} notes</span>
+                                    <span>•</span>
+                                    <span>{song.tempo} BPM</span>
+                                  </div>
+                                </div>
+                              </div>
+                              {selectedSong?.id === song.id && (
+                                <div className="flex-shrink-0 ml-2">
+                                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                  </svg>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* MIDI Songs Section */}
+                  {(midiSongs.length > 0 || songs.length > 0) && (
+                    <div className="mb-4">
+                      <h5 className="text-xs font-medium text-blue-400 mb-2 flex items-center">
+                        <span className="w-2 h-2 bg-blue-400 rounded-full mr-2"></span>
+                        Imported Songs ({midiSongs.length + songs.length})
+                      </h5>
+                      <div className="bg-gray-700 rounded-lg p-3 max-h-48 overflow-y-auto">
+                        <div className="space-y-1">
+                          {/* MIDI Songs */}
+                          {midiSongs.map(song => (
+                            <div
+                              key={song.id}
+                              className={`flex items-center justify-between p-2 rounded transition-colors ${selectedSong?.id === song.id ? 'bg-blue-600 text-white' : 'hover:bg-gray-600 text-gray-300'}`}
+                            >
+                              <div className="flex items-center space-x-3 flex-1 min-w-0">
+                                <div className={`w-3 h-3 rounded-full flex-shrink-0 ${selectedSong?.id === song.id ? 'bg-white' : 'bg-gray-500'}`}></div>
+                                <div className="flex-1 min-w-0">
+                                  {editingSongId === song.id ? (
+                                    <div className="flex items-center space-x-2">
+                                      <input
+                                        type="text"
+                                        value={editingTitle}
+                                        onChange={(e) => setEditingTitle(e.target.value)}
+                                        onKeyDown={(e) => {
+                                          if (e.key === 'Enter') saveEditing(song.id, true);
+                                          if (e.key === 'Escape') cancelEditing();
+                                        }}
+                                        className="bg-gray-600 text-white px-2 py-1 rounded text-sm flex-1"
+                                        autoFocus
+                                        onClick={(e) => e.stopPropagation()}
+                                      />
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          saveEditing(song.id, true);
+                                        }}
+                                        className="text-green-400 hover:text-green-300 p-1"
+                                        title="Save"
+                                      >
+                                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                        </svg>
+                                      </button>
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          cancelEditing();
+                                        }}
+                                        className="text-red-400 hover:text-red-300 p-1"
+                                        title="Cancel"
+                                      >
+                                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                          <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                                        </svg>
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <div 
+                                      className="font-medium truncate cursor-pointer"
+                                      onClick={() => {
+                                        setSelectedSong(song);
+                                        startPracticeSequence(song.notes);
+                                      }}
+                                    >
+                                      {song.title}
+                                    </div>
+                                  )}
+                                  <div className="text-xs text-gray-400 flex items-center space-x-2">
+                                    <span>{song.notes.length} notes</span>
+                                    <span>•</span>
+                                    <span>{song.tempo} BPM</span>
+                                    <span>•</span>
+                                    <span className="text-purple-400">Track {song.selectedTrack + 1}</span>
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                {/* Track Selection Dropdown */}
+                                <select
+                                  value={song.selectedTrack}
+                                  onChange={(e) => {
+                                    const newTrack = parseInt(e.target.value);
+                                    try {
+                                      // Extract notes from the new track
+                                      const { notes, tempo, notesWithTiming } = extractNotesFromArrayBuffer(song.fileData!, newTrack);
+                                      const updatedSong = { 
+                                        ...song, 
+                                        selectedTrack: newTrack,
+                                        notes,
+                                        tempo,
+                                        notesWithTiming
+                                      };
+                                      // Update the song in the midiSongs array
+                                      setMidiSongs(prev => prev.map(s => s.id === song.id ? updatedSong : s));
+                                      if (selectedSong?.id === song.id) {
+                                        setSelectedSong(updatedSong);
+                                      }
+                                    } catch (error) {
+                                      console.error('Failed to extract notes from track:', error);
+                                    }
+                                  }}
+                                  className="bg-gray-600 text-white px-2 py-1 rounded text-xs"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  {song.availableTracks.map((track, index) => (
+                                    <option key={index} value={index}>
+                                      Track {index + 1}: {track.trackName || 'Unnamed'} ({track.noteCount} notes)
+                                    </option>
+                                  ))}
+                                </select>
+                                
+                                {/* MIDI Preview Button */}
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setPreviewSong(song);
+                                    setShowPreview(true);
+                                  }}
+                                  className="bg-purple-600 hover:bg-purple-500 text-white px-2 py-1 rounded text-xs flex items-center space-x-1"
+                                  title="Preview MIDI track"
+                                >
+                                  <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
+                                  </svg>
+                                  <span>Preview</span>
+                                </button>
+                                
+                                {/* Rename button */}
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    startEditing(song.id, song.title);
+                                  }}
+                                  className="bg-blue-600 hover:bg-blue-500 text-white px-2 py-1 rounded text-xs"
+                                  title="Rename song"
+                                >
+                                  <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                                  </svg>
+                                </button>
+                                
+                                {/* Delete button */}
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (confirm(`Are you sure you want to delete "${song.title}"?`)) {
+                                      deleteMidiSong(song.id);
+                                    }
+                                  }}
+                                  className="bg-red-600 hover:bg-red-500 text-white px-2 py-1 rounded text-xs"
+                                  title="Delete song"
+                                >
+                                  <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" clipRule="evenodd" />
+                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414L7.586 12l-1.293 1.293a1 1 0 101.414 1.414L9 13.414l2.293 2.293a1 1 0 001.414-1.414L11.414 12l1.293-1.293z" clipRule="evenodd" />
+                                  </svg>
+                                </button>
+                                
+                                {selectedSong?.id === song.id && (
+                                  <div className="flex-shrink-0">
+                                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                    </svg>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                          {/* Manual Songs */}
+                          {songs.map(song => (
+                            <div
+                              key={song.id}
+                              className={`flex items-center justify-between p-2 rounded transition-colors ${
+                                selectedSong?.id === song.id
+                                  ? 'bg-blue-600 text-white'
+                                  : 'hover:bg-gray-600 text-gray-300'
+                              }`}
+                            >
+                              <div className="flex items-center space-x-3 flex-1 min-w-0">
+                                <div className={`w-3 h-3 rounded-full flex-shrink-0 ${
+                                  selectedSong?.id === song.id ? 'bg-white' : 'bg-gray-500'
+                                }`}></div>
+                                <div className="flex-1 min-w-0">
+                                  {editingSongId === song.id ? (
+                                    <div className="flex items-center space-x-2">
+                                      <input
+                                        type="text"
+                                        value={editingTitle}
+                                        onChange={(e) => setEditingTitle(e.target.value)}
+                                        onKeyDown={(e) => {
+                                          if (e.key === 'Enter') saveEditing(song.id, false);
+                                          if (e.key === 'Escape') cancelEditing();
+                                        }}
+                                        className="bg-gray-600 text-white px-2 py-1 rounded text-sm flex-1"
+                                        autoFocus
+                                        onClick={(e) => e.stopPropagation()}
+                                      />
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          saveEditing(song.id, false);
+                                        }}
+                                        className="text-green-400 hover:text-green-300 p-1"
+                                        title="Save"
+                                      >
+                                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                        </svg>
+                                      </button>
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          cancelEditing();
+                                        }}
+                                        className="text-red-400 hover:text-red-300 p-1"
+                                        title="Cancel"
+                                      >
+                                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                          <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                                        </svg>
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <div 
+                                      className="font-medium truncate cursor-pointer"
+                                      onClick={() => {
+                                        setSelectedSong(song);
+                                        startPracticeSequence(song.notes);
+                                      }}
+                                    >
+                                      {song.title}
+                                    </div>
+                                  )}
+                                  <div className="text-xs text-gray-400 flex items-center space-x-2">
+                                    <span>{song.notes.length} notes</span>
+                                    <span>•</span>
+                                    <span>{song.tempo} BPM</span>
+                                    <span>•</span>
+                                    <span className="text-yellow-400">Manual</span>
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                {/* Rename button */}
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    startEditing(song.id, song.title);
+                                  }}
+                                  className="bg-blue-600 hover:bg-blue-500 text-white px-2 py-1 rounded text-xs"
+                                  title="Rename song"
+                                >
+                                  <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                                  </svg>
+                                </button>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (confirm(`Are you sure you want to delete "${song.title}"?`)) {
+                                      deleteManualSong(song.id);
+                                    }
+                                  }}
+                                  className="bg-red-600 hover:bg-red-500 text-white px-2 py-1 rounded text-xs"
+                                  title="Delete song"
+                                >
+                                  <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" clipRule="evenodd" />
+                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414L7.586 12l-1.293 1.293a1 1 0 101.414 1.414L9 13.414l2.293 2.293a1 1 0 001.414-1.414L11.414 12l1.293-1.293z" clipRule="evenodd" />
+                                  </svg>
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {(builtInSongs.length === 0 && midiSongs.length === 0 && songs.length === 0) && (
+                    <div className="bg-gray-700 rounded-lg p-4">
+                      <div className="text-center text-gray-500 py-4">
+                        No songs available. Create a song or upload a MIDI file above to get started.
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+                {/* Practice Controls for Tin Whistle */}
+                {selectedInstrument === 'tin-whistle' && selectedSong && (
+                  <div className="bg-gray-700 rounded-lg p-4">
+                    <h4 className="text-sm font-medium text-gray-300 mb-3">Practice Controls:</h4>
+
+                    <div className="flex gap-2 flex-wrap">
+                      <button
+                        onClick={resetPracticeSequence}
+                        className="px-3 py-1 bg-yellow-600 text-white rounded text-sm hover:bg-yellow-500"
+                        disabled={practiceSequence.length === 0}
+                      >
+                        Reset
+                      </button>
+                      <button
+                        onClick={stopPracticeSequence}
+                        className="px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-500"
+                        disabled={practiceSequence.length === 0}
+                      >
+                        Stop
+                      </button>
+                    </div>
+                    {practiceSequence.length > 0 && (
+                      <div className="mt-2 text-sm text-gray-300">
+                        Progress: {currentNoteIndex + 1} of {practiceSequence.length} notes
+                        {currentTargetNote && (
+                          <span className="ml-2 text-yellow-400">
+                            • Current: {midiNoteToName(currentTargetNote)} (MIDI {currentTargetNote})
+                          </span>
                         )}
-                        <div className="text-sm text-gray-400">
-                          Range: {getCurrentInstrumentRange().MIN}-{getCurrentInstrumentRange().MAX}
-                          {lastPlayedNote && (
-                            <span className="ml-2">
-                              (MIDI {lastPlayedNote})
-                            </span>
-                          )}
+                        <div className="mt-1 text-xs text-gray-400">
+                          Sequence: {practiceSequence.map((note, idx) => 
+                            `${midiNoteToName(note)}${idx === currentNoteIndex ? '←' : ''}`
+                          ).join(' → ')}
                         </div>
                       </div>
                     )}
                   </div>
+                )}
+
+                {selectedSong && (
+                  <>
+                    {process.env.NODE_ENV === 'development' && (
+                      <SimulatedMIDIPlayer
+                        onMIDIMessage={handleMIDIMessage}
+                        practiceSequence={practiceSequence}
+                        currentNoteIndex={currentNoteIndex}
+                        tempo={selectedSong?.tempo || 120}
+                        isVisible={true}
+                      />
+                    )}
+
+                    {/* Practice Area */}
+                    <div className="bg-gray-800 rounded-lg p-4">
+                      <h2 className="text-xl font-semibold mb-3">Practice Area</h2>
+                      
+                      <div className="grid grid-cols-1 gap-4">
+                        {/* Main practice area */}
+                        <div>
+                          {selectedInstrument === 'tin-whistle' ? (
+                            // Tin whistle practice area
+                            practiceSequence.length > 0 && selectedSong?.notesWithTiming ? (
+                              // Sequential practice with timeline (when timing data is available)
+                              <TinWhistleSequentialPractice
+                                sequence={selectedSong.notesWithTiming}
+                                currentNoteIndex={currentNoteIndex}
+                                tempo={selectedSong.tempo || 120}
+                                lastPlayedNote={lastPlayedNote}
+                                isCorrectNote={isCorrectNote}
+                                className="h-auto"
+                              />
+                            ) : (
+                              // Fallback static practice board (when no timing data)
+                              <TinWhistlePracticeBoard
+                                currentTargetNote={currentTargetNote}
+                                lastPlayedNote={lastPlayedNote}
+                                isCorrectNote={isCorrectNote}
+                                className="h-auto"
+                              />
+                            )
+                          ) : (
+                            // Simple note display for other instruments
+                            <div className="bg-gray-700 rounded-lg p-8 text-center">
+                              <h3 className="text-lg font-medium text-gray-300 mb-4">
+                                {selectedInstrument.charAt(0).toUpperCase() + selectedInstrument.slice(1).replace('-', ' ')} Practice
+                              </h3>
+                              {lastPlayedNote ? (
+                                <div className="text-4xl font-bold text-blue-400 mb-2">
+                                  {midiNoteToName(lastPlayedNote)}
+                                </div>
+                              ) : (
+                                <div className="text-2xl text-gray-500 mb-2">
+                                  Play a note
+                                </div>
+                              )}
+                              <div className="text-sm text-gray-400">
+                                Range: {getCurrentInstrumentRange().MIN}-{getCurrentInstrumentRange().MAX}
+                                {lastPlayedNote && (
+                                  <span className="ml-2">
+                                    (MIDI {lastPlayedNote})
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {isReady && connectedDevices.length === 0 && (
+                        <div className="text-center text-gray-400 mt-4">
+                          <p>Connect a MIDI device to start practicing!</p>
+                          <p className="text-sm">Make sure your MIDI controller or instrument is connected.</p>
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
+              </>
+            )}
+
+            {practiceSubTab === 'create' && (
+              <>
+                <div className="bg-gray-800 rounded-lg p-4">
+                  <h2 className="text-xl font-semibold mb-3">Create Practice Song (Manual)</h2>
+                  <SongInput onSongCreate={handleSongCreate} />
                 </div>
-                
-                {isReady && connectedDevices.length === 0 && (
-                  <div className="text-center text-gray-400 mt-4">
-                    <p>Connect a MIDI device to start practicing!</p>
-                    <p className="text-sm">Make sure your MIDI controller or instrument is connected.</p>
+                <div className="bg-gray-800 rounded-lg p-4">
+                  <h2 className="text-xl font-semibold mb-3">Import MIDI File</h2>
+                  <MIDIFileUploader onMIDISongCreate={handleMIDISongCreate} />
+                </div>
+                {process.env.NODE_ENV === 'development' && (
+                  <div className="bg-gray-800 rounded-lg p-4">
+                    <h2 className="text-xl font-semibold mb-3">Development Tools</h2>
+                    <div className="bg-gray-700 rounded-lg p-3">
+                      <h4 className="text-sm font-medium text-gray-300 mb-2">Storage Management</h4>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => {
+                            const info = getStorageInfo();
+                            if (confirm(`Clear all stored songs?
+
+Current storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs (${info.totalSize})`)) {
+                              clearAllStoredSongs();
+                              setMidiSongs([]);
+                              setSongs([]);
+                              setSelectedSong(null);
+                              alert('✅ All stored songs cleared!');
+                            }
+                          }}
+                          className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-sm"
+                        >
+                          🗑️ Clear Storage
+                        </button>
+                        <button
+                          onClick={() => {
+                            const info = getStorageInfo();
+                            alert(`Storage Info:
+
+📁 MIDI Songs: ${info.midiSongs}
+📝 Manual Songs: ${info.manualSongs}
+💾 Total Size: ${info.totalSize}`);
+                          }}
+                          className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm"
+                        >
+                          📊 Storage Info
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 )}
-              </div>
-            </>
-          )}
-        </div>
+              </>
+            )}
+          </div>
         )}
-
         {activeTab === 'd-scale' && (
           <div className="space-y-6">
             <DScalePracticePanel
