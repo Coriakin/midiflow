@@ -1617,80 +1617,84 @@ function App() {
 
           </div>
 
-          {/* Simulated MIDI Player - Development Tool */}
-          {process.env.NODE_ENV === 'development' && (
-            <SimulatedMIDIPlayer
-              onMIDIMessage={handleMIDIMessage}
-              practiceSequence={practiceSequence}
-              currentNoteIndex={currentNoteIndex}
-              tempo={selectedSong?.tempo || 120}
-              isVisible={true}
-            />
-          )}
+          {selectedSong && (
+            <>
+              {/* Simulated MIDI Player - Development Tool */}
+              {process.env.NODE_ENV === 'development' && (
+                <SimulatedMIDIPlayer
+                  onMIDIMessage={handleMIDIMessage}
+                  practiceSequence={practiceSequence}
+                  currentNoteIndex={currentNoteIndex}
+                  tempo={selectedSong?.tempo || 120}
+                  isVisible={true}
+                />
+              )}
 
-          {/* Practice Area */}
-          <div className="bg-gray-800 rounded-lg p-4">
-            <h2 className="text-xl font-semibold mb-3">Practice Area</h2>
-            
-            <div className="grid grid-cols-1 gap-4">
-              {/* Main practice area */}
-              <div>
-                {selectedInstrument === 'tin-whistle' ? (
-                  // Tin whistle practice area
-                  practiceSequence.length > 0 && selectedSong?.notesWithTiming ? (
-                    // Sequential practice with timeline (when timing data is available)
-                    <TinWhistleSequentialPractice
-                      sequence={selectedSong.notesWithTiming}
-                      currentNoteIndex={currentNoteIndex}
-                      tempo={selectedSong.tempo || 120}
-                      lastPlayedNote={lastPlayedNote}
-                      isCorrectNote={isCorrectNote}
-                      className="h-auto"
-                    />
-                  ) : (
-                    // Fallback static practice board (when no timing data)
-                    <TinWhistlePracticeBoard
-                      currentTargetNote={currentTargetNote}
-                      lastPlayedNote={lastPlayedNote}
-                      isCorrectNote={isCorrectNote}
-                      className="h-auto"
-                    />
-                  )
-                ) : (
-                  // Simple note display for other instruments
-                  <div className="bg-gray-700 rounded-lg p-8 text-center">
-                    <h3 className="text-lg font-medium text-gray-300 mb-4">
-                      {selectedInstrument.charAt(0).toUpperCase() + selectedInstrument.slice(1).replace('-', ' ')} Practice
-                    </h3>
-                    {lastPlayedNote ? (
-                      <div className="text-4xl font-bold text-blue-400 mb-2">
-                        {midiNoteToName(lastPlayedNote)}
-                      </div>
+              {/* Practice Area */}
+              <div className="bg-gray-800 rounded-lg p-4">
+                <h2 className="text-xl font-semibold mb-3">Practice Area</h2>
+                
+                <div className="grid grid-cols-1 gap-4">
+                  {/* Main practice area */}
+                  <div>
+                    {selectedInstrument === 'tin-whistle' ? (
+                      // Tin whistle practice area
+                      practiceSequence.length > 0 && selectedSong?.notesWithTiming ? (
+                        // Sequential practice with timeline (when timing data is available)
+                        <TinWhistleSequentialPractice
+                          sequence={selectedSong.notesWithTiming}
+                          currentNoteIndex={currentNoteIndex}
+                          tempo={selectedSong.tempo || 120}
+                          lastPlayedNote={lastPlayedNote}
+                          isCorrectNote={isCorrectNote}
+                          className="h-auto"
+                        />
+                      ) : (
+                        // Fallback static practice board (when no timing data)
+                        <TinWhistlePracticeBoard
+                          currentTargetNote={currentTargetNote}
+                          lastPlayedNote={lastPlayedNote}
+                          isCorrectNote={isCorrectNote}
+                          className="h-auto"
+                        />
+                      )
                     ) : (
-                      <div className="text-2xl text-gray-500 mb-2">
-                        Play a note
+                      // Simple note display for other instruments
+                      <div className="bg-gray-700 rounded-lg p-8 text-center">
+                        <h3 className="text-lg font-medium text-gray-300 mb-4">
+                          {selectedInstrument.charAt(0).toUpperCase() + selectedInstrument.slice(1).replace('-', ' ')} Practice
+                        </h3>
+                        {lastPlayedNote ? (
+                          <div className="text-4xl font-bold text-blue-400 mb-2">
+                            {midiNoteToName(lastPlayedNote)}
+                          </div>
+                        ) : (
+                          <div className="text-2xl text-gray-500 mb-2">
+                            Play a note
+                          </div>
+                        )}
+                        <div className="text-sm text-gray-400">
+                          Range: {getCurrentInstrumentRange().MIN}-{getCurrentInstrumentRange().MAX}
+                          {lastPlayedNote && (
+                            <span className="ml-2">
+                              (MIDI {lastPlayedNote})
+                            </span>
+                          )}
+                        </div>
                       </div>
                     )}
-                    <div className="text-sm text-gray-400">
-                      Range: {getCurrentInstrumentRange().MIN}-{getCurrentInstrumentRange().MAX}
-                      {lastPlayedNote && (
-                        <span className="ml-2">
-                          (MIDI {lastPlayedNote})
-                        </span>
-                      )}
-                    </div>
+                  </div>
+                </div>
+                
+                {isReady && connectedDevices.length === 0 && (
+                  <div className="text-center text-gray-400 mt-4">
+                    <p>Connect a MIDI device to start practicing!</p>
+                    <p className="text-sm">Make sure your MIDI controller or instrument is connected.</p>
                   </div>
                 )}
               </div>
-            </div>
-            
-            {isReady && connectedDevices.length === 0 && (
-              <div className="text-center text-gray-400 mt-4">
-                <p>Connect a MIDI device to start practicing!</p>
-                <p className="text-sm">Make sure your MIDI controller or instrument is connected.</p>
-              </div>
-            )}
-          </div>
+            </>
+          )}
         </div>
         )}
 
