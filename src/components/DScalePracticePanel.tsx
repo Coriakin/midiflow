@@ -32,7 +32,7 @@ export const DScalePracticePanel: React.FC<DScalePracticePanelProps> = ({
   const progressPercent =
     D_SCALE_SEQUENCE.length > 0 ? Math.round((progressIndex / D_SCALE_SEQUENCE.length) * 100) : 0;
 
-  const heroBorderClass = isActive ? 'border-blue-600 shadow-[0_0_30px_rgba(37,99,235,0.35)]' : 'border-gray-700';
+  const heroBorderClass = isActive ? 'border-blue-400/60 shadow-[0_0_30px_rgba(95,156,255,0.22)]' : 'border-gray-700';
 
   const timedSequence = useMemo(
     () =>
@@ -46,7 +46,7 @@ export const DScalePracticePanel: React.FC<DScalePracticePanelProps> = ({
 
   return (
     <div className="space-y-6">
-      <div className={`bg-gray-800 rounded-lg p-6 space-y-4 border ${heroBorderClass}`}>
+      <div className={`mac-panel p-6 space-y-4 border ${heroBorderClass}`}>
         <div>
           <h2 className="text-2xl font-bold">D Scale Practice</h2>
           <p className="text-gray-300 mt-1">
@@ -61,7 +61,7 @@ export const DScalePracticePanel: React.FC<DScalePracticePanelProps> = ({
               key={note}
               className={`p-4 rounded-xl border transition-colors ${
                 currentTargetNote === note
-                  ? 'bg-blue-600 border-blue-400'
+                  ? 'bg-blue-500/25 border-blue-300/55'
                   : 'bg-gray-700 border-gray-600'
               }`}
             >
@@ -77,20 +77,20 @@ export const DScalePracticePanel: React.FC<DScalePracticePanelProps> = ({
         <div className="flex items-center gap-3 flex-wrap">
           <button
             onClick={startPracticeSequence}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-500"
+            className="mac-button mac-button-primary"
           >
             Start D Scale
           </button>
           <button
             onClick={resetPracticeSequence}
-            className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-500"
+            className="mac-button"
             disabled={practiceSequence.length === 0}
           >
             Reset
           </button>
           <button
             onClick={stopPracticeSequence}
-            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-500"
+            className="mac-button mac-button-danger"
             disabled={practiceSequence.length === 0}
           >
             Stop Practice
@@ -101,7 +101,7 @@ export const DScalePracticePanel: React.FC<DScalePracticePanelProps> = ({
         </div>
       </div>
 
-      <div className="bg-gray-900 rounded-xl p-6 border border-gray-700">
+      <div className="mac-panel-soft p-6 border border-gray-700">
         {practiceSequence.length > 0 ? (
           <TinWhistleSequentialPractice
             sequence={timedSequence}

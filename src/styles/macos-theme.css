@@ -1,0 +1,246 @@
+:root {
+  --bg-app: #12161c;
+  --bg-elevated: #1a212c;
+  --bg-glass: rgba(31, 40, 54, 0.7);
+  --bg-muted: #202938;
+  --border-subtle: rgba(173, 188, 216, 0.2);
+  --border-strong: rgba(186, 205, 237, 0.35);
+  --text-primary: #edf3ff;
+  --text-secondary: #b6c2d8;
+  --text-muted: #8f9db7;
+  --accent-blue: #6fa7ff;
+  --accent-blue-strong: #3c86ff;
+  --accent-green: #68c893;
+  --accent-red: #f17f86;
+  --accent-amber: #f2bd6f;
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-xl: 20px;
+  --radius-pill: 9999px;
+  --shadow-soft: 0 8px 20px rgba(7, 10, 16, 0.32);
+  --shadow-panel: 0 20px 48px rgba(5, 8, 14, 0.42);
+  --blur-glass: 18px;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(152, 174, 209, 0.45) transparent;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  color: var(--text-primary);
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+  background:
+    radial-gradient(80% 70% at 0% 0%, rgba(111, 167, 255, 0.17), transparent 65%),
+    radial-gradient(70% 60% at 100% 0%, rgba(100, 140, 210, 0.16), transparent 65%),
+    radial-gradient(90% 80% at 50% 100%, rgba(29, 39, 57, 0.8), transparent 70%),
+    var(--bg-app);
+}
+
+.mac-window {
+  min-height: 100vh;
+  background: transparent;
+  color: var(--text-primary);
+  padding: 1rem;
+}
+
+.mac-panel {
+  background: linear-gradient(180deg, rgba(38, 47, 63, 0.92), rgba(29, 37, 52, 0.88));
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-soft);
+  backdrop-filter: blur(var(--blur-glass));
+}
+
+.mac-panel-soft {
+  background: var(--bg-glass);
+  border: 1px solid rgba(160, 179, 207, 0.2);
+  border-radius: var(--radius-md);
+  backdrop-filter: blur(calc(var(--blur-glass) * 0.75));
+}
+
+.mac-toolbar {
+  display: grid;
+  grid-template-columns: minmax(160px, 1fr) auto minmax(240px, 1fr);
+  align-items: center;
+  gap: 1rem;
+  padding: 0.85rem 1rem;
+  background: linear-gradient(180deg, rgba(39, 50, 67, 0.82), rgba(30, 38, 53, 0.78));
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-panel);
+  backdrop-filter: blur(var(--blur-glass));
+}
+
+.mac-segmented {
+  display: inline-flex;
+  gap: 0.35rem;
+  padding: 0.25rem;
+  border-radius: var(--radius-pill);
+  background: rgba(18, 24, 35, 0.6);
+  border: 1px solid rgba(169, 189, 218, 0.2);
+}
+
+.mac-segmented button {
+  border: 0;
+  border-radius: var(--radius-pill);
+  padding: 0.5rem 0.95rem;
+  font-size: 0.82rem;
+  line-height: 1;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: transparent;
+  transition: all 160ms ease;
+}
+
+.mac-segmented button:hover {
+  color: var(--text-primary);
+  background: rgba(126, 152, 193, 0.14);
+}
+
+.mac-segmented button.is-active {
+  color: #f4f8ff;
+  background: linear-gradient(180deg, rgba(111, 167, 255, 0.42), rgba(72, 126, 214, 0.45));
+  box-shadow: inset 0 0 0 1px rgba(205, 222, 248, 0.28);
+}
+
+.mac-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border-radius: var(--radius-pill);
+  border: 1px solid rgba(168, 188, 214, 0.24);
+  background: rgba(19, 25, 35, 0.6);
+  color: var(--text-secondary);
+  font-size: 0.76rem;
+  padding: 0.3rem 0.56rem;
+  white-space: nowrap;
+}
+
+.mac-pill-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+}
+
+.mac-input,
+.mac-select,
+.mac-textarea {
+  width: 100%;
+  border: 1px solid rgba(173, 188, 216, 0.25);
+  background: rgba(19, 24, 34, 0.78);
+  color: var(--text-primary);
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 0.7rem;
+  outline: none;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.mac-input:focus,
+.mac-select:focus,
+.mac-textarea:focus {
+  border-color: rgba(111, 167, 255, 0.72);
+  box-shadow: 0 0 0 3px rgba(111, 167, 255, 0.2);
+}
+
+.mac-button {
+  border: 1px solid rgba(173, 188, 216, 0.25);
+  border-radius: var(--radius-sm);
+  padding: 0.48rem 0.8rem;
+  color: #edf3ff;
+  background: rgba(45, 56, 76, 0.72);
+  font-size: 0.83rem;
+  font-weight: 600;
+  transition: all 160ms ease;
+}
+
+.mac-button:hover {
+  background: rgba(58, 71, 95, 0.86);
+}
+
+.mac-button-primary {
+  background: linear-gradient(180deg, rgba(111, 167, 255, 0.78), rgba(60, 134, 255, 0.74));
+  border-color: rgba(179, 208, 255, 0.5);
+  color: #f7fbff;
+}
+
+.mac-button-primary:hover {
+  background: linear-gradient(180deg, rgba(129, 178, 255, 0.84), rgba(77, 146, 255, 0.8));
+}
+
+.mac-button-success {
+  background: linear-gradient(180deg, rgba(104, 200, 147, 0.78), rgba(58, 153, 107, 0.74));
+  border-color: rgba(152, 222, 184, 0.5);
+}
+
+.mac-button-danger {
+  background: linear-gradient(180deg, rgba(241, 127, 134, 0.76), rgba(186, 76, 84, 0.74));
+  border-color: rgba(245, 176, 181, 0.48);
+}
+
+.mac-scroll::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.mac-scroll::-webkit-scrollbar-thumb {
+  background: rgba(152, 174, 209, 0.4);
+  border-radius: 9999px;
+}
+
+.slider::-webkit-slider-thumb {
+  appearance: none;
+  height: 18px;
+  width: 18px;
+  border-radius: 50%;
+  background: var(--accent-blue);
+  border: 2px solid rgba(205, 222, 248, 0.5);
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.slider::-webkit-slider-thumb:hover {
+  background: var(--accent-blue-strong);
+  transform: scale(1.06);
+}
+
+.slider::-moz-range-thumb {
+  height: 18px;
+  width: 18px;
+  border-radius: 50%;
+  background: var(--accent-blue);
+  border: 2px solid rgba(205, 222, 248, 0.5);
+  cursor: pointer;
+}
+
+.slider::-moz-range-track,
+.slider::-webkit-slider-track {
+  height: 8px;
+  border-radius: 4px;
+  background: rgba(101, 118, 144, 0.55);
+}
+
+/* Softly retint legacy gray classes during transition */
+.bg-gray-900 { background-color: rgba(16, 21, 30, 0.78) !important; }
+.bg-gray-800 { background-color: rgba(25, 32, 44, 0.83) !important; }
+.bg-gray-700 { background-color: rgba(34, 43, 58, 0.8) !important; }
+.bg-gray-600 { background-color: rgba(43, 54, 72, 0.88) !important; }
+.border-gray-700 { border-color: rgba(167, 186, 213, 0.22) !important; }
+.border-gray-600 { border-color: rgba(167, 186, 213, 0.28) !important; }
+.text-gray-500 { color: var(--text-muted) !important; }
+.text-gray-400 { color: #9aa8bf !important; }
+.text-gray-300 { color: var(--text-secondary) !important; }
+
+@media (max-width: 980px) {
+  .mac-toolbar {
+    grid-template-columns: 1fr;
+    gap: 0.65rem;
+  }
+}

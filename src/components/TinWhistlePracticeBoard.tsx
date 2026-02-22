@@ -52,7 +52,7 @@ export const TinWhistlePracticeBoard: React.FC<TinWhistlePracticeBoardProps> = (
   className = ''
 }) => {
   return (
-    <div className={`bg-gray-900 rounded-lg p-6 ${className}`}>
+    <div className={`mac-panel p-6 ${className}`}>
       <div className="flex">
         {/* Main note board - showing all notes */}
         <div className="flex-1">
@@ -65,9 +65,9 @@ export const TinWhistlePracticeBoard: React.FC<TinWhistlePracticeBoardProps> = (
               let noteStyle = 'bg-gray-800 border-gray-600'; // Default
               if (currentTargetNote === midiNote) {
                 if (isCorrectNote === true) {
-                  noteStyle = 'bg-green-600 border-green-400 animate-pulse'; // Correctly played with animation
+                  noteStyle = 'bg-green-500/40 border-green-300 animate-pulse'; // Correctly played with animation
                 } else {
-                  noteStyle = 'bg-yellow-600 border-yellow-400 animate-pulse'; // Current target with animation
+                  noteStyle = 'bg-amber-500/35 border-amber-300 animate-pulse'; // Current target with animation
                 }
               }
               
@@ -103,7 +103,7 @@ export const TinWhistlePracticeBoard: React.FC<TinWhistlePracticeBoardProps> = (
                   
                   {/* Helper text */}
                   <div className="text-center mt-3 text-xs text-gray-400">
-                    🔴=covered  ⚪=open
+                    Filled = covered · Empty = open
                   </div>
                 </div>
               );
@@ -112,15 +112,15 @@ export const TinWhistlePracticeBoard: React.FC<TinWhistlePracticeBoardProps> = (
         </div>
         
         {/* Side panel - current play feedback */}
-        <div className="w-72 ml-6 bg-gray-800 rounded-lg p-4">
+        <div className="w-72 ml-6 mac-panel-soft p-4">
           <h3 className="text-lg font-semibold text-white mb-4 text-center">
             Practice Feedback
           </h3>
           
           {currentTargetNote && (
             <div className="mb-6">
-              <div className="text-sm text-yellow-400 mb-2 font-medium">🎯 Target Note:</div>
-              <div className="bg-yellow-600 rounded-lg p-4 text-center">
+              <div className="text-sm text-yellow-300 mb-2 font-medium">Target Note</div>
+              <div className="bg-amber-500/35 rounded-lg p-4 text-center border border-amber-300/45">
                 <div className="text-2xl font-bold text-white mb-3">
                   {midiNoteToName(currentTargetNote)}
                 </div>
@@ -132,15 +132,15 @@ export const TinWhistlePracticeBoard: React.FC<TinWhistlePracticeBoardProps> = (
           {lastPlayedNote && (
             <div className="mb-4">
               <div className="text-sm text-gray-400 mb-2 font-medium">
-                🎵 Last Played:
+                Last Played:
                 {isCorrectNote === true && <span className="ml-2 text-green-400">✓ Correct!</span>}
                 {isCorrectNote === false && <span className="ml-2 text-red-400">✗ Try again</span>}
               </div>
               <div className={`rounded-lg p-4 text-center ${
                 isCorrectNote === true 
-                  ? 'bg-green-600' 
+                  ? 'bg-green-500/35 border border-green-300/40' 
                   : isCorrectNote === false 
-                    ? 'bg-red-600' 
+                    ? 'bg-red-500/35 border border-red-300/40' 
                     : 'bg-gray-700'
               }`}>
                 <div className="text-xl font-bold text-white mb-3">
@@ -153,7 +153,6 @@ export const TinWhistlePracticeBoard: React.FC<TinWhistlePracticeBoardProps> = (
           
           {!currentTargetNote && !lastPlayedNote && (
             <div className="text-center text-gray-400 py-8">
-              <div className="text-5xl mb-4">🎵</div>
               <div className="text-lg mb-2">Ready to Practice!</div>
               <div className="text-sm">
                 Start a practice sequence to see target notes,<br/>

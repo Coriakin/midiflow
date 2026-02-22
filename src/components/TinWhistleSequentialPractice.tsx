@@ -300,7 +300,7 @@ export const TinWhistleSequentialPractice: React.FC<SequentialPracticeProps> = (
   };
 
   return (
-    <div className={`relative bg-gray-900 rounded-lg border border-gray-600 overflow-hidden ${className}`}>
+    <div className={`relative mac-panel border border-gray-600 overflow-hidden ${className}`}>
       {loopModeActive && (
         <div className="bg-gradient-to-r from-indigo-600 to-blue-600 border-b border-indigo-300/40 px-4 py-3">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -323,17 +323,17 @@ export const TinWhistleSequentialPractice: React.FC<SequentialPracticeProps> = (
       )}
 
       {/* Header with metronome */}
-      <div className="bg-gray-800 p-4 border-b border-gray-600">
+      <div className="mac-panel-soft p-4 border-b border-gray-600">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <h3 className="text-lg font-semibold text-white flex items-center gap-2">
             Sequential Practice
             {!hasStarted ? (
-              <span className="text-blue-400 text-sm font-normal animate-pulse">
-                🎵 Play the first note to start
+              <span className="text-blue-300 text-sm font-normal animate-pulse">
+                Play the first note to start
               </span>
             ) : isCompleted ? (
               <span className="text-green-400 text-sm font-normal">
-                ✅ Song Complete!
+                Song Complete
               </span>
             ) : null}
           </h3>
@@ -383,7 +383,7 @@ export const TinWhistleSequentialPractice: React.FC<SequentialPracticeProps> = (
       {/* Main practice area - Horizontally scrollable note layout */}
       <div 
         ref={containerRef}
-        className="relative bg-gray-900 p-6 overflow-x-auto overflow-y-hidden"
+        className="relative bg-gray-900/35 p-6 overflow-x-auto overflow-y-hidden mac-scroll"
         style={{ minHeight: '400px' }}
       >
         {/* Horizontally arranged practice notes */}
@@ -443,11 +443,11 @@ export const TinWhistleSequentialPractice: React.FC<SequentialPracticeProps> = (
                 {/* Fingering chart */}
                 <div className={`transition-all duration-500 ${
                   showGreenFeedback
-                    ? 'bg-green-500 p-3 rounded-lg shadow-lg scale-110 border-2 border-green-300'
+                    ? 'bg-green-500/35 p-3 rounded-lg shadow-lg scale-110 border-2 border-green-300'
                     : showRedFeedback
-                      ? 'bg-red-500 p-3 rounded-lg shadow-lg scale-110 border-2 border-red-300'
+                      ? 'bg-red-500/35 p-3 rounded-lg shadow-lg scale-110 border-2 border-red-300'
                       : isCurrentNote
-                        ? 'bg-blue-600 p-3 rounded-lg shadow-lg'
+                        ? 'bg-blue-500/35 p-3 rounded-lg shadow-lg'
                         : isPastNote || isCompleted
                           ? 'opacity-40 filter grayscale bg-gray-800 p-2 rounded'
                           : 'bg-gray-700 p-2 rounded border border-gray-600'
@@ -461,9 +461,9 @@ export const TinWhistleSequentialPractice: React.FC<SequentialPracticeProps> = (
       </div>
 
       {/* Footer with instructions */}
-      <div className="bg-gray-800 p-3 border-t border-gray-600">
+      <div className="mac-panel-soft p-3 border-t border-gray-600">
         <div className="text-sm text-gray-300 text-center">
-          🎵 Play each note in sequence • Practice at your own pace
+          Play each note in sequence at your own pace.
           <div className="mt-2 text-xs text-gray-400">
             Tip: Click a note, then Shift-click another note to loop a section.
             <button

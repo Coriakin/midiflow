@@ -86,12 +86,12 @@ export const SongInput: React.FC<SongInputProps> = ({ onSongCreate, className = 
   const previewNotes = parseNotes(noteInput);
 
   return (
-    <div className={`bg-gray-800 rounded-lg p-4 ${className}`}>
+    <div className={`mac-panel p-4 ${className}`}>
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-lg font-semibold text-white">Create Practice Song (Manual)</h3>
         <button
           onClick={() => setIsExpanded(!isExpanded)}
-          className="px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded text-sm text-white"
+          className="mac-button mac-button-primary text-sm"
         >
           {isExpanded ? 'Collapse' : 'Add Song'}
         </button>
@@ -109,7 +109,7 @@ export const SongInput: React.FC<SongInputProps> = ({ onSongCreate, className = 
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Enter song title"
-              className="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-600 focus:border-blue-500 focus:outline-none"
+              className="mac-input"
             />
           </div>
 
@@ -123,7 +123,7 @@ export const SongInput: React.FC<SongInputProps> = ({ onSongCreate, className = 
               onChange={(e) => setNoteInput(e.target.value)}
               placeholder="Enter notes (e.g., C4 D4 E4 F4 G4 or 60 62 64 65 67)"
               rows={3}
-              className="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-600 focus:border-blue-500 focus:outline-none"
+              className="mac-textarea"
             />
             <div className="text-xs text-gray-400 mt-1">
               You can use note names (C4, F#5) or MIDI numbers (60, 67). Separate with spaces or commas.
@@ -141,7 +141,7 @@ export const SongInput: React.FC<SongInputProps> = ({ onSongCreate, className = 
               max="200"
               value={tempo}
               onChange={(e) => setTempo(Number(e.target.value))}
-              className="bg-gray-700 text-white px-3 py-1 rounded border border-gray-600 focus:border-blue-500 focus:outline-none w-20"
+              className="mac-input w-20"
             />
           </div>
 
@@ -149,12 +149,12 @@ export const SongInput: React.FC<SongInputProps> = ({ onSongCreate, className = 
           {previewNotes.length > 0 && (
             <div>
               <div className="text-sm font-medium text-gray-300 mb-2">Preview:</div>
-              <div className="bg-gray-700 p-3 rounded">
+              <div className="mac-panel-soft p-3">
                 <div className="flex flex-wrap gap-2">
                   {previewNotes.map((note, index) => (
                     <span
                       key={index}
-                      className="bg-blue-600 text-white px-2 py-1 rounded text-sm"
+                      className="px-2 py-1 rounded text-sm bg-blue-500/30 border border-blue-300/40 text-blue-100"
                     >
                       {midiNoteToName(note)} ({note})
                     </span>
@@ -172,13 +172,13 @@ export const SongInput: React.FC<SongInputProps> = ({ onSongCreate, className = 
             <button
               onClick={handleCreate}
               disabled={!title.trim() || previewNotes.length === 0}
-              className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed rounded text-white"
+              className="mac-button mac-button-success disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Create Song
             </button>
             <button
               onClick={() => setIsExpanded(false)}
-              className="px-4 py-2 bg-gray-600 hover:bg-gray-700 rounded text-white"
+              className="mac-button"
             >
               Cancel
             </button>

@@ -892,10 +892,10 @@ function App() {
   // Show practice completion notification
   const showPracticeCompletion = (sequenceName: string) => {
     const messages = [
-      `🎉 Excellent! You completed the ${sequenceName}!`,
-      `🌟 Well done! ${sequenceName} finished perfectly!`,
-      `✨ Fantastic! You've mastered the ${sequenceName}!`,
-      `🎵 Great job! ${sequenceName} complete!`,
+      `Excellent! You completed the ${sequenceName}.`,
+      `Well done! ${sequenceName} finished perfectly.`,
+      `Fantastic! You've mastered the ${sequenceName}.`,
+      `Great job! ${sequenceName} complete.`,
     ];
     const randomMessage = messages[Math.floor(Math.random() * messages.length)];
     
@@ -938,82 +938,64 @@ function App() {
 
   if (!isSupported) {
     return (
-      <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
-        <div className="text-center">
+      <div className="min-h-screen mac-window flex items-center justify-center">
+        <div className="text-center mac-panel p-8">
           <h1 className="text-4xl font-bold mb-4">MIDIFlow</h1>
-          <p className="text-xl text-red-400 mb-4">WebMIDI not supported</p>
-          <p className="text-gray-400">Please use Chrome or a Chromium-based browser</p>
+          <p className="text-xl text-red-300 mb-4">WebMIDI not supported</p>
+          <p className="text-gray-400">Please use Chrome or another Chromium-based browser.</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
-      <style>
-        {`
-          /* Custom slider styles */
-          .slider::-webkit-slider-thumb {
-            appearance: none;
-            height: 18px;
-            width: 18px;
-            border-radius: 50%;
-            background: #3B82F6;
-            border: 2px solid #1E40AF;
-            cursor: pointer;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-          }
-          
-          .slider::-webkit-slider-thumb:hover {
-            background: #2563EB;
-            transform: scale(1.1);
-          }
-          
-          .slider::-moz-range-thumb {
-            height: 18px;
-            width: 18px;
-            border-radius: 50%;
-            background: #3B82F6;
-            border: 2px solid #1E40AF;
-            cursor: pointer;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-          }
-          
-          .slider::-moz-range-thumb:hover {
-            background: #2563EB;
-            transform: scale(1.1);
-          }
-          
-          .slider::-webkit-slider-track {
-            height: 8px;
-            border-radius: 4px;
-          }
-          
-          .slider::-moz-range-track {
-            height: 8px;
-            border-radius: 4px;
-            background: #4B5563;
-          }
-        `}
-      </style>
-      <header className="bg-gray-800 p-4">
-        <div className="container mx-auto">
-          <h1 className="text-3xl font-bold text-center">🎵 MIDIFlow</h1>
-          <p className="text-center text-gray-400 mt-2">Real-time MIDI practice with visual feedback</p>
-          
-          {/* MIDI Connection Status - Compact at top */}
-          <div className="mt-4 flex items-center justify-center space-x-6 text-sm">
-            <div className="flex items-center space-x-2">
-              <div className={`w-3 h-3 rounded-full ${isSupported && isInitialized ? 'bg-green-500' : 'bg-red-500'}`}></div>
-              <span className="text-gray-300">WebMIDI Support: {isSupported && isInitialized ? 'Yes' : 'No'}</span>
+    <div className="mac-window">
+      <header className="mb-4">
+        <div className="mac-toolbar">
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight">MIDIFlow</h1>
+            <p className="text-xs text-gray-400 mt-1">Real-time MIDI practice workspace</p>
+          </div>
+
+          <div className="mac-segmented">
+            <button
+              onClick={() => setActiveTab('practice')}
+              className={activeTab === 'practice' ? 'is-active' : ''}
+            >
+              Practice
+            </button>
+            <button
+              onClick={() => setActiveTab('d-scale')}
+              className={isDScaleTabActive ? 'is-active' : ''}
+            >
+              D Scale
+            </button>
+            <button
+              onClick={() => setActiveTab('settings')}
+              className={activeTab === 'settings' ? 'is-active' : ''}
+            >
+              Settings
+            </button>
+            <button
+              onClick={() => setActiveTab('about')}
+              className={activeTab === 'about' ? 'is-active' : ''}
+            >
+              About
+            </button>
+          </div>
+
+          <div className="flex items-center justify-end gap-2 flex-wrap">
+            <div className="mac-pill">
+              <span className={`mac-pill-dot ${isSupported && isInitialized ? 'bg-green-400' : 'bg-red-400'}`}></span>
+              <span>WebMIDI {isSupported && isInitialized ? 'Ready' : 'Unavailable'}</span>
             </div>
-            <div className="flex items-center space-x-2">
-              <div className={`w-3 h-3 rounded-full ${isInitialized ? 'bg-green-500' : 'bg-yellow-500'}`}></div>
-              <span className="text-gray-300">Initialized: {isInitialized ? 'Yes' : 'No'}</span>
+            <div className="mac-pill">
+              <span className={`mac-pill-dot ${isInitialized ? 'bg-green-400' : 'bg-amber-400'}`}></span>
+              <span>Init {isInitialized ? 'Yes' : 'No'}</span>
             </div>
-            <div className="flex items-center space-x-2">
-              <div className={`w-3 h-3 rounded-full ${connectedDevices.length > 0 ? 'bg-green-500' : 'bg-gray-500'}`}></div>
-              <span className="text-gray-300">Connected Devices: {connectedDevices.length}</span>
+            <div className="mac-pill">
+              <span className={`mac-pill-dot ${connectedDevices.length > 0 ? 'bg-green-400' : 'bg-slate-400'}`}></span>
+              <span>Devices {connectedDevices.length}</span>
             </div>
           </div>
         </div>
@@ -1021,103 +1003,57 @@ function App() {
 
       {/* Practice Completion Notification */}
       {showCompletionMessage && (
-        <div className="fixed top-4 right-4 z-50 transition-all duration-500 ease-in-out transform">
-          <div className="bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-4 rounded-lg shadow-xl border-2 border-green-400 max-w-sm animate-pulse relative">
+        <div className="fixed top-5 right-5 z-50 transition-all duration-300 ease-in-out transform">
+          <div className="mac-panel-soft text-white px-5 py-4 rounded-2xl shadow-xl border border-green-400/35 max-w-sm relative">
             {/* Dismiss button */}
             <button
               onClick={() => setShowCompletionMessage(false)}
-              className="absolute top-2 right-2 text-white hover:text-gray-200 text-xl leading-none"
+              className="absolute top-2 right-3 text-gray-300 hover:text-white text-xl leading-none"
               title="Dismiss"
             >
               ×
             </button>
             
             <div className="flex items-center space-x-3 pr-6">
-              <div className="text-3xl animate-bounce">🎉</div>
+              <div className="w-3 h-3 rounded-full bg-green-400"></div>
               <div>
                 <div className="font-bold text-lg">Practice Complete!</div>
-                <div className="text-sm opacity-90">{completionMessage.replace(/^🎉|🌟|✨|🎵\s*/, '')}</div>
+                <div className="text-sm opacity-90">{completionMessage}</div>
               </div>
             </div>
             
             {/* Progress bar animation */}
-            <div className="mt-3 w-full bg-green-700 rounded-full h-1">
-              <div className="bg-white h-1 rounded-full animate-pulse" style={{ width: '100%' }}></div>
+            <div className="mt-3 w-full bg-green-900/60 rounded-full h-1">
+              <div className="bg-green-300 h-1 rounded-full" style={{ width: '100%' }}></div>
             </div>
           </div>
         </div>
       )}
 
-      <main className="container mx-auto p-4">
+      <main className="container mx-auto px-1 pb-6">
         {/* Error Display */}
         {error && (
-          <div className="bg-red-800 border border-red-600 text-red-200 px-4 py-3 rounded mb-4">
+          <div className="mac-panel-soft border border-red-400/40 text-red-100 px-4 py-3 rounded mb-4">
             <strong>Error:</strong> {error}
           </div>
         )}
-
-        {/* Tab Navigation */}
-        <div className="bg-gray-900 border border-gray-700 rounded-t-lg mb-2 overflow-hidden shadow-[0_0_0_1px_rgba(255,255,255,0.04)]">
-          <div className="flex">
-            <button
-              onClick={() => setActiveTab('practice')}
-              className={`flex-1 text-center px-6 py-3 text-sm font-medium transition-colors border-r border-gray-700 ${
-                activeTab === 'practice'
-                  ? 'text-blue-300 bg-gray-900 border-b-2 border-blue-400'
-                  : 'text-gray-300 bg-gray-800 hover:text-white hover:bg-gray-700 border-b border-transparent'
-              }`}
-            >
-              Practice
-            </button>
-            <button
-              onClick={() => setActiveTab('d-scale')}
-              className={`flex-1 text-center px-6 py-3 text-sm font-medium transition-colors border-r border-gray-700 ${
-                isDScaleTabActive
-                  ? 'text-blue-300 bg-gray-900 border-b-2 border-blue-400'
-                  : 'text-gray-300 bg-gray-800 hover:text-white hover:bg-gray-700 border-b border-transparent'
-              }`}
-            >
-              D Scale
-            </button>
-            <button
-              onClick={() => setActiveTab('settings')}
-              className={`flex-1 text-center px-6 py-3 text-sm font-medium transition-colors border-r border-gray-700 ${
-                activeTab === 'settings'
-                  ? 'text-blue-300 bg-gray-900 border-b-2 border-blue-400'
-                  : 'text-gray-300 bg-gray-800 hover:text-white hover:bg-gray-700 border-b border-transparent'
-              }`}
-            >
-              Settings
-            </button>
-            <button
-              onClick={() => setActiveTab('about')}
-              className={`flex-1 text-center px-6 py-3 text-sm font-medium transition-colors ${
-                activeTab === 'about'
-                  ? 'text-blue-300 bg-gray-900 border-b-2 border-blue-400'
-                  : 'text-gray-300 bg-gray-800 hover:text-white hover:bg-gray-700 border-b border-transparent'
-              }`}
-            >
-              About
-            </button>
-          </div>
-        </div>
 
         {/* Tab Content */}
         {activeTab === 'settings' && (
           <div className="space-y-6">
             {/* Settings */}
-            <div className="bg-gray-800 rounded-lg p-4">
+            <div className="mac-panel p-4">
               <h2 className="text-xl font-semibold mb-3">Settings</h2>
               
               {/* Instrument Selection */}
-              <div className="bg-gray-700 p-3 rounded mb-4">
+              <div className="mac-panel-soft p-3 rounded mb-4">
                 <h3 className="font-medium mb-2">Instrument Settings:</h3>
                 <div className="flex flex-wrap gap-2">
                   <label className="text-sm text-gray-300">Select your instrument:</label>
                   <select
                     value={selectedInstrument}
                     onChange={(e) => setSelectedInstrument(e.target.value as InstrumentType)}
-                    className="bg-gray-600 text-white px-3 py-1 rounded text-sm"
+                    className="mac-select text-sm"
                   >
                     <option value="tin-whistle">Tin Whistle</option>
                     <option value="flute">Flute</option>
@@ -1145,7 +1081,7 @@ function App() {
                           max="127"
                           value={customRangeMin}
                           onChange={(e) => setCustomRangeMin(Number(e.target.value))}
-                          className="bg-gray-700 text-white px-2 py-1 rounded text-sm w-16"
+                          className="mac-input text-sm w-16"
                         />
                         <span className="text-xs text-gray-400">({midiNoteToName(customRangeMin)})</span>
                       </div>
@@ -1157,7 +1093,7 @@ function App() {
                           max="127"
                           value={customRangeMax}
                           onChange={(e) => setCustomRangeMax(Number(e.target.value))}
-                          className="bg-gray-700 text-white px-2 py-1 rounded text-sm w-16"
+                          className="mac-input text-sm w-16"
                         />
                         <span className="text-xs text-gray-400">({midiNoteToName(customRangeMax)})</span>
                       </div>
@@ -1170,7 +1106,7 @@ function App() {
               </div>
               
               {/* Debug Information */}
-              <div className="bg-gray-700 p-3 rounded mb-4 text-sm">
+              <div className="mac-panel-soft p-3 rounded mb-4 text-sm">
                 <h3 className="font-medium mb-2">Debug Information:</h3>
                 <div className="space-y-1">
                   <div>Browser: {navigator.userAgent.includes('Chrome') ? 'Chrome/Chromium' : 'Other'}</div>
@@ -1184,13 +1120,13 @@ function App() {
                 <div className="flex gap-2 mt-2">
                   <button
                     onClick={testMIDIAccess}
-                    className="px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded text-sm"
+                    className="mac-button mac-button-primary text-sm"
                   >
                     Test Direct MIDI Access
                   </button>
                   <button
                     onClick={initializeMIDI}
-                    className="px-3 py-1 bg-green-600 hover:bg-green-700 rounded text-sm"
+                    className="mac-button mac-button-success text-sm"
                   >
                     Manual MIDI Init
                   </button>
@@ -1218,7 +1154,7 @@ function App() {
                   <h3 className="text-lg font-medium mb-2">Available Devices:</h3>
                   <div className="space-y-2">
                     {devices.map(device => (
-                      <div key={device.id} className="flex items-center justify-between bg-gray-700 p-3 rounded">
+                      <div key={device.id} className="flex items-center justify-between mac-panel-soft p-3 rounded">
                         <div>
                           <span className="font-medium">{device.name}</span>
                           <span className="text-gray-400 ml-2">({device.manufacturer})</span>
@@ -1232,7 +1168,7 @@ function App() {
                           {device.state === 'connected' ? (
                             <button
                               onClick={() => disconnectFromDevice(device.id)}
-                              className="px-3 py-1 bg-red-600 hover:bg-red-700 rounded text-sm"
+                              className="mac-button mac-button-danger text-sm"
                             >
                               Disconnect
                             </button>
@@ -1240,7 +1176,7 @@ function App() {
                             <button
                               onClick={() => connectToDevice(device.id)}
                               disabled={isConnecting}
-                              className="px-3 py-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 rounded text-sm"
+                              className="mac-button mac-button-primary text-sm disabled:opacity-60"
                             >
                               {isConnecting ? 'Connecting...' : 'Connect'}
                             </button>
@@ -1256,7 +1192,7 @@ function App() {
               <div className="mt-4 grid grid-cols-1 md:grid-cols-1 gap-4">
                 {/* Last Note Display */}
                 {lastNote && (
-                  <div className="p-3 bg-gray-700 rounded">
+                  <div className="p-3 mac-panel-soft rounded">
                     <strong>Last Note:</strong> {midiNoteToName(lastNote.note)} 
                     (MIDI {lastNote.note}) - {lastNote.type} 
                     <span className="text-gray-400 ml-2">
@@ -1269,9 +1205,9 @@ function App() {
                 )}
               </div>
               {process.env.NODE_ENV === 'development' && (
-                <div className="bg-gray-800 rounded-lg p-4">
+                <div className="mac-panel p-4">
                   <h2 className="text-xl font-semibold mb-3">Development Tools</h2>
-                  <div className="bg-gray-700 rounded-lg p-3">
+                  <div className="mac-panel-soft p-3">
                     <h4 className="text-sm font-medium text-gray-300 mb-2">Storage Management</h4>
                     <div className="flex gap-2">
                       <button
@@ -1290,12 +1226,12 @@ Current storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs 
                             setCurrentTargetNote(null);
                             setIsCorrectNote(null);
                             setLastPlayedNote(null);
-                            alert('✅ All stored songs cleared!');
+                            alert('All stored songs cleared.');
                           }
                         }}
-                        className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-sm"
+                        className="mac-button mac-button-danger text-sm"
                       >
-                        🗑️ Clear Storage
+                        Clear Storage
                       </button>
                       <button
                         onClick={() => {
@@ -1306,9 +1242,9 @@ Current storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs 
 📝 Manual Songs: ${info.manualSongs}
 💾 Total Size: ${info.totalSize}`);
                         }}
-                        className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm"
+                        className="mac-button mac-button-primary text-sm"
                       >
-                        📊 Storage Info
+                        Storage Info
                       </button>
                     </div>
                   </div>
@@ -1320,14 +1256,14 @@ Current storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs 
 
         {activeTab === 'practice' && (
           <div className="space-y-6">
-          <div className="bg-gray-900 border border-gray-700 rounded-lg mb-4 p-1">
-            <div className="flex overflow-hidden rounded-lg shadow-inner">
+          <div className="mac-panel-soft mb-4 p-1">
+            <div className="mac-segmented w-full justify-center">
               <button
                 onClick={() => setPracticeSubTab('library')}
                 className={`flex-1 text-center px-4 py-2 text-sm font-semibold transition-colors ${
                   practiceSubTab === 'library'
-                    ? 'bg-gray-800 text-white'
-                    : 'bg-gray-700 text-gray-300 hover:text-white hover:bg-gray-600'
+                    ? 'is-active'
+                    : ''
                 }`}
               >
                 Song Library
@@ -1336,8 +1272,8 @@ Current storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs 
                 onClick={() => setPracticeSubTab('practice')}
                 className={`flex-1 text-center px-4 py-2 text-sm font-semibold transition-colors ${
                   practiceSubTab === 'practice'
-                    ? 'bg-blue-600 text-white shadow-[0_0_0_2px_rgba(59,130,246,0.4)]'
-                    : 'bg-gray-700 text-gray-300 hover:text-white hover:bg-gray-600'
+                    ? 'is-active'
+                    : ''
                 }`}
               >
                 Practice Song
@@ -1346,8 +1282,8 @@ Current storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs 
                 onClick={() => setPracticeSubTab('create')}
                 className={`flex-1 text-center px-4 py-2 text-sm font-semibold transition-colors ${
                   practiceSubTab === 'create'
-                    ? 'bg-gray-800 text-white'
-                    : 'bg-gray-700 text-gray-300 hover:text-white hover:bg-gray-600'
+                    ? 'is-active'
+                    : ''
                 }`}
               >
                 Create Practice Song
@@ -1360,7 +1296,7 @@ Current storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs 
 
             {practiceSubTab === 'library' && (
               <>
-                <div className="bg-gray-800 rounded-lg p-4">
+                <div className="mac-panel p-4">
                   {/* Song Selection */}
                   <div>
                     <h4 className="text-sm font-medium text-gray-300 mb-2">Select a song to practice:</h4>
@@ -1372,7 +1308,7 @@ Current storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs 
                         <span className="w-2 h-2 bg-green-400 rounded-full mr-2"></span>
                         Song Library ({builtInSongs.length})
                       </h5>
-                      <div className="bg-gray-700 rounded-lg p-5 min-h-[300px] overflow-y-auto">
+                      <div className="mac-panel-soft p-5 min-h-[300px] overflow-y-auto mac-scroll">
                         <div className="space-y-2">
                           {builtInSongs.map(song => (
                             <div
@@ -1415,7 +1351,7 @@ Current storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs 
                         <span className="w-2 h-2 bg-blue-400 rounded-full mr-2"></span>
                         Imported Songs ({midiSongs.length + songs.length})
                       </h5>
-                      <div className="bg-gray-700 rounded-lg p-3 max-h-48 overflow-y-auto">
+                      <div className="mac-panel-soft p-3 max-h-48 overflow-y-auto mac-scroll">
                         <div className="space-y-1">
                           {/* MIDI Songs */}
                           {midiSongs.map(song => (
@@ -1436,7 +1372,7 @@ Current storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs 
                                           if (e.key === 'Enter') saveEditing(song.id, true);
                                           if (e.key === 'Escape') cancelEditing();
                                         }}
-                                        className="bg-gray-600 text-white px-2 py-1 rounded text-sm flex-1"
+                                        className="mac-input text-sm flex-1"
                                         autoFocus
                                         onClick={(e) => e.stopPropagation()}
                                       />
@@ -1510,7 +1446,7 @@ Current storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs 
                                       console.error('Failed to extract notes from track:', error);
                                     }
                                   }}
-                                  className="bg-gray-600 text-white px-2 py-1 rounded text-xs"
+                                  className="mac-select text-xs"
                                   onClick={(e) => e.stopPropagation()}
                                 >
                                   {song.availableTracks.map((track, index) => (
@@ -1527,7 +1463,7 @@ Current storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs 
                                     setPreviewSong(song);
                                     setShowPreview(true);
                                   }}
-                                  className="bg-purple-600 hover:bg-purple-500 text-white px-2 py-1 rounded text-xs flex items-center space-x-1"
+                                  className="mac-button text-xs flex items-center space-x-1"
                                   title="Preview MIDI track"
                                 >
                                   <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
@@ -1542,7 +1478,7 @@ Current storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs 
                                     e.stopPropagation();
                                     startEditing(song.id, song.title);
                                   }}
-                                  className="bg-blue-600 hover:bg-blue-500 text-white px-2 py-1 rounded text-xs"
+                                  className="mac-button mac-button-primary text-xs"
                                   title="Rename song"
                                 >
                                   <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
@@ -1558,7 +1494,7 @@ Current storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs 
                                       deleteMidiSong(song.id);
                                     }
                                   }}
-                                  className="bg-red-600 hover:bg-red-500 text-white px-2 py-1 rounded text-xs"
+                                  className="mac-button mac-button-danger text-xs"
                                   title="Delete song"
                                 >
                                   <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
@@ -1602,7 +1538,7 @@ Current storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs 
                                           if (e.key === 'Enter') saveEditing(song.id, false);
                                           if (e.key === 'Escape') cancelEditing();
                                         }}
-                                        className="bg-gray-600 text-white px-2 py-1 rounded text-sm flex-1"
+                                        className="mac-input text-sm flex-1"
                                         autoFocus
                                         onClick={(e) => e.stopPropagation()}
                                       />
@@ -1658,7 +1594,7 @@ Current storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs 
                                     e.stopPropagation();
                                     startEditing(song.id, song.title);
                                   }}
-                                  className="bg-blue-600 hover:bg-blue-500 text-white px-2 py-1 rounded text-xs"
+                                  className="mac-button mac-button-primary text-xs"
                                   title="Rename song"
                                 >
                                   <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
@@ -1672,7 +1608,7 @@ Current storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs 
                                       deleteManualSong(song.id);
                                     }
                                   }}
-                                  className="bg-red-600 hover:bg-red-500 text-white px-2 py-1 rounded text-xs"
+                                  className="mac-button mac-button-danger text-xs"
                                   title="Delete song"
                                 >
                                   <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
@@ -1689,7 +1625,7 @@ Current storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs 
                   )}
 
                   {(builtInSongs.length === 0 && midiSongs.length === 0 && songs.length === 0) && (
-                    <div className="bg-gray-700 rounded-lg p-4">
+                    <div className="mac-panel-soft p-4">
                       <div className="text-center text-gray-500 py-4">
                         No songs available. Create a song or upload a MIDI file above to get started.
                       </div>
@@ -1703,7 +1639,7 @@ Current storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs 
             {practiceSubTab === 'practice' && (
               <>
                 {!selectedSong ? (
-                  <div className="bg-gray-800 rounded-lg p-4 text-center text-gray-400">
+                  <div className="mac-panel p-4 text-center text-gray-400">
                     Select a song from the library to start practicing.
                   </div>
                 ) : (
@@ -1723,7 +1659,7 @@ Current storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs 
                     )}
 
                     {/* Practice Area */}
-                    <div className="bg-gray-800 rounded-lg p-4">
+                    <div className="mac-panel p-4">
                       <h2 className="text-xl font-semibold mb-3">Practice Area</h2>
                       
                       <div className="grid grid-cols-1 gap-4">
@@ -1753,7 +1689,7 @@ Current storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs 
                               />
                             )
                           ) : (
-                            <div className="bg-gray-700 rounded-lg p-8 text-center">
+                            <div className="mac-panel-soft p-8 text-center">
                               <h3 className="text-lg font-medium text-gray-300 mb-4">
                                 {selectedInstrument.charAt(0).toUpperCase() + selectedInstrument.slice(1).replace('-', ' ')} Practice
                               </h3>
@@ -1793,11 +1729,11 @@ Current storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs 
 
             {practiceSubTab === 'create' && (
               <>
-                <div className="bg-gray-800 rounded-lg p-4">
+                <div className="mac-panel p-4">
                   <h2 className="text-xl font-semibold mb-3">Create Practice Song (Manual)</h2>
                   <SongInput onSongCreate={handleSongCreate} />
                 </div>
-                <div className="bg-gray-800 rounded-lg p-4">
+                <div className="mac-panel p-4">
                   <h2 className="text-xl font-semibold mb-3">Import MIDI File</h2>
                   <MIDIFileUploader onMIDISongCreate={handleMIDISongCreate} />
                 </div>
@@ -1838,7 +1774,7 @@ Current storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs 
         {activeTab === 'about' && (
           <div className="space-y-6">
             {/* About */}
-            <div className="bg-gray-800 rounded-lg p-6">
+            <div className="mac-panel p-6">
               {aboutError ? (
                 <div className="text-center py-8">
                   <div className="text-red-400 mb-2">Error loading About content</div>

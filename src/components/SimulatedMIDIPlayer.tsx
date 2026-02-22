@@ -303,31 +303,31 @@ export const SimulatedMIDIPlayer: React.FC<SimulatedMIDIPlayerProps> = ({
   }
 
   return (
-    <div className={`border-2 rounded-lg p-4 mb-4 ${
+    <div className={`mac-panel p-4 mb-4 ${
       playerState.isPlaying 
-        ? 'bg-purple-900 border-purple-400 shadow-lg shadow-purple-500/20' 
-        : 'bg-purple-900 border-purple-500'
+        ? 'border-blue-400/50 shadow-lg shadow-blue-500/20' 
+        : 'border-gray-600'
     }`}>
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center">
-          <span className={`text-lg font-bold mr-2 ${
-            playerState.isPlaying ? 'text-purple-200 animate-pulse' : 'text-purple-300'
-          }`}>🎭</span>
+            <span className={`text-lg font-bold mr-2 ${
+            playerState.isPlaying ? 'text-blue-200 animate-pulse' : 'text-blue-300'
+          }`}>Dev</span>
           <h3 className="text-white font-semibold">Simulated MIDI Player</h3>
-          <span className="ml-2 text-xs bg-purple-700 text-purple-200 px-2 py-1 rounded">
+          <span className="ml-2 text-xs bg-gray-700 text-gray-200 px-2 py-1 rounded">
             DEBUG TOOL
           </span>
           {playerState.isPlaying && (
             <span className="ml-2 text-xs bg-green-600 text-white px-2 py-1 rounded animate-pulse">
-              ▶ ACTIVE
+              ACTIVE
             </span>
           )}
         </div>
         <button
           onClick={() => setIsExpanded(!isExpanded)}
-          className="text-purple-300 hover:text-white text-sm"
+          className="text-gray-300 hover:text-white text-sm"
         >
-          {isExpanded ? '▼ Collapse' : '▶ Expand'}
+          {isExpanded ? 'Collapse' : 'Expand'}
         </button>
       </div>
 
@@ -336,11 +336,11 @@ export const SimulatedMIDIPlayer: React.FC<SimulatedMIDIPlayerProps> = ({
           <div className="grid grid-cols-2 gap-4 mb-4">
             {/* Speed Control */}
             <div>
-              <label className="block text-purple-300 text-sm mb-1">Speed</label>
+              <label className="block text-gray-300 text-sm mb-1">Speed</label>
               <select
                 value={playerState.speed}
                 onChange={(e) => setPlayerState(prev => ({ ...prev, speed: parseFloat(e.target.value) }))}
-                className="w-full bg-purple-800 text-white border border-purple-600 rounded px-2 py-1 text-sm"
+                className="mac-select text-sm"
                 disabled={playerState.isPlaying}
               >
                 <option value={0.125}>0.5x (Very Slow)</option>
@@ -355,7 +355,7 @@ export const SimulatedMIDIPlayer: React.FC<SimulatedMIDIPlayerProps> = ({
 
             {/* Failure Rate Control */}
             <div>
-              <label className="block text-purple-300 text-sm mb-1">
+              <label className="block text-gray-300 text-sm mb-1">
                 Failure Rate: {playerState.failureRate}%
               </label>
               <input
@@ -371,12 +371,12 @@ export const SimulatedMIDIPlayer: React.FC<SimulatedMIDIPlayerProps> = ({
           </div>
 
           <div className="mb-4">
-            <label className="flex items-center gap-2 text-sm text-purple-200">
+            <label className="flex items-center gap-2 text-sm text-gray-200">
               <input
                 type="checkbox"
                 checked={playSound}
                 onChange={(e) => onPlaySoundChange(e.target.checked)}
-                className="h-4 w-4 rounded border-purple-500 bg-purple-800 text-blue-500 focus:ring-blue-400"
+                className="h-4 w-4 rounded border-gray-500 bg-gray-800 text-blue-500 focus:ring-blue-400"
               />
               Play sound
             </label>
@@ -386,45 +386,45 @@ export const SimulatedMIDIPlayer: React.FC<SimulatedMIDIPlayerProps> = ({
             <button
               onClick={startPlaying}
               disabled={playerState.isPlaying || playerState.sequence.length === 0}
-              className="bg-green-600 hover:bg-green-700 disabled:bg-gray-600 text-white px-3 py-1 rounded text-sm font-medium"
+              className="mac-button mac-button-success disabled:opacity-60 text-sm font-medium"
             >
-              ▶ Start
+              Start
             </button>
             
             <button
               onClick={pausePlaying}
               disabled={!playerState.isPlaying}
-              className="bg-yellow-600 hover:bg-yellow-700 disabled:bg-gray-600 text-white px-3 py-1 rounded text-sm font-medium"
+              className="mac-button disabled:opacity-60 text-sm font-medium"
             >
-              ⏸ Pause
+              Pause
             </button>
             
             <button
               onClick={resumePlaying}
               disabled={!playerState.isPaused}
-              className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white px-3 py-1 rounded text-sm font-medium"
+              className="mac-button mac-button-primary disabled:opacity-60 text-sm font-medium"
             >
-              ⏵ Resume
+              Resume
             </button>
             
             <button
               onClick={stopPlaying}
               disabled={!playerState.isPlaying && !playerState.isPaused}
-              className="bg-red-600 hover:bg-red-700 disabled:bg-gray-600 text-white px-3 py-1 rounded text-sm font-medium"
+              className="mac-button mac-button-danger disabled:opacity-60 text-sm font-medium"
             >
-              ⏹ Stop
+              Stop
             </button>
             
             <button
               onClick={restartPlaying}
               disabled={playerState.sequence.length === 0}
-              className="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 text-white px-3 py-1 rounded text-sm font-medium"
+              className="mac-button disabled:opacity-60 text-sm font-medium"
             >
-              🔄 Restart
+              Restart
             </button>
           </div>
 
-          <div className="text-sm text-purple-200">
+          <div className="text-sm text-gray-200">
             <div className="flex justify-between items-center">
               <span>
                 Progress: {currentNoteIndex} / {playerState.sequence.length}
@@ -437,14 +437,14 @@ export const SimulatedMIDIPlayer: React.FC<SimulatedMIDIPlayerProps> = ({
                 )}
               </span>
               <span className="text-xs">
-                Status: {playerState.isPlaying ? '▶ Playing' : playerState.isPaused ? '⏸ Paused' : '⏹ Stopped'}
+                Status: {playerState.isPlaying ? 'Playing' : playerState.isPaused ? 'Paused' : 'Stopped'}
               </span>
             </div>
           </div>
 
           {playerState.sequence.length === 0 && (
             <div className="text-yellow-300 text-sm mt-2">
-              ⚠️ No practice sequence loaded. Start a practice session to enable simulation.
+              No practice sequence loaded. Start a practice session to enable simulation.
             </div>
           )}
         </>

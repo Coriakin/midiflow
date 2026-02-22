@@ -128,7 +128,7 @@ export const MIDIFileUploader: React.FC<MIDIFileUploaderProps> = ({
   );
 
   return (
-    <div className={`bg-gray-700 rounded-lg p-4 ${className}`}>
+    <div className={`mac-panel p-4 ${className}`}>
       <h3 className="text-lg font-medium text-gray-200 mb-3">Upload MIDI File</h3>
       
       {error && (
@@ -139,16 +139,16 @@ export const MIDIFileUploader: React.FC<MIDIFileUploaderProps> = ({
 
       {!parsedFile ? (
         <div
-          className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+          className={`border-2 border-dashed rounded-xl p-6 text-center transition-colors ${
             isDragOver
-              ? 'border-blue-400 bg-blue-900/20'
-              : 'border-gray-500 hover:border-gray-400'
+              ? 'border-blue-300 bg-blue-500/10'
+              : 'border-gray-500/60 hover:border-gray-300'
           }`}
           onDrop={handleDrop}
           onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
           onDragLeave={() => setIsDragOver(false)}
         >
-          <div className="text-4xl mb-2">🎵</div>
+          <div className="text-lg font-semibold mb-2 text-gray-200">MIDI Import</div>
           <div className="text-gray-300 mb-2">
             {isUploading ? 'Parsing MIDI file...' : 'Drop a MIDI file here or click to browse'}
           </div>
@@ -162,7 +162,7 @@ export const MIDIFileUploader: React.FC<MIDIFileUploaderProps> = ({
           />
           <label
             htmlFor="midi-file-input"
-            className="inline-block px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white rounded cursor-pointer text-sm"
+            className="inline-block mac-button mac-button-primary cursor-pointer text-sm"
           >
             {isUploading ? 'Processing...' : 'Browse Files'}
           </label>
@@ -173,7 +173,7 @@ export const MIDIFileUploader: React.FC<MIDIFileUploaderProps> = ({
       ) : (
         <div className="space-y-4">
           {/* File Info */}
-          <div className="bg-gray-600 rounded p-3">
+          <div className="mac-panel-soft p-3">
             <h4 className="font-medium text-gray-200 mb-2">File: {parsedFile.fileName}</h4>
             <div className="text-sm text-gray-400 grid grid-cols-2 gap-2">
               <div>Duration: {Math.round(parsedFile.durationInSeconds)}s</div>
@@ -192,7 +192,7 @@ export const MIDIFileUploader: React.FC<MIDIFileUploaderProps> = ({
               type="text"
               value={songTitle}
               onChange={(e) => setSongTitle(e.target.value)}
-              className="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded text-white text-sm focus:outline-none focus:border-blue-500"
+              className="mac-input text-sm"
               placeholder="Enter song title..."
             />
           </div>
@@ -207,10 +207,10 @@ export const MIDIFileUploader: React.FC<MIDIFileUploaderProps> = ({
                 <div
                   key={index}
                   onClick={() => setSelectedTrackIndex(index)}
-                  className={`p-3 rounded cursor-pointer transition-colors ${
+                  className={`p-3 rounded-lg cursor-pointer transition-colors ${
                     selectedTrackIndex === index
-                      ? 'bg-blue-600 border border-blue-400'
-                      : 'bg-gray-600 hover:bg-gray-500 border border-transparent'
+                      ? 'bg-blue-500/25 border border-blue-300/50'
+                      : 'bg-gray-600/55 hover:bg-gray-500/60 border border-transparent'
                   }`}
                 >
                   <div className="flex items-center space-x-3">
@@ -231,7 +231,7 @@ export const MIDIFileUploader: React.FC<MIDIFileUploaderProps> = ({
             <button
               onClick={handleCreateSong}
               disabled={isUploading || !songTitle.trim()}
-              className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 text-white rounded text-sm"
+              className="mac-button mac-button-success disabled:opacity-50 text-sm"
             >
               {isUploading ? 'Creating...' : 'Create Practice Song'}
             </button>
@@ -267,7 +267,7 @@ export const MIDIFileUploader: React.FC<MIDIFileUploaderProps> = ({
                 }
               }}
               disabled={isUploading}
-              className="px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 text-white rounded text-sm flex items-center space-x-1"
+              className="mac-button disabled:opacity-50 text-sm flex items-center space-x-1"
             >
               <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
@@ -283,7 +283,7 @@ export const MIDIFileUploader: React.FC<MIDIFileUploaderProps> = ({
                 setSelectedTrackIndex(0);
                 setError(null);
               }}
-              className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded text-sm"
+              className="mac-button text-sm"
             >
               Cancel
             </button>

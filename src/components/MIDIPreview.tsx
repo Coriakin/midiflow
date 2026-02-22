@@ -283,8 +283,8 @@ export const MIDIPreview: React.FC<MIDIPreviewProps> = ({
   };
 
   return (
-    <div className={`fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 ${className}`}>
-      <div className="bg-gray-800 rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
+    <div className={`fixed inset-0 bg-black/55 backdrop-blur-sm flex items-center justify-center z-50 ${className}`}>
+      <div className="mac-panel p-6 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto mac-scroll">
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-xl font-semibold text-white">MIDI Preview</h3>
@@ -297,7 +297,7 @@ export const MIDIPreview: React.FC<MIDIPreviewProps> = ({
         </div>
 
         {/* Song Info */}
-        <div className="bg-gray-700 rounded-lg p-4 mb-4">
+        <div className="mac-panel-soft p-4 mb-4">
           <h4 className="font-medium text-white mb-2">{song.title}</h4>
           <div className="text-sm text-gray-300">
             {song.fileName} • {trackData.length} note events
@@ -312,7 +312,7 @@ export const MIDIPreview: React.FC<MIDIPreviewProps> = ({
           <select
             value={currentTrack}
             onChange={(e) => handleTrackChange(parseInt(e.target.value))}
-            className="w-full bg-gray-600 text-white px-3 py-2 rounded"
+            className="mac-select"
           >
             {availableTracks.map((track, index) => (
               <option key={index} value={index}>
@@ -324,7 +324,7 @@ export const MIDIPreview: React.FC<MIDIPreviewProps> = ({
         </div>
 
         {/* Playback Controls */}
-        <div className="bg-gray-700 rounded-lg p-4 mb-4">
+        <div className="mac-panel-soft p-4 mb-4">
           <div className="flex items-center justify-between mb-3">
             <div className="text-sm text-gray-300">
               {formatTime(currentTime)} / {formatTime(totalDuration)}
@@ -335,9 +335,9 @@ export const MIDIPreview: React.FC<MIDIPreviewProps> = ({
           </div>
 
           {/* Progress Bar */}
-          <div className="w-full bg-gray-600 rounded-full h-2 mb-4">
+          <div className="w-full bg-gray-700/70 rounded-full h-2 mb-4">
             <div
-              className="bg-blue-500 h-2 rounded-full transition-all duration-100"
+              className="bg-blue-300 h-2 rounded-full transition-all duration-100"
               style={{ width: `${totalDuration > 0 ? (currentTime / totalDuration) * 100 : 0}%` }}
             ></div>
           </div>
@@ -346,32 +346,32 @@ export const MIDIPreview: React.FC<MIDIPreviewProps> = ({
           <div className="flex items-center justify-center space-x-4">
             <button
               onClick={() => skipTime(-15)}
-              className="px-3 py-2 bg-gray-600 hover:bg-gray-500 text-white rounded text-sm"
+              className="mac-button text-sm"
               title="Skip back 15 seconds"
             >
-              ⏪ -15s
+              Back 15s
             </button>
             
             <button
               onClick={togglePlayback}
-              className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded font-medium"
+              className="mac-button mac-button-primary px-6 py-2 font-medium"
             >
-              {isPlaying ? '⏸️ Pause' : '▶️ Play'}
+              {isPlaying ? 'Pause' : 'Play'}
             </button>
             
             <button
               onClick={() => skipTime(15)}
-              className="px-3 py-2 bg-gray-600 hover:bg-gray-500 text-white rounded text-sm"
+              className="mac-button text-sm"
               title="Skip forward 15 seconds"
             >
-              ⏩ +15s
+              Forward 15s
             </button>
             
             <button
               onClick={stopPlayback}
-              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded text-sm"
+              className="mac-button mac-button-danger text-sm"
             >
-              ⏹️ Stop
+              Stop
             </button>
           </div>
         </div>
