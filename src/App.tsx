@@ -108,7 +108,7 @@ function App() {
 
   // Tab state
   const [activeTab, setActiveTab] = useState<'practice' | 'd-scale' | 'settings' | 'about'>('practice');
-  const [practiceSubTab, setPracticeSubTab] = useState<'library' | 'create'>('library');
+  const [practiceSubTab, setPracticeSubTab] = useState<'library' | 'practice' | 'create'>('library');
   const isDScaleTabActive = activeTab === 'd-scale';
 
   // About content state
@@ -1203,6 +1203,12 @@ Current storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs 
                   Song Library
                 </button>
                 <button
+                  onClick={() => setPracticeSubTab('practice')}
+                  className={`px-4 py-2 rounded-md text-sm font-semibold transition-all ${practiceSubTab === 'practice' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}`}
+                >
+                  Practice Song
+                </button>
+                <button
                   onClick={() => setPracticeSubTab('create')}
                   className={`px-4 py-2 rounded-md text-sm font-semibold transition-all ${practiceSubTab === 'create' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}`}
                 >
@@ -1210,7 +1216,7 @@ Current storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs 
                 </button>
               </div>
               <p className="text-xs text-gray-400">
-                Switch between browsing the song library and creating a new practice song.
+                Switch between browsing the song library, practicing the selected song, and creating a new practice song.
               </p>
             </div>
 
@@ -1236,6 +1242,7 @@ Current storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs 
                               onClick={() => {
                                 setSelectedSong(song);
                                 startPracticeSequence(song.notes);
+                                setPracticeSubTab('practice');
                               }}
                               className={`flex items-center justify-between p-2 rounded cursor-pointer transition-colors ${selectedSong?.id === song.id ? 'bg-blue-600 text-white' : 'hover:bg-gray-600 text-gray-300'}`}
                             >
@@ -1327,6 +1334,7 @@ Current storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs 
                                       onClick={() => {
                                         setSelectedSong(song);
                                         startPracticeSequence(song.notes);
+                                        setPracticeSubTab('practice');
                                       }}
                                     >
                                       {song.title}
@@ -1493,6 +1501,7 @@ Current storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs 
                                       onClick={() => {
                                         setSelectedSong(song);
                                         startPracticeSequence(song.notes);
+                                        setPracticeSubTab('practice');
                                       }}
                                     >
                                       {song.title}
@@ -1553,48 +1562,55 @@ Current storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs 
                   )}
                 </div>
               </div>
+            </>
+          )}
 
-                {/* Practice Controls for Tin Whistle */}
-                {selectedInstrument === 'tin-whistle' && selectedSong && (
-                  <div className="bg-gray-700 rounded-lg p-4">
-                    <h4 className="text-sm font-medium text-gray-300 mb-3">Practice Controls:</h4>
+            {practiceSubTab === 'practice' && (
+              <>
+                {!selectedSong ? (
+                  <div className="bg-gray-800 rounded-lg p-4 text-center text-gray-400">
+                    Select a song from the library to start practicing.
+                  </div>
+                ) : (
+                  <>
+                    {selectedInstrument === 'tin-whistle' && selectedSong && (
+                      <div className="bg-gray-700 rounded-lg p-4">
+                        <h4 className="text-sm font-medium text-gray-300 mb-3">Practice Controls:</h4>
 
-                    <div className="flex gap-2 flex-wrap">
-                      <button
-                        onClick={resetPracticeSequence}
-                        className="px-3 py-1 bg-yellow-600 text-white rounded text-sm hover:bg-yellow-500"
-                        disabled={practiceSequence.length === 0}
-                      >
-                        Reset
-                      </button>
-                      <button
-                        onClick={stopPracticeSequence}
-                        className="px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-500"
-                        disabled={practiceSequence.length === 0}
-                      >
-                        Stop
-                      </button>
-                    </div>
-                    {practiceSequence.length > 0 && (
-                      <div className="mt-2 text-sm text-gray-300">
-                        Progress: {currentNoteIndex + 1} of {practiceSequence.length} notes
-                        {currentTargetNote && (
-                          <span className="ml-2 text-yellow-400">
-                            • Current: {midiNoteToName(currentTargetNote)} (MIDI {currentTargetNote})
-                          </span>
-                        )}
-                        <div className="mt-1 text-xs text-gray-400">
-                          Sequence: {practiceSequence.map((note, idx) => 
-                            `${midiNoteToName(note)}${idx === currentNoteIndex ? '←' : ''}`
-                          ).join(' → ')}
+                        <div className="flex gap-2 flex-wrap">
+                          <button
+                            onClick={resetPracticeSequence}
+                            className="px-3 py-1 bg-yellow-600 text-white rounded text-sm hover:bg-yellow-500"
+                            disabled={practiceSequence.length === 0}
+                          >
+                            Reset
+                          </button>
+                          <button
+                            onClick={stopPracticeSequence}
+                            className="px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-500"
+                            disabled={practiceSequence.length === 0}
+                          >
+                            Stop
+                          </button>
                         </div>
+                        {practiceSequence.length > 0 && (
+                          <div className="mt-2 text-sm text-gray-300">
+                            Progress: {currentNoteIndex + 1} of {practiceSequence.length} notes
+                            {currentTargetNote && (
+                              <span className="ml-2 text-yellow-400">
+                                • Current: {midiNoteToName(currentTargetNote)} (MIDI {currentTargetNote})
+                              </span>
+                            )}
+                            <div className="mt-1 text-xs text-gray-400">
+                              Sequence: {practiceSequence.map((note, idx) => 
+                                `${midiNoteToName(note)}${idx === currentNoteIndex ? '←' : ''}`
+                              ).join(' → ')}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
-                  </div>
-                )}
 
-                {selectedSong && (
-                  <>
                     {process.env.NODE_ENV === 'development' && (
                       <SimulatedMIDIPlayer
                         onMIDIMessage={handleMIDIMessage}
@@ -1613,9 +1629,7 @@ Current storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs 
                         {/* Main practice area */}
                         <div>
                           {selectedInstrument === 'tin-whistle' ? (
-                            // Tin whistle practice area
                             practiceSequence.length > 0 && selectedSong?.notesWithTiming ? (
-                              // Sequential practice with timeline (when timing data is available)
                               <TinWhistleSequentialPractice
                                 sequence={selectedSong.notesWithTiming}
                                 currentNoteIndex={currentNoteIndex}
@@ -1625,7 +1639,6 @@ Current storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs 
                                 className="h-auto"
                               />
                             ) : (
-                              // Fallback static practice board (when no timing data)
                               <TinWhistlePracticeBoard
                                 currentTargetNote={currentTargetNote}
                                 lastPlayedNote={lastPlayedNote}
@@ -1634,7 +1647,6 @@ Current storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs 
                               />
                             )
                           ) : (
-                            // Simple note display for other instruments
                             <div className="bg-gray-700 rounded-lg p-8 text-center">
                               <h3 className="text-lg font-medium text-gray-300 mb-4">
                                 {selectedInstrument.charAt(0).toUpperCase() + selectedInstrument.slice(1).replace('-', ' ')} Practice
