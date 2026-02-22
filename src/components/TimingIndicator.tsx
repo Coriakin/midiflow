@@ -102,7 +102,7 @@ export const TimingIndicator: React.FC<TimingIndicatorProps> = ({
 }) => {
   const [feedback, setFeedback] = useState<TimingFeedback | null>(null);
   const [showFeedback, setShowFeedback] = useState(false);
-  const [timingMeasurements, setTimingMeasurements] = useState<TimingMeasurement[]>([]);
+  const [, setTimingMeasurements] = useState<TimingMeasurement[]>([]);
   const lastProcessedTimestamp = useRef<number>(0);
   
   const timingWindow = TIMING_WINDOWS[sensitivity];

@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { midiNoteToName } from '../types/midi';
-import type { Song } from './SongInput';
+import { midiNoteToName, Song } from '../types/midi';
 
 export interface PracticeSession {
   songId: string;

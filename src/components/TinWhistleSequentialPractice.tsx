@@ -29,6 +29,54 @@ const TIN_WHISTLE_FINGERINGS: Record<number, boolean[]> = {
   84: [false, false, false, false, false, false], // C6
 };
 
+const STAFF_LINE_SPACING = 8;
+const STAFF_TOP_PADDING = 4;
+const STAFF_NOTE_DIAMETER = 8;
+const STAFF_REFERENCE_NOTE = 64; // E4 line
+const STAFF_LINE_INDICES = [0, 1, 2, 3, 4];
+
+const StaffNoteDisplay: React.FC<{ note: number }> = ({ note }) => {
+  const bottomLineY = STAFF_TOP_PADDING + STAFF_LINE_SPACING * 4;
+  const semitoneOffset = note - STAFF_REFERENCE_NOTE;
+  const stepSize = STAFF_LINE_SPACING / 2;
+  const centerY = bottomLineY - semitoneOffset * stepSize;
+  const noteTop = centerY - STAFF_NOTE_DIAMETER / 2;
+  const needsLedgerBelow = centerY > bottomLineY + STAFF_LINE_SPACING / 2;
+  const needsLedgerAbove = centerY < STAFF_TOP_PADDING - STAFF_LINE_SPACING / 2;
+
+  return (
+    <div className="relative w-24 h-20">
+      {STAFF_LINE_INDICES.map(line => (
+        <span
+          key={line}
+          className="absolute left-0 right-0 h-[1px] bg-white/20"
+          style={{ top: STAFF_TOP_PADDING + line * STAFF_LINE_SPACING }}
+        />
+      ))}
+      <span
+        className="absolute left-1/2 -translate-x-1/2 rounded-full bg-white border border-white/30 shadow-sm"
+        style={{
+          width: STAFF_NOTE_DIAMETER,
+          height: STAFF_NOTE_DIAMETER,
+          top: noteTop
+        }}
+      ></span>
+      {needsLedgerBelow && (
+        <span
+          className="absolute left-1/2 -translate-x-1/2 h-[2px] bg-white/60"
+          style={{ width: 32, top: bottomLineY + STAFF_LINE_SPACING / 2 }}
+        />
+      )}
+      {needsLedgerAbove && (
+        <span
+          className="absolute left-1/2 -translate-x-1/2 h-[2px] bg-white/60"
+          style={{ width: 32, top: STAFF_TOP_PADDING - STAFF_LINE_SPACING / 2 }}
+        />
+      )}
+    </div>
+  );
+};
+
 interface NoteWithTiming {
   note: number;
   startTime: number; // in beats relative to song start
@@ -268,19 +316,23 @@ export const TinWhistleSequentialPractice: React.FC<SequentialPracticeProps> = (
                 }`}
                 style={{ minWidth: '140px' }}
               >
-                {/* Note name */}
-                <div className={`text-sm font-medium mb-2 px-3 py-1 rounded shadow-md ${
-                  showRedFeedback
-                    ? 'bg-red-500 text-white border-2 border-red-300'
-                    : isCurrentNote 
-                      ? 'bg-yellow-500 text-black border-2 border-yellow-300' 
-                      : isPastNote || isCompleted
-                        ? 'bg-gray-700 text-gray-400 border border-gray-600'
-                        : 'bg-gray-600 text-white border border-gray-500'
-                }`}>
-                  <span className={noteItem.note >= 74 ? 'border-b-2 border-orange-400' : ''}>
-                    {midiNoteToName(noteItem.note)}
-                  </span>
+                <div className="flex flex-col items-center gap-2 mb-2">
+                  {/* Note name */}
+                  <div className={`text-sm font-medium px-3 py-1 rounded shadow-md ${
+                    showRedFeedback
+                      ? 'bg-red-500 text-white border-2 border-red-300'
+                      : isCurrentNote 
+                        ? 'bg-yellow-500 text-black border-2 border-yellow-300' 
+                        : isPastNote || isCompleted
+                          ? 'bg-gray-700 text-gray-400 border border-gray-600'
+                          : 'bg-gray-600 text-white border border-gray-500'
+                  }`}>
+                    <span className={noteItem.note >= 74 ? 'border-b-2 border-orange-400' : ''}>
+                      {midiNoteToName(noteItem.note)}
+                    </span>
+                  </div>
+
+                  <StaffNoteDisplay note={noteItem.note} />
                 </div>
 
                 {/* Fingering chart */}
@@ -296,11 +348,6 @@ export const TinWhistleSequentialPractice: React.FC<SequentialPracticeProps> = (
                           : 'bg-gray-700 p-2 rounded border border-gray-600'
                 }`}>
                   {renderFingeringChart(noteItem.note, isCurrentNote ? 'large' : 'small')}
-                </div>
-
-                {/* Note sequence position */}
-                <div className="text-xs text-gray-400 mt-2">
-                  {index + 1} / {sequence.length}
                 </div>
               </div>
             );
