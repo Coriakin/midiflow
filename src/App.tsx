@@ -1738,6 +1738,8 @@ Current storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs 
                                 lastPlayedNote={lastPlayedNote}
                                 isCorrectNote={isCorrectNote}
                                 loopModeActive={!!loopRange}
+                                loopRange={loopRange}
+                                loopNotesPreview={activeTimedSequence.map(item => midiNoteToName(item.note)).slice(0, 8)}
                                 onApplyLoopRange={handleApplyLoopRange}
                                 onClearLoopRange={handleClearLoopRange}
                                 className="h-auto"
