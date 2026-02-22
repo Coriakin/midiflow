@@ -89,6 +89,9 @@ interface SequentialPracticeProps {
   tempo: number; // BPM
   lastPlayedNote?: number | null;
   isCorrectNote?: boolean | null;
+  loopModeActive?: boolean;
+  onApplyLoopRange?: (startIndex: number, endIndex: number) => void;
+  onClearLoopRange?: () => void;
   className?: string;
 }
 
@@ -101,6 +104,9 @@ export const TinWhistleSequentialPractice: React.FC<SequentialPracticeProps> = (
   currentNoteIndex,
   tempo,
   isCorrectNote,
+  loopModeActive = false,
+  onApplyLoopRange,
+  onClearLoopRange,
   className = ''
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -108,8 +114,9 @@ export const TinWhistleSequentialPractice: React.FC<SequentialPracticeProps> = (
   const [correctNoteFeedback, setCorrectNoteFeedback] = useState<Set<number>>(new Set());
   const [incorrectNoteFeedback, setIncorrectNoteFeedback] = useState<Set<number>>(new Set());
   const [hasStarted, setHasStarted] = useState(false);
-  const [isCompleted, setIsCompleted] = useState(false);  // Calculate vertical offsets for overlapping notes to prevent stacking (removed - no longer needed)
-  // We'll use a simple grid layout instead
+  const [isCompleted, setIsCompleted] = useState(false);
+  const [selectionAnchorIndex, setSelectionAnchorIndex] = useState<number | null>(null);
+  const [previewRange, setPreviewRange] = useState<{ start: number; end: number } | null>(null);
 
   // Reset state when sequence changes
   useEffect(() => {
@@ -118,6 +125,8 @@ export const TinWhistleSequentialPractice: React.FC<SequentialPracticeProps> = (
     setCompletedNotes(new Set());
     setCorrectNoteFeedback(new Set());
     setIncorrectNoteFeedback(new Set());
+    setSelectionAnchorIndex(null);
+    setPreviewRange(null);
   }, [sequence]);
 
   // Auto-scroll to keep current note in view
@@ -237,6 +246,49 @@ export const TinWhistleSequentialPractice: React.FC<SequentialPracticeProps> = (
   const currentBeat = getCurrentBeat();
   const metronomeIntensity = !hasStarted || isCompleted ? 0 : Math.abs(Math.sin((currentBeat % 1) * Math.PI));
 
+  const handleNoteClick = (index: number, event: React.MouseEvent<HTMLDivElement>) => {
+    if (sequence.length === 0 || !onApplyLoopRange) {
+      return;
+    }
+
+    if (event.shiftKey && selectionAnchorIndex !== null) {
+      const start = Math.min(selectionAnchorIndex, index);
+      const end = Math.max(selectionAnchorIndex, index);
+      const selectedNotes = sequence.slice(start, end + 1);
+      const noteSummary = selectedNotes
+        .map((noteItem, selectedIndex) => `${start + selectedIndex + 1}. ${midiNoteToName(noteItem.note)}`)
+        .join(', ');
+
+      setPreviewRange({ start, end });
+
+      const shouldEnableLoop = window.confirm(
+        `Loop this note range?\n\nRange: ${start + 1} to ${end + 1}\nNotes (${selectedNotes.length}): ${noteSummary}`
+      );
+
+      if (shouldEnableLoop) {
+        onApplyLoopRange(start, end);
+        setSelectionAnchorIndex(null);
+        setPreviewRange(null);
+      }
+
+      return;
+    }
+
+    setSelectionAnchorIndex(index);
+    setPreviewRange(null);
+  };
+
+  const handleNoteMouseEnter = (index: number, event: React.MouseEvent<HTMLDivElement>) => {
+    if (!event.shiftKey || selectionAnchorIndex === null) {
+      return;
+    }
+
+    setPreviewRange({
+      start: Math.min(selectionAnchorIndex, index),
+      end: Math.max(selectionAnchorIndex, index)
+    });
+  };
+
   return (
     <div className={`relative bg-gray-900 rounded-lg border border-gray-600 overflow-hidden ${className}`}>
       {/* Header with metronome */}
@@ -253,6 +305,11 @@ export const TinWhistleSequentialPractice: React.FC<SequentialPracticeProps> = (
                 ✅ Song Complete!
               </span>
             ) : null}
+            {loopModeActive && (
+              <span className="text-xs font-semibold uppercase tracking-wide bg-indigo-600 text-indigo-100 px-2 py-1 rounded">
+                Loop Mode: On
+              </span>
+            )}
           </h3>
           <div className="flex items-center space-x-6">
             {/* Metronome */}
@@ -282,6 +339,14 @@ export const TinWhistleSequentialPractice: React.FC<SequentialPracticeProps> = (
             <div className="text-sm text-gray-300">
               {currentNoteIndex + 1} / {sequence.length}
             </div>
+            {loopModeActive && onClearLoopRange && (
+              <button
+                onClick={onClearLoopRange}
+                className="px-3 py-1 text-xs font-semibold rounded bg-indigo-500 hover:bg-indigo-400 text-white transition-colors"
+              >
+                Clear Loop
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -300,20 +365,30 @@ export const TinWhistleSequentialPractice: React.FC<SequentialPracticeProps> = (
             const showGreenFeedback = correctNoteFeedback.has(index);
             const showRedFeedback = incorrectNoteFeedback.has(index);
             const isPastNote = index < currentNoteIndex;
+            const isSelectionAnchor = selectionAnchorIndex === index;
+            const isInPreviewRange = previewRange !== null && index >= previewRange.start && index <= previewRange.end;
             
             return (
               <div
                 key={index}
                 data-note-index={index}
+                role="button"
+                tabIndex={0}
+                onClick={(event) => handleNoteClick(index, event)}
+                onMouseEnter={(event) => handleNoteMouseEnter(index, event)}
                 className={`flex flex-col items-center transition-all duration-500 p-4 rounded-lg flex-shrink-0 ${
                   showRedFeedback
                     ? 'bg-red-600 ring-4 ring-red-400 shadow-lg scale-110'
                     : isCurrentNote
                       ? 'bg-blue-600 ring-4 ring-yellow-400 shadow-lg scale-110'
+                      : isSelectionAnchor
+                        ? 'bg-indigo-700 ring-2 ring-indigo-300'
+                        : isInPreviewRange
+                          ? 'bg-indigo-800/80 ring-2 ring-indigo-500'
                       : isPastNote || isCompleted
                         ? 'bg-gray-700 opacity-60'
                         : 'bg-gray-800'
-                }`}
+                } cursor-pointer`}
                 style={{ minWidth: '140px' }}
               >
                 <div className="flex flex-col items-center gap-2 mb-2">
@@ -361,7 +436,7 @@ export const TinWhistleSequentialPractice: React.FC<SequentialPracticeProps> = (
           🎵 Play each note in sequence • Practice at your own pace
           <br />
           <span className="text-xs text-gray-400">
-            Practice view automatically scrolls to keep current note centered • Incorrect notes auto-recover after 1 second
+            Click a note, then Shift-click another note to loop a range • Practice view keeps current note centered • Incorrect notes auto-recover after 1 second
           </span>
         </div>
       </div>

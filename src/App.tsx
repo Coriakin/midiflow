@@ -24,6 +24,12 @@ import { playWhistleNote } from './lib/audio/simulatedWhistleSynth';
 
 const SIMULATED_SOUND_ENABLED_KEY = 'midiflow.simulatedSound.enabled';
 
+type NoteWithTiming = {
+  note: number;
+  startTime: number;
+  duration: number;
+};
+
 function App() {
   const { 
     isSupported, 
@@ -102,6 +108,7 @@ function App() {
   const [isCorrectNote, setIsCorrectNote] = useState<boolean | null>(null);
   const [practiceSequence, setPracticeSequence] = useState<number[]>([]);
   const [currentNoteIndex, setCurrentNoteIndex] = useState<number>(0);
+  const [loopRange, setLoopRange] = useState<{ start: number; end: number } | null>(null);
   const [showCompletionMessage, setShowCompletionMessage] = useState<boolean>(false);
   const [completionMessage, setCompletionMessage] = useState<string>('');
   const [simulatedSoundEnabled, setSimulatedSoundEnabled] = useState<boolean>(() => {
@@ -137,6 +144,18 @@ function App() {
   // About content state
   const [aboutContent, setAboutContent] = useState<string>('');
   const [aboutError, setAboutError] = useState<string | null>(null);
+
+  const fullTimedSequence: NoteWithTiming[] = selectedSong
+    ? selectedSong.notesWithTiming && selectedSong.notesWithTiming.length > 0
+      ? selectedSong.notesWithTiming
+      : selectedSong.notes.map((note, index) => ({ note, startTime: index, duration: 1 }))
+    : [];
+
+  const activeTimedSequence: NoteWithTiming[] = loopRange
+    ? fullTimedSequence.slice(loopRange.start, loopRange.end + 1)
+    : fullTimedSequence;
+
+  const activePracticeSequence = activeTimedSequence.map(noteItem => noteItem.note);
 
   // Built-in songs for quick testing
   const builtInSongs: Song[] = [
@@ -567,26 +586,35 @@ function App() {
               setIsCorrectNote(null);
             }, 500);
           } else if (currentNoteIndex >= practiceSequence.length - 1) {
-            console.log('Practice sequence completed!');
-            
-            // Determine sequence name for completion message
-            let sequenceName = 'sequence';
-            if (selectedSong) {
-              sequenceName = selectedSong.title;
-            } else if (practiceSequence.length === 7 && practiceSequence[0] === 62) {
-              sequenceName = 'D Major Scale';
+            if (loopRange && practiceSequence.length > 0) {
+              console.log('🔁 Loop mode active: wrapping to first selected note');
+              setTimeout(() => {
+                setIsCorrectNote(null);
+                setCurrentNoteIndex(0);
+                setCurrentTargetNote(practiceSequence[0]);
+              }, 500);
+            } else {
+              console.log('Practice sequence completed!');
+              
+              // Determine sequence name for completion message
+              let sequenceName = 'sequence';
+              if (selectedSong) {
+                sequenceName = selectedSong.title;
+              } else if (practiceSequence.length === 7 && practiceSequence[0] === 62) {
+                sequenceName = 'D Major Scale';
+              }
+              
+              // Show completion notification
+              showPracticeCompletion(sequenceName);
+              
+              // Sequence completed - reset after showing green feedback
+              setTimeout(() => {
+                setIsCorrectNote(null);
+                setCurrentTargetNote(null);
+                setCurrentNoteIndex(0);
+                setPracticeSequence([]);
+              }, 1000);
             }
-            
-            // Show completion notification
-            showPracticeCompletion(sequenceName);
-            
-            // Sequence completed - reset after showing green feedback
-            setTimeout(() => {
-              setIsCorrectNote(null);
-              setCurrentTargetNote(null);
-              setCurrentNoteIndex(0);
-              setPracticeSequence([]);
-            }, 1000);
           }
         } else {
           console.log(`❌ Incorrect note played. Expected: ${midiNoteToName(currentTargetNote)}, Got: ${midiNoteToName(message.note)}`);
@@ -626,26 +654,35 @@ function App() {
                 setIsCorrectNote(null);
               }, 500);
             } else if (currentNoteIndex >= practiceSequence.length - 1) {
-              console.log('Auto-recovery: Practice sequence completed!');
-              
-              // Determine sequence name for completion message
-              let sequenceName = 'sequence';
-              if (selectedSong) {
-                sequenceName = selectedSong.title;
-              } else if (practiceSequence.length === 7 && practiceSequence[0] === 62) {
-                sequenceName = 'D Major Scale';
+              if (loopRange && practiceSequence.length > 0) {
+                console.log('🔁 Loop mode active (auto-recovery): wrapping to first selected note');
+                setTimeout(() => {
+                  setIsCorrectNote(null);
+                  setCurrentNoteIndex(0);
+                  setCurrentTargetNote(practiceSequence[0]);
+                }, 500);
+              } else {
+                console.log('Auto-recovery: Practice sequence completed!');
+                
+                // Determine sequence name for completion message
+                let sequenceName = 'sequence';
+                if (selectedSong) {
+                  sequenceName = selectedSong.title;
+                } else if (practiceSequence.length === 7 && practiceSequence[0] === 62) {
+                  sequenceName = 'D Major Scale';
+                }
+                
+                // Show completion notification
+                showPracticeCompletion(sequenceName);
+                
+                // Sequence completed - reset after showing green feedback
+                setTimeout(() => {
+                  setIsCorrectNote(null);
+                  setCurrentTargetNote(null);
+                  setCurrentNoteIndex(0);
+                  setPracticeSequence([]);
+                }, 1000);
               }
-              
-              // Show completion notification
-              showPracticeCompletion(sequenceName);
-              
-              // Sequence completed - reset after showing green feedback
-              setTimeout(() => {
-                setIsCorrectNote(null);
-                setCurrentTargetNote(null);
-                setCurrentNoteIndex(0);
-                setPracticeSequence([]);
-              }, 1000);
             }
           }, 1000); // 1 second delay before auto-recovery
         }
@@ -664,7 +701,7 @@ function App() {
   useEffect(() => {
     addMessageListener(handleMIDIMessage);
     return () => removeMessageListener(handleMIDIMessage);
-  }, [addMessageListener, removeMessageListener, selectedInstrument, currentTargetNote, practiceSequence, currentNoteIndex, selectedSong]);
+  }, [addMessageListener, removeMessageListener, selectedInstrument, currentTargetNote, practiceSequence, currentNoteIndex, selectedSong, loopRange]);
 
   // Handle song creation
   const handleSongCreate = (song: Song) => {
@@ -684,6 +721,7 @@ function App() {
     // If the deleted song was selected, clear selection and stop practice
     if (selectedSong?.id === songId) {
       setSelectedSong(null);
+      setLoopRange(null);
       setPracticeSequence([]);
       setCurrentNoteIndex(0);
       setCurrentTargetNote(null);
@@ -697,6 +735,7 @@ function App() {
     // If the deleted song was selected, clear selection and stop practice
     if (selectedSong?.id === songId) {
       setSelectedSong(null);
+      setLoopRange(null);
       setPracticeSequence([]);
       setCurrentNoteIndex(0);
       setCurrentTargetNote(null);
@@ -761,6 +800,52 @@ function App() {
     cancelEditing();
   };
 
+  const startSongPractice = (song: AnySong) => {
+    setSelectedSong(song);
+    setLoopRange(null);
+    startPracticeSequence(song.notes);
+  };
+
+  const handleApplyLoopRange = (startIndex: number, endIndex: number) => {
+    if (!selectedSong || fullTimedSequence.length === 0) {
+      return;
+    }
+
+    const start = Math.max(0, Math.min(startIndex, endIndex));
+    const end = Math.min(fullTimedSequence.length - 1, Math.max(startIndex, endIndex));
+
+    if (start > end) {
+      return;
+    }
+
+    const loopNotes = fullTimedSequence.slice(start, end + 1).map(noteItem => noteItem.note);
+    if (loopNotes.length === 0) {
+      return;
+    }
+
+    setLoopRange({ start, end });
+    setPracticeSequence(loopNotes);
+    setCurrentNoteIndex(0);
+    setCurrentTargetNote(loopNotes[0]);
+    setIsCorrectNote(null);
+    setLastPlayedNote(null);
+  };
+
+  const handleClearLoopRange = () => {
+    if (!selectedSong) {
+      setLoopRange(null);
+      return;
+    }
+
+    const fullNotes = fullTimedSequence.map(noteItem => noteItem.note);
+    setLoopRange(null);
+    setPracticeSequence(fullNotes);
+    setCurrentNoteIndex(0);
+    setCurrentTargetNote(fullNotes[0] ?? null);
+    setIsCorrectNote(null);
+    setLastPlayedNote(null);
+  };
+
   // Start a practice sequence for tin whistle
   const startPracticeSequence = (notes: number[]) => {
     setPracticeSequence(notes);
@@ -774,6 +859,7 @@ function App() {
 
   // Stop practice sequence
   const stopPracticeSequence = () => {
+    setLoopRange(null);
     setPracticeSequence([]);
     setCurrentNoteIndex(0);
     setCurrentTargetNote(null);
@@ -785,9 +871,11 @@ function App() {
 
   // Reset practice sequence to beginning
   const resetPracticeSequence = () => {
-    if (practiceSequence.length > 0) {
+    const sequenceToReset = selectedSong ? activePracticeSequence : practiceSequence;
+    if (sequenceToReset.length > 0) {
+      setPracticeSequence(sequenceToReset);
       setCurrentNoteIndex(0);
-      setCurrentTargetNote(practiceSequence[0]);
+      setCurrentTargetNote(sequenceToReset[0]);
       setIsCorrectNote(null);
       setLastPlayedNote(null);
       console.log('Reset practice sequence to beginning');
@@ -796,6 +884,7 @@ function App() {
 
   const handleStartDScalePractice = () => {
     setSelectedSong(null);
+    setLoopRange(null);
     startPracticeSequence(D_SCALE_SEQUENCE);
   };
 
@@ -1195,6 +1284,12 @@ Current storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs 
                             setMidiSongs([]);
                             setSongs([]);
                             setSelectedSong(null);
+                            setLoopRange(null);
+                            setPracticeSequence([]);
+                            setCurrentNoteIndex(0);
+                            setCurrentTargetNote(null);
+                            setIsCorrectNote(null);
+                            setLastPlayedNote(null);
                             alert('✅ All stored songs cleared!');
                           }
                         }}
@@ -1283,8 +1378,7 @@ Current storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs 
                             <div
                               key={song.id}
                               onClick={() => {
-                                setSelectedSong(song);
-                                startPracticeSequence(song.notes);
+                                startSongPractice(song);
                                 setPracticeSubTab('practice');
                               }}
                               className={`flex items-center justify-between p-2 rounded cursor-pointer transition-colors ${selectedSong?.id === song.id ? 'bg-blue-600 text-white' : 'hover:bg-gray-600 text-gray-300'}`}
@@ -1375,8 +1469,7 @@ Current storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs 
                                     <div 
                                       className="font-medium truncate cursor-pointer"
                                       onClick={() => {
-                                        setSelectedSong(song);
-                                        startPracticeSequence(song.notes);
+                                        startSongPractice(song);
                                         setPracticeSubTab('practice');
                                       }}
                                     >
@@ -1411,7 +1504,7 @@ Current storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs 
                                       // Update the song in the midiSongs array
                                       setMidiSongs(prev => prev.map(s => s.id === song.id ? updatedSong : s));
                                       if (selectedSong?.id === song.id) {
-                                        setSelectedSong(updatedSong);
+                                        startSongPractice(updatedSong);
                                       }
                                     } catch (error) {
                                       console.error('Failed to extract notes from track:', error);
@@ -1542,8 +1635,7 @@ Current storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs 
                                     <div 
                                       className="font-medium truncate cursor-pointer"
                                       onClick={() => {
-                                        setSelectedSong(song);
-                                        startPracticeSequence(song.notes);
+                                        startSongPractice(song);
                                         setPracticeSubTab('practice');
                                       }}
                                     >
@@ -1638,13 +1730,16 @@ Current storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs 
                         {/* Main practice area */}
                         <div>
                           {selectedInstrument === 'tin-whistle' ? (
-                            practiceSequence.length > 0 && selectedSong?.notesWithTiming ? (
+                            practiceSequence.length > 0 && selectedSong ? (
                               <TinWhistleSequentialPractice
-                                sequence={selectedSong.notesWithTiming}
+                                sequence={activeTimedSequence}
                                 currentNoteIndex={currentNoteIndex}
                                 tempo={selectedSong.tempo || 120}
                                 lastPlayedNote={lastPlayedNote}
                                 isCorrectNote={isCorrectNote}
+                                loopModeActive={!!loopRange}
+                                onApplyLoopRange={handleApplyLoopRange}
+                                onClearLoopRange={handleClearLoopRange}
                                 className="h-auto"
                               />
                             ) : (
@@ -1784,7 +1879,7 @@ Current storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs 
               
               // If this song is currently selected, update the selected song too
               if (selectedSong?.id === previewSong.id) {
-                setSelectedSong(updatedSong);
+                startSongPractice(updatedSong);
               }
             } catch (error) {
               console.error('Failed to extract notes from track in preview:', error);
