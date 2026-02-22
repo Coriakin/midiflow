@@ -1,11 +1,13 @@
 # MIDIFlow
-Real-time, timeline-based MIDI practice for tin whistle and other instruments. Practice, song creation, MIDI preview, and settings live in a clean three-tab UI with persistent song storage and responsive design.
+MIDIFlow is a focused web-based tin whistle practice application that provides real-time visual feedback through MIDI input. Practice songs with step-by-step guidance and see your progress in real-time.
+Initially focus is on tin whistle and uilleann pipes, but I do not see why this tool cannot also be a more generic one for other midi instruments.
 
-## Why it exists
-- **Focused practice only**: sequential timeline with smart note stacking, tempo controls (25–100%), and encouraging retry feedback.
-- **Immediate MIDI feedback**: WebMIDI + Web Audio support real-time input, status bar indicators, live previews, and device hot-plugging.
-- **Song authoring & storage**: manual song input or drag-and-drop MIDI import with per-track previews, automatic persistence, and easy management.
-- **Instrument-ready UX**: tin whistle fingering board, range filtering for other instruments, and visual device/debug helpers.
+![MIDIFlow screenshot](./screenshot1.jpg)
+
+## Note from author
+I have always wanted to improve my tooting, but seldom find time and always looking for structured ways to get some practice in with songs I like and find around the web. This project is an attempt to do something that I can use, and once it is mature enough I hope it will be of joy for others out there as well!
+
+/Andreas
 
 ## Quick start
 1. **Prerequisites**: Chrome/Chromium and a MIDI source (hardware or virtual).
