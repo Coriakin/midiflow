@@ -1664,6 +1664,7 @@ Current storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs 
                         playSound={simulatedSoundEnabled}
                         onPlaySoundChange={setSimulatedSoundEnabled}
                         onSimulatedNotePlayed={handleSimulatedNotePlayed}
+                        onRestartFromBeginning={resetPracticeSequence}
                       />
                     )}
 
@@ -1769,6 +1770,7 @@ Current storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs 
                 playSound={simulatedSoundEnabled}
                 onPlaySoundChange={setSimulatedSoundEnabled}
                 onSimulatedNotePlayed={handleSimulatedNotePlayed}
+                onRestartFromBeginning={resetPracticeSequence}
               />
             )}
           </div>

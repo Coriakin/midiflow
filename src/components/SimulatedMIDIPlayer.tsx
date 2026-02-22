@@ -44,6 +44,7 @@ interface SimulatedMIDIPlayerProps {
   playSound: boolean;
   onPlaySoundChange: (enabled: boolean) => void;
   onSimulatedNotePlayed?: (note: number, velocity?: number) => void;
+  onRestartFromBeginning?: () => void;
 }
 
 /**
@@ -58,7 +59,8 @@ export const SimulatedMIDIPlayer: React.FC<SimulatedMIDIPlayerProps> = ({
   isVisible = true,
   playSound,
   onPlaySoundChange,
-  onSimulatedNotePlayed
+  onSimulatedNotePlayed,
+  onRestartFromBeginning
 }) => {
   const [playerState, setPlayerState] = useState<SimulatedPlayerState>({
     isPlaying: false,
@@ -70,6 +72,7 @@ export const SimulatedMIDIPlayer: React.FC<SimulatedMIDIPlayerProps> = ({
   });
 
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const restartTimerRef = useRef<NodeJS.Timeout | null>(null);
   const playerStateRef = useRef(playerState);
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -253,19 +256,44 @@ export const SimulatedMIDIPlayer: React.FC<SimulatedMIDIPlayerProps> = ({
   }, []);
 
   const restartPlaying = useCallback(() => {
+    if (intervalRef.current) {
+      clearTimeout(intervalRef.current);
+      intervalRef.current = null;
+    }
+    if (restartTimerRef.current) {
+      clearTimeout(restartTimerRef.current);
+      restartTimerRef.current = null;
+    }
+
+    // Stop immediately, reset app sequence index, then start from beginning.
     setPlayerState(prev => ({
       ...prev,
-      isPlaying: true,
+      isPlaying: false,
       isPaused: false,
-      lastPlayedIndex: -1 // Reset to trigger first note
+      lastPlayedIndex: -1
     }));
-  }, []);
+
+    onRestartFromBeginning?.();
+
+    restartTimerRef.current = setTimeout(() => {
+      setPlayerState(prev => ({
+        ...prev,
+        isPlaying: true,
+        isPaused: false,
+        lastPlayedIndex: -1
+      }));
+      restartTimerRef.current = null;
+    }, 0);
+  }, [onRestartFromBeginning]);
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (intervalRef.current) {
         clearTimeout(intervalRef.current);
+      }
+      if (restartTimerRef.current) {
+        clearTimeout(restartTimerRef.current);
       }
     };
   }, []);
