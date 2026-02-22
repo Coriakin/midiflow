@@ -1616,44 +1616,6 @@ Current storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs 
                   </div>
                 ) : (
                   <>
-                    {selectedInstrument === 'tin-whistle' && selectedSong && (
-                      <div className="bg-gray-700 rounded-lg p-4">
-                        <h4 className="text-sm font-medium text-gray-300 mb-3">Practice Controls:</h4>
-
-                        <div className="flex gap-2 flex-wrap">
-                          <button
-                            onClick={resetPracticeSequence}
-                            className="px-3 py-1 bg-yellow-600 text-white rounded text-sm hover:bg-yellow-500"
-                            disabled={practiceSequence.length === 0}
-                          >
-                            Reset
-                          </button>
-                          <button
-                            onClick={stopPracticeSequence}
-                            className="px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-500"
-                            disabled={practiceSequence.length === 0}
-                          >
-                            Stop
-                          </button>
-                        </div>
-                        {practiceSequence.length > 0 && (
-                          <div className="mt-2 text-sm text-gray-300">
-                            Progress: {currentNoteIndex + 1} of {practiceSequence.length} notes
-                            {currentTargetNote && (
-                              <span className="ml-2 text-yellow-400">
-                                • Current: {midiNoteToName(currentTargetNote)} (MIDI {currentTargetNote})
-                              </span>
-                            )}
-                            <div className="mt-1 text-xs text-gray-400">
-                              Sequence: {practiceSequence.map((note, idx) => 
-                                `${midiNoteToName(note)}${idx === currentNoteIndex ? '←' : ''}`
-                              ).join(' → ')}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
-
                     {process.env.NODE_ENV === 'development' && (
                       <SimulatedMIDIPlayer
                         onMIDIMessage={handleMIDIMessage}
