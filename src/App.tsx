@@ -937,44 +937,44 @@ function App() {
         )}
 
         {/* Tab Navigation */}
-        <div className="bg-gray-800 rounded-lg mb-6">
-          <div className="flex border-b border-gray-600">
+        <div className="bg-gray-900 border border-gray-700 rounded-t-lg mb-2 overflow-hidden shadow-[0_0_0_1px_rgba(255,255,255,0.04)]">
+          <div className="flex">
             <button
               onClick={() => setActiveTab('practice')}
-              className={`px-6 py-3 font-medium transition-colors ${
+              className={`flex-1 text-center px-6 py-3 text-sm font-medium transition-colors border-r border-gray-700 ${
                 activeTab === 'practice'
-                  ? 'text-blue-400 border-b-2 border-blue-400 bg-gray-700'
-                  : 'text-gray-300 hover:text-white hover:bg-gray-700'
+                  ? 'text-blue-300 bg-gray-900 border-b-2 border-blue-400'
+                  : 'text-gray-300 bg-gray-800 hover:text-white hover:bg-gray-700 border-b border-transparent'
               }`}
             >
               Practice
             </button>
             <button
               onClick={() => setActiveTab('d-scale')}
-              className={`px-6 py-3 font-medium transition-colors ${
+              className={`flex-1 text-center px-6 py-3 text-sm font-medium transition-colors border-r border-gray-700 ${
                 isDScaleTabActive
-                  ? 'text-blue-400 border-b-2 border-blue-400 bg-gray-700'
-                  : 'text-gray-300 hover:text-white hover:bg-gray-700'
+                  ? 'text-blue-300 bg-gray-900 border-b-2 border-blue-400'
+                  : 'text-gray-300 bg-gray-800 hover:text-white hover:bg-gray-700 border-b border-transparent'
               }`}
             >
               D Scale
             </button>
             <button
               onClick={() => setActiveTab('settings')}
-              className={`px-6 py-3 font-medium transition-colors ${
+              className={`flex-1 text-center px-6 py-3 text-sm font-medium transition-colors border-r border-gray-700 ${
                 activeTab === 'settings'
-                  ? 'text-blue-400 border-b-2 border-blue-400 bg-gray-700'
-                  : 'text-gray-300 hover:text-white hover:bg-gray-700'
+                  ? 'text-blue-300 bg-gray-900 border-b-2 border-blue-400'
+                  : 'text-gray-300 bg-gray-800 hover:text-white hover:bg-gray-700 border-b border-transparent'
               }`}
             >
               Settings
             </button>
             <button
               onClick={() => setActiveTab('about')}
-              className={`px-6 py-3 font-medium transition-colors ${
+              className={`flex-1 text-center px-6 py-3 text-sm font-medium transition-colors ${
                 activeTab === 'about'
-                  ? 'text-blue-400 border-b-2 border-blue-400 bg-gray-700'
-                  : 'text-gray-300 hover:text-white hover:bg-gray-700'
+                  ? 'text-blue-300 bg-gray-900 border-b-2 border-blue-400'
+                  : 'text-gray-300 bg-gray-800 hover:text-white hover:bg-gray-700 border-b border-transparent'
               }`}
             >
               About
@@ -1194,31 +1194,43 @@ Current storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs 
 
         {activeTab === 'practice' && (
           <div className="space-y-6">
-            <div className="bg-gray-800 rounded-lg p-4 space-y-2">
-              <div className="flex flex-wrap gap-3">
-                <button
-                  onClick={() => setPracticeSubTab('library')}
-                  className={`px-4 py-2 rounded-md text-sm font-semibold transition-all ${practiceSubTab === 'library' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}`}
-                >
-                  Song Library
-                </button>
-                <button
-                  onClick={() => setPracticeSubTab('practice')}
-                  className={`px-4 py-2 rounded-md text-sm font-semibold transition-all ${practiceSubTab === 'practice' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}`}
-                >
-                  Practice Song
-                </button>
-                <button
-                  onClick={() => setPracticeSubTab('create')}
-                  className={`px-4 py-2 rounded-md text-sm font-semibold transition-all ${practiceSubTab === 'create' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}`}
-                >
-                  Create Practice Song
-                </button>
-              </div>
-              <p className="text-xs text-gray-400">
-                Switch between browsing the song library, practicing the selected song, and creating a new practice song.
-              </p>
+          <div className="bg-gray-900 border border-gray-700 rounded-lg mb-4 p-1">
+            <div className="flex overflow-hidden rounded-lg shadow-inner">
+              <button
+                onClick={() => setPracticeSubTab('library')}
+                className={`flex-1 text-center px-4 py-2 text-sm font-semibold transition-colors ${
+                  practiceSubTab === 'library'
+                    ? 'bg-gray-800 text-white'
+                    : 'bg-gray-700 text-gray-300 hover:text-white hover:bg-gray-600'
+                }`}
+              >
+                Song Library
+              </button>
+              <button
+                onClick={() => setPracticeSubTab('practice')}
+                className={`flex-1 text-center px-4 py-2 text-sm font-semibold transition-colors ${
+                  practiceSubTab === 'practice'
+                    ? 'bg-blue-600 text-white shadow-[0_0_0_2px_rgba(59,130,246,0.4)]'
+                    : 'bg-gray-700 text-gray-300 hover:text-white hover:bg-gray-600'
+                }`}
+              >
+                Practice Song
+              </button>
+              <button
+                onClick={() => setPracticeSubTab('create')}
+                className={`flex-1 text-center px-4 py-2 text-sm font-semibold transition-colors ${
+                  practiceSubTab === 'create'
+                    ? 'bg-gray-800 text-white'
+                    : 'bg-gray-700 text-gray-300 hover:text-white hover:bg-gray-600'
+                }`}
+              >
+                Create Practice Song
+              </button>
             </div>
+            <p className="mt-2 text-xs text-gray-400">
+              Switch between browsing the song library, practicing the selected song, and creating a new practice song.
+            </p>
+          </div>
 
             {practiceSubTab === 'library' && (
               <>
