@@ -20,6 +20,9 @@ import {
   getStorageInfo
 } from './utils/storage';
 import { loadMarkdownFile } from './utils/markdown';
+import { playWhistleNote } from './lib/audio/simulatedWhistleSynth';
+
+const SIMULATED_SOUND_ENABLED_KEY = 'midiflow.simulatedSound.enabled';
 
 function App() {
   const { 
@@ -101,6 +104,26 @@ function App() {
   const [currentNoteIndex, setCurrentNoteIndex] = useState<number>(0);
   const [showCompletionMessage, setShowCompletionMessage] = useState<boolean>(false);
   const [completionMessage, setCompletionMessage] = useState<string>('');
+  const [simulatedSoundEnabled, setSimulatedSoundEnabled] = useState<boolean>(() => {
+    if (typeof window === 'undefined') {
+      return true;
+    }
+    const storedValue = window.localStorage.getItem(SIMULATED_SOUND_ENABLED_KEY);
+    if (storedValue === 'false') {
+      return false;
+    }
+    if (storedValue === 'true') {
+      return true;
+    }
+    return true;
+  });
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    window.localStorage.setItem(SIMULATED_SOUND_ENABLED_KEY, String(simulatedSoundEnabled));
+  }, [simulatedSoundEnabled]);
 
   // Song editing state
   const [editingSongId, setEditingSongId] = useState<string | null>(null);
@@ -627,6 +650,13 @@ function App() {
         }
       }
     }
+  };
+
+  const handleSimulatedNotePlayed = (note: number, velocity: number = 80) => {
+    if (!simulatedSoundEnabled) {
+      return;
+    }
+    void playWhistleNote(note, velocity);
   };
 
   // Listen for real MIDI messages for sequential practice
@@ -1630,6 +1660,9 @@ Current storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs 
                         currentNoteIndex={currentNoteIndex}
                         tempo={selectedSong?.tempo || 120}
                         isVisible={true}
+                        playSound={simulatedSoundEnabled}
+                        onPlaySoundChange={setSimulatedSoundEnabled}
+                        onSimulatedNotePlayed={handleSimulatedNotePlayed}
                       />
                     )}
 
@@ -1732,6 +1765,9 @@ Current storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs 
                 currentNoteIndex={currentNoteIndex}
                 tempo={selectedSong?.tempo || 120}
                 isVisible={true}
+                playSound={simulatedSoundEnabled}
+                onPlaySoundChange={setSimulatedSoundEnabled}
+                onSimulatedNotePlayed={handleSimulatedNotePlayed}
               />
             )}
           </div>

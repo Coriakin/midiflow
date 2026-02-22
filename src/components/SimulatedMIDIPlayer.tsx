@@ -41,6 +41,9 @@ interface SimulatedMIDIPlayerProps {
   currentNoteIndex?: number; // Add this to sync with app state
   tempo?: number; // BPM for timing calculations
   isVisible?: boolean;
+  playSound: boolean;
+  onPlaySoundChange: (enabled: boolean) => void;
+  onSimulatedNotePlayed?: (note: number, velocity?: number) => void;
 }
 
 /**
@@ -52,7 +55,10 @@ export const SimulatedMIDIPlayer: React.FC<SimulatedMIDIPlayerProps> = ({
   practiceSequence,
   currentNoteIndex = 0,
   tempo = 120,
-  isVisible = true
+  isVisible = true,
+  playSound,
+  onPlaySoundChange,
+  onSimulatedNotePlayed
 }) => {
   const [playerState, setPlayerState] = useState<SimulatedPlayerState>({
     isPlaying: false,
@@ -157,11 +163,13 @@ export const SimulatedMIDIPlayer: React.FC<SimulatedMIDIPlayerProps> = ({
     }
 
     console.log(`🎭 Simulator: Playing note ${midiNoteToName(noteToPlay)} (${noteToPlay}) at app index ${currentNoteIndex}${noteToPlay !== targetNote ? ` [WRONG: expected ${midiNoteToName(targetNote)}]` : ''}`);
-    sendMIDINote(noteToPlay);
+    const velocity = 80;
+    sendMIDINote(noteToPlay, velocity);
+    onSimulatedNotePlayed?.(noteToPlay, velocity);
 
     // Update the last played index
     setPlayerState(prev => ({ ...prev, lastPlayedIndex: currentNoteIndex }));
-  }, [sendMIDINote, getRandomWrongNote, currentNoteIndex]);
+  }, [sendMIDINote, getRandomWrongNote, currentNoteIndex, onSimulatedNotePlayed]);
 
   // Auto-play when currentNoteIndex changes (if simulator is active)
   useEffect(() => {
@@ -333,6 +341,18 @@ export const SimulatedMIDIPlayer: React.FC<SimulatedMIDIPlayerProps> = ({
                 disabled={playerState.isPlaying}
               />
             </div>
+          </div>
+
+          <div className="mb-4">
+            <label className="flex items-center gap-2 text-sm text-purple-200">
+              <input
+                type="checkbox"
+                checked={playSound}
+                onChange={(e) => onPlaySoundChange(e.target.checked)}
+                className="h-4 w-4 rounded border-purple-500 bg-purple-800 text-blue-500 focus:ring-blue-400"
+              />
+              Play sound
+            </label>
           </div>
 
           <div className="flex flex-wrap gap-2 mb-3">
