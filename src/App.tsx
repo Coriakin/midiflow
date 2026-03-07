@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useMIDI } from './hooks/useMIDI';
 import { TinWhistlePracticeBoard } from './components/TinWhistlePracticeBoard';
 import { TinWhistleSequentialPractice } from './components/TinWhistleSequentialPractice';
@@ -28,6 +28,21 @@ type NoteWithTiming = {
   note: number;
   startTime: number;
   duration: number;
+};
+
+type TimingPreset = 'easy' | 'normal' | 'hard';
+type SongOrigin = 'built-in' | 'midi' | 'manual';
+
+const TIMING_WINDOW_MS: Record<TimingPreset, number> = {
+  easy: 180,
+  normal: 120,
+  hard: 70
+};
+
+const SONG_ORIGIN_META: Record<SongOrigin, { label: string; colorClass: string }> = {
+  'built-in': { label: 'Built-in', colorClass: 'text-green-300' },
+  midi: { label: 'MIDI-derived', colorClass: 'text-blue-300' },
+  manual: { label: 'Manual', colorClass: 'text-yellow-300' }
 };
 
 function App() {
@@ -111,6 +126,13 @@ function App() {
   const [loopRange, setLoopRange] = useState<{ start: number; end: number } | null>(null);
   const [showCompletionMessage, setShowCompletionMessage] = useState<boolean>(false);
   const [completionMessage, setCompletionMessage] = useState<string>('');
+  const [timingPreset, setTimingPreset] = useState<TimingPreset>('normal');
+  const [tempoMultiplier, setTempoMultiplier] = useState<number>(1);
+  const [notesAheadTarget, setNotesAheadTarget] = useState<number>(3);
+  const [lastTimingDeviationMs, setLastTimingDeviationMs] = useState<number | null>(null);
+  const [flowStartTimestampMs, setFlowStartTimestampMs] = useState<number | null>(null);
+  const [flowPausedAtTimestampMs, setFlowPausedAtTimestampMs] = useState<number | null>(null);
+  const [flowAccumulatedPauseMs, setFlowAccumulatedPauseMs] = useState<number>(0);
   const [simulatedSoundEnabled, setSimulatedSoundEnabled] = useState<boolean>(() => {
     if (typeof window === 'undefined') {
       return true;
@@ -124,6 +146,7 @@ function App() {
     }
     return true;
   });
+  const [simulatedSpeedMultiplier, setSimulatedSpeedMultiplier] = useState<number>(1);
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -145,17 +168,51 @@ function App() {
   const [aboutContent, setAboutContent] = useState<string>('');
   const [aboutError, setAboutError] = useState<string | null>(null);
 
-  const fullTimedSequence: NoteWithTiming[] = selectedSong
-    ? selectedSong.notesWithTiming && selectedSong.notesWithTiming.length > 0
-      ? selectedSong.notesWithTiming
-      : selectedSong.notes.map((note, index) => ({ note, startTime: index, duration: 1 }))
-    : [];
+  const renderSongOriginBadge = (origin: SongOrigin, isSelected: boolean) => {
+    const meta = SONG_ORIGIN_META[origin];
+    if (isSelected) {
+      return (
+        <span className="px-1.5 py-0.5 rounded border border-white/40 bg-white/10 text-white text-[10px] uppercase tracking-wide">
+          {meta.label}
+        </span>
+      );
+    }
+    return (
+      <span className={`px-1.5 py-0.5 rounded border border-gray-500/60 bg-gray-800/70 text-[10px] uppercase tracking-wide ${meta.colorClass}`}>
+        {meta.label}
+      </span>
+    );
+  };
 
-  const activeTimedSequence: NoteWithTiming[] = loopRange
-    ? fullTimedSequence.slice(loopRange.start, loopRange.end + 1)
-    : fullTimedSequence;
+  const fullTimedSequence: NoteWithTiming[] = useMemo(() => {
+    if (!selectedSong) {
+      return [];
+    }
+    if (selectedSong.notesWithTiming && selectedSong.notesWithTiming.length > 0) {
+      return selectedSong.notesWithTiming;
+    }
+    return selectedSong.notes.map((note, index) => ({ note, startTime: index, duration: 1 }));
+  }, [selectedSong]);
 
-  const activePracticeSequence = activeTimedSequence.map(noteItem => noteItem.note);
+  const activeTimedSequence: NoteWithTiming[] = useMemo(() => (
+    loopRange ? fullTimedSequence.slice(loopRange.start, loopRange.end + 1) : fullTimedSequence
+  ), [fullTimedSequence, loopRange]);
+
+  const normalizedActiveTimedSequence: NoteWithTiming[] = useMemo(() => {
+    if (activeTimedSequence.length === 0) {
+      return [];
+    }
+    const startOffset = activeTimedSequence[0].startTime;
+    return activeTimedSequence.map((noteItem) => ({
+      ...noteItem,
+      startTime: Math.max(0, noteItem.startTime - startOffset)
+    }));
+  }, [activeTimedSequence]);
+
+  const activePracticeSequence = normalizedActiveTimedSequence.map(noteItem => noteItem.note);
+  const timingWindowMs = TIMING_WINDOW_MS[timingPreset];
+  const effectiveTempo = (selectedSong?.tempo || 120) * tempoMultiplier;
+  const flowTempo = Math.max(1, effectiveTempo * simulatedSpeedMultiplier);
 
   // Built-in songs for quick testing
   const builtInSongs: Song[] = [
@@ -551,6 +608,83 @@ function App() {
     return noteNumber >= range.MIN && noteNumber <= range.MAX;
   };
 
+  const resetFlowClock = () => {
+    setFlowStartTimestampMs(null);
+    setFlowPausedAtTimestampMs(null);
+    setFlowAccumulatedPauseMs(0);
+  };
+
+  const getEffectiveElapsedMs = (timestampMs: number) => {
+    if (flowStartTimestampMs === null) {
+      return 0;
+    }
+    const activePauseMs = flowPausedAtTimestampMs !== null ? Math.max(0, timestampMs - flowPausedAtTimestampMs) : 0;
+    return Math.max(0, timestampMs - flowStartTimestampMs - flowAccumulatedPauseMs - activePauseMs);
+  };
+
+  const getExpectedBeatForCurrentIndex = () => {
+    if (normalizedActiveTimedSequence.length > 0 && currentNoteIndex < normalizedActiveTimedSequence.length) {
+      return normalizedActiveTimedSequence[currentNoteIndex].startTime;
+    }
+    return currentNoteIndex;
+  };
+
+  const pauseFlowClock = (timestampMs: number) => {
+    if (flowStartTimestampMs === null || flowPausedAtTimestampMs !== null) {
+      return;
+    }
+    setFlowPausedAtTimestampMs(timestampMs);
+  };
+
+  const resumeFlowClock = (timestampMs: number) => {
+    if (flowPausedAtTimestampMs === null) {
+      return;
+    }
+    setFlowAccumulatedPauseMs(prev => prev + Math.max(0, timestampMs - flowPausedAtTimestampMs));
+    setFlowPausedAtTimestampMs(null);
+  };
+
+  const advancePracticeSequence = () => {
+    if (practiceSequence.length > 0 && currentNoteIndex < practiceSequence.length - 1) {
+      const nextIndex = currentNoteIndex + 1;
+      const nextNote = practiceSequence[nextIndex];
+      setCurrentNoteIndex(nextIndex);
+      setCurrentTargetNote(nextNote);
+      setTimeout(() => {
+        setIsCorrectNote(null);
+      }, 350);
+      return;
+    }
+
+    if (currentNoteIndex >= practiceSequence.length - 1) {
+      if (loopRange && practiceSequence.length > 0) {
+        setTimeout(() => {
+          setIsCorrectNote(null);
+          setCurrentNoteIndex(0);
+          setCurrentTargetNote(practiceSequence[0]);
+          setLastTimingDeviationMs(null);
+          resetFlowClock();
+        }, 350);
+      } else {
+        let sequenceName = 'sequence';
+        if (selectedSong) {
+          sequenceName = selectedSong.title;
+        } else if (practiceSequence.length === 7 && practiceSequence[0] === 62) {
+          sequenceName = 'D Major Scale';
+        }
+        showPracticeCompletion(sequenceName);
+        setTimeout(() => {
+          setIsCorrectNote(null);
+          setCurrentTargetNote(null);
+          setCurrentNoteIndex(0);
+          setPracticeSequence([]);
+          setLastTimingDeviationMs(null);
+          resetFlowClock();
+        }, 1000);
+      }
+    }
+  };
+
   // Unified MIDI message handler for both real and simulated MIDI
   const handleMIDIMessage = (message: MIDIMessage) => {
     setLastNote(message);
@@ -563,129 +697,43 @@ function App() {
       
       // For tin whistle, handle sequential practice logic
       if (selectedInstrument === 'tin-whistle' && currentTargetNote !== null) {
-        const isCorrect = message.note === currentTargetNote;
-        console.log(`🎯 App: Note played: ${midiNoteToName(message.note)} (${message.note}), Target: ${midiNoteToName(currentTargetNote)} (${currentTargetNote}), Index: ${currentNoteIndex}, Correct: ${isCorrect}`);
-        setIsCorrectNote(isCorrect);
-        
-        if (isCorrect) {
-          console.log(`✅ Correct note! Current index: ${currentNoteIndex}, Sequence length: ${practiceSequence.length}`);
-          
-          // Move to next note in sequence immediately, but show green feedback briefly
-          if (practiceSequence.length > 0 && currentNoteIndex < practiceSequence.length - 1) {
-            const nextIndex = currentNoteIndex + 1;
-            const nextNote = practiceSequence[nextIndex];
-            
-            console.log(`⏭️ Advancing to next note: ${midiNoteToName(nextNote)} (${nextNote}) at index ${nextIndex}`);
-            
-            // Update state immediately to prevent getting stuck
-            setCurrentNoteIndex(nextIndex);
-            setCurrentTargetNote(nextNote);
-            
-            // Show green feedback briefly, then reset for next note
-            setTimeout(() => {
-              setIsCorrectNote(null);
-            }, 500);
-          } else if (currentNoteIndex >= practiceSequence.length - 1) {
-            if (loopRange && practiceSequence.length > 0) {
-              console.log('🔁 Loop mode active: wrapping to first selected note');
-              setTimeout(() => {
-                setIsCorrectNote(null);
-                setCurrentNoteIndex(0);
-                setCurrentTargetNote(practiceSequence[0]);
-              }, 500);
-            } else {
-              console.log('Practice sequence completed!');
-              
-              // Determine sequence name for completion message
-              let sequenceName = 'sequence';
-              if (selectedSong) {
-                sequenceName = selectedSong.title;
-              } else if (practiceSequence.length === 7 && practiceSequence[0] === 62) {
-                sequenceName = 'D Major Scale';
-              }
-              
-              // Show completion notification
-              showPracticeCompletion(sequenceName);
-              
-              // Sequence completed - reset after showing green feedback
-              setTimeout(() => {
-                setIsCorrectNote(null);
-                setCurrentTargetNote(null);
-                setCurrentNoteIndex(0);
-                setPracticeSequence([]);
-              }, 1000);
-            }
+        const isCorrectFingering = message.note === currentTargetNote;
+        const isFlowStarted = flowStartTimestampMs !== null;
+        const timestampMs = message.timestamp || performance.now();
+
+        if (!isCorrectFingering) {
+          setIsCorrectNote(false);
+          setLastTimingDeviationMs(null);
+          if (isFlowStarted) {
+            pauseFlowClock(timestampMs);
           }
-        } else {
-          console.log(`❌ Incorrect note played. Expected: ${midiNoteToName(currentTargetNote)}, Got: ${midiNoteToName(message.note)}`);
-          
-          // Auto-recovery: After 1 second, simulate playing the correct note to keep simulation progressing
-          setTimeout(() => {
-            console.log(`🔧 Auto-recovery: Simulating correct note ${midiNoteToName(currentTargetNote)} after incorrect input`);
-            
-            // Simulate the correct note being played
-            const correctMessage: MIDIMessage = {
-              type: 'noteon',
-              note: currentTargetNote,
-              velocity: 64,
-              timestamp: performance.now()
-            };
-            
-            // Process the simulated correct note
-            handleSimulatedNotePlayed(correctMessage.note, correctMessage.velocity);
-            setLastPlayedNote(correctMessage.note);
-            setIsCorrectNote(true);
-            
-            console.log(`✅ Auto-recovery: Correct note simulated! Current index: ${currentNoteIndex}, Sequence length: ${practiceSequence.length}`);
-            
-            // Move to next note in sequence
-            if (practiceSequence.length > 0 && currentNoteIndex < practiceSequence.length - 1) {
-              const nextIndex = currentNoteIndex + 1;
-              const nextNote = practiceSequence[nextIndex];
-              
-              console.log(`⏭️ Auto-recovery: Advancing to next note: ${midiNoteToName(nextNote)} (${nextNote}) at index ${nextIndex}`);
-              
-              // Update state immediately to prevent getting stuck
-              setCurrentNoteIndex(nextIndex);
-              setCurrentTargetNote(nextNote);
-              
-              // Show green feedback briefly, then reset for next note
-              setTimeout(() => {
-                setIsCorrectNote(null);
-              }, 500);
-            } else if (currentNoteIndex >= practiceSequence.length - 1) {
-              if (loopRange && practiceSequence.length > 0) {
-                console.log('🔁 Loop mode active (auto-recovery): wrapping to first selected note');
-                setTimeout(() => {
-                  setIsCorrectNote(null);
-                  setCurrentNoteIndex(0);
-                  setCurrentTargetNote(practiceSequence[0]);
-                }, 500);
-              } else {
-                console.log('Auto-recovery: Practice sequence completed!');
-                
-                // Determine sequence name for completion message
-                let sequenceName = 'sequence';
-                if (selectedSong) {
-                  sequenceName = selectedSong.title;
-                } else if (practiceSequence.length === 7 && practiceSequence[0] === 62) {
-                  sequenceName = 'D Major Scale';
-                }
-                
-                // Show completion notification
-                showPracticeCompletion(sequenceName);
-                
-                // Sequence completed - reset after showing green feedback
-                setTimeout(() => {
-                  setIsCorrectNote(null);
-                  setCurrentTargetNote(null);
-                  setCurrentNoteIndex(0);
-                  setPracticeSequence([]);
-                }, 1000);
-              }
-            }
-          }, 1000); // 1 second delay before auto-recovery
+          return;
         }
+
+        if (!isFlowStarted) {
+          setFlowStartTimestampMs(timestampMs);
+          setFlowAccumulatedPauseMs(0);
+          setFlowPausedAtTimestampMs(null);
+          setIsCorrectNote(true);
+          setLastTimingDeviationMs(0);
+          advancePracticeSequence();
+          return;
+        }
+
+        if (flowPausedAtTimestampMs !== null) {
+          resumeFlowClock(timestampMs);
+        }
+
+        const expectedBeat = getExpectedBeatForCurrentIndex();
+        const expectedMs = (expectedBeat * 60000) / flowTempo;
+        const elapsedMs = getEffectiveElapsedMs(timestampMs);
+        const timingDeviationMs = elapsedMs - expectedMs;
+        const timingWithinWindow = Math.abs(timingDeviationMs) <= timingWindowMs;
+
+        setIsCorrectNote(timingWithinWindow);
+        setLastTimingDeviationMs(timingDeviationMs);
+
+        advancePracticeSequence();
       }
     }
   };
@@ -697,11 +745,40 @@ function App() {
     void playWhistleNote(note, velocity);
   };
 
+  const handleSimulatedTransportStateChange = (state: 'playing' | 'paused' | 'stopped') => {
+    if (state === 'playing') {
+      return;
+    }
+
+    if (state === 'stopped') {
+      resetPracticeSequence();
+      return;
+    }
+
+    const now = performance.now();
+    pauseFlowClock(now);
+  };
+
   // Listen for real MIDI messages for sequential practice
   useEffect(() => {
     addMessageListener(handleMIDIMessage);
     return () => removeMessageListener(handleMIDIMessage);
-  }, [addMessageListener, removeMessageListener, selectedInstrument, currentTargetNote, practiceSequence, currentNoteIndex, selectedSong, loopRange]);
+  }, [
+    addMessageListener,
+    removeMessageListener,
+    selectedInstrument,
+    currentTargetNote,
+    practiceSequence,
+    currentNoteIndex,
+    selectedSong,
+    loopRange,
+    normalizedActiveTimedSequence,
+    timingWindowMs,
+    flowTempo,
+    flowStartTimestampMs,
+    flowPausedAtTimestampMs,
+    flowAccumulatedPauseMs
+  ]);
 
   // Handle song creation
   const handleSongCreate = (song: Song) => {
@@ -727,6 +804,8 @@ function App() {
       setCurrentTargetNote(null);
       setIsCorrectNote(null);
       setLastPlayedNote(null);
+      setLastTimingDeviationMs(null);
+      resetFlowClock();
     }
   };
 
@@ -741,6 +820,8 @@ function App() {
       setCurrentTargetNote(null);
       setIsCorrectNote(null);
       setLastPlayedNote(null);
+      setLastTimingDeviationMs(null);
+      resetFlowClock();
     }
   };
 
@@ -803,6 +884,8 @@ function App() {
   const startSongPractice = (song: AnySong) => {
     setSelectedSong(song);
     setLoopRange(null);
+    setLastTimingDeviationMs(null);
+    resetFlowClock();
     startPracticeSequence(song.notes);
   };
 
@@ -829,6 +912,8 @@ function App() {
     setCurrentTargetNote(loopNotes[0]);
     setIsCorrectNote(null);
     setLastPlayedNote(null);
+    setLastTimingDeviationMs(null);
+    resetFlowClock();
   };
 
   const handleClearLoopRange = () => {
@@ -844,6 +929,8 @@ function App() {
     setCurrentTargetNote(fullNotes[0] ?? null);
     setIsCorrectNote(null);
     setLastPlayedNote(null);
+    setLastTimingDeviationMs(null);
+    resetFlowClock();
   };
 
   // Start a practice sequence for tin whistle
@@ -853,6 +940,8 @@ function App() {
     setCurrentTargetNote(notes[0]);
     setIsCorrectNote(null);
     setLastPlayedNote(null);
+    setLastTimingDeviationMs(null);
+    resetFlowClock();
     console.log('🎯 App: Started practice sequence:', notes.map((n, i) => `${i}:${midiNoteToName(n)}(${n})`).join(' '));
     console.log('🎯 App: First note target:', midiNoteToName(notes[0]), `(${notes[0]})`);
   };
@@ -865,6 +954,8 @@ function App() {
     setCurrentTargetNote(null);
     setIsCorrectNote(null);
     setLastPlayedNote(null);
+    setLastTimingDeviationMs(null);
+    resetFlowClock();
     setSelectedSong(null); // Clear selected song to make it clear practice has stopped
     console.log('Stopped practice sequence and cleared selected song');
   };
@@ -878,6 +969,8 @@ function App() {
       setCurrentTargetNote(sequenceToReset[0]);
       setIsCorrectNote(null);
       setLastPlayedNote(null);
+      setLastTimingDeviationMs(null);
+      resetFlowClock();
       console.log('Reset practice sequence to beginning');
     }
   };
@@ -885,6 +978,8 @@ function App() {
   const handleStartDScalePractice = () => {
     setSelectedSong(null);
     setLoopRange(null);
+    setLastTimingDeviationMs(null);
+    resetFlowClock();
     startPracticeSequence(D_SCALE_SEQUENCE);
   };
 
@@ -1300,6 +1395,9 @@ Current storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs 
                   {/* Song Selection */}
                   <div>
                     <h4 className="text-sm font-medium text-gray-300 mb-2">Select a song to practice:</h4>
+                    <p className="text-xs text-gray-400 mb-3">
+                      MIDI-derived songs usually preserve source timing better, but quality depends on source MIDI and track selection.
+                    </p>
                   
                   {/* Built-in Songs Section */}
                   {builtInSongs.length > 0 && (
@@ -1311,26 +1409,31 @@ Current storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs 
                       <div className="mac-panel-soft p-5 min-h-[300px] overflow-y-auto mac-scroll">
                         <div className="space-y-2">
                           {builtInSongs.map(song => (
+                            (() => {
+                              const isSelectedSong = selectedSong?.id === song.id;
+                              return (
                             <div
                               key={song.id}
                               onClick={() => {
                                 startSongPractice(song);
                                 setPracticeSubTab('practice');
                               }}
-                              className={`flex items-center justify-between p-2 rounded cursor-pointer transition-colors ${selectedSong?.id === song.id ? 'bg-blue-600 text-white' : 'hover:bg-gray-600 text-gray-300'}`}
+                              className={`flex items-center justify-between p-2 rounded cursor-pointer transition-colors ${isSelectedSong ? 'bg-blue-600 text-white' : 'hover:bg-gray-600 text-gray-300'}`}
                             >
                               <div className="flex items-center space-x-3 flex-1 min-w-0">
-                                <div className={`w-3 h-3 rounded-full flex-shrink-0 ${selectedSong?.id === song.id ? 'bg-white' : 'bg-gray-500'}`}></div>
+                                <div className={`w-3 h-3 rounded-full flex-shrink-0 ${isSelectedSong ? 'bg-white' : 'bg-gray-500'}`}></div>
                                 <div className="flex-1 min-w-0">
                                   <div className="font-medium truncate">{song.title}</div>
                                   <div className="text-xs text-gray-400 flex items-center space-x-2">
                                     <span>{song.notes.length} notes</span>
                                     <span>•</span>
                                     <span>{song.tempo} BPM</span>
+                                    <span>•</span>
+                                    {renderSongOriginBadge('built-in', isSelectedSong)}
                                   </div>
                                 </div>
                               </div>
-                              {selectedSong?.id === song.id && (
+                              {isSelectedSong && (
                                 <div className="flex-shrink-0 ml-2">
                                   <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -1338,6 +1441,8 @@ Current storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs 
                                 </div>
                               )}
                             </div>
+                              );
+                            })()
                           ))}
                         </div>
                       </div>
@@ -1355,12 +1460,15 @@ Current storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs 
                         <div className="space-y-1">
                           {/* MIDI Songs */}
                           {midiSongs.map(song => (
+                            (() => {
+                              const isSelectedSong = selectedSong?.id === song.id;
+                              return (
                             <div
                               key={song.id}
-                              className={`flex items-center justify-between p-2 rounded transition-colors ${selectedSong?.id === song.id ? 'bg-blue-600 text-white' : 'hover:bg-gray-600 text-gray-300'}`}
+                              className={`flex items-center justify-between p-2 rounded transition-colors ${isSelectedSong ? 'bg-blue-600 text-white' : 'hover:bg-gray-600 text-gray-300'}`}
                             >
                               <div className="flex items-center space-x-3 flex-1 min-w-0">
-                                <div className={`w-3 h-3 rounded-full flex-shrink-0 ${selectedSong?.id === song.id ? 'bg-white' : 'bg-gray-500'}`}></div>
+                                <div className={`w-3 h-3 rounded-full flex-shrink-0 ${isSelectedSong ? 'bg-white' : 'bg-gray-500'}`}></div>
                                 <div className="flex-1 min-w-0">
                                   {editingSongId === song.id ? (
                                     <div className="flex items-center space-x-2">
@@ -1416,6 +1524,8 @@ Current storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs 
                                     <span>{song.notes.length} notes</span>
                                     <span>•</span>
                                     <span>{song.tempo} BPM</span>
+                                    <span>•</span>
+                                    {renderSongOriginBadge('midi', isSelectedSong)}
                                     <span>•</span>
                                     <span className="text-purple-400">Track {song.selectedTrack + 1}</span>
                                   </div>
@@ -1503,7 +1613,7 @@ Current storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs 
                                   </svg>
                                 </button>
                                 
-                                {selectedSong?.id === song.id && (
+                                {isSelectedSong && (
                                   <div className="flex-shrink-0">
                                     <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                                       <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -1512,20 +1622,25 @@ Current storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs 
                                 )}
                               </div>
                             </div>
+                              );
+                            })()
                           ))}
                           {/* Manual Songs */}
                           {songs.map(song => (
+                            (() => {
+                              const isSelectedSong = selectedSong?.id === song.id;
+                              return (
                             <div
                               key={song.id}
                               className={`flex items-center justify-between p-2 rounded transition-colors ${
-                                selectedSong?.id === song.id
+                                isSelectedSong
                                   ? 'bg-blue-600 text-white'
                                   : 'hover:bg-gray-600 text-gray-300'
                               }`}
                             >
                               <div className="flex items-center space-x-3 flex-1 min-w-0">
                                 <div className={`w-3 h-3 rounded-full flex-shrink-0 ${
-                                  selectedSong?.id === song.id ? 'bg-white' : 'bg-gray-500'
+                                  isSelectedSong ? 'bg-white' : 'bg-gray-500'
                                 }`}></div>
                                 <div className="flex-1 min-w-0">
                                   {editingSongId === song.id ? (
@@ -1583,7 +1698,7 @@ Current storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs 
                                     <span>•</span>
                                     <span>{song.tempo} BPM</span>
                                     <span>•</span>
-                                    <span className="text-yellow-400">Manual</span>
+                                    {renderSongOriginBadge('manual', isSelectedSong)}
                                   </div>
                                 </div>
                               </div>
@@ -1618,6 +1733,8 @@ Current storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs 
                                 </button>
                               </div>
                             </div>
+                              );
+                            })()
                           ))}
                         </div>
                       </div>
@@ -1648,19 +1765,74 @@ Current storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs 
                       <SimulatedMIDIPlayer
                         onMIDIMessage={handleMIDIMessage}
                         practiceSequence={practiceSequence}
+                        timedSequence={normalizedActiveTimedSequence}
                         currentNoteIndex={currentNoteIndex}
-                        tempo={selectedSong?.tempo || 120}
+                        tempo={effectiveTempo}
                         isVisible={true}
                         playSound={simulatedSoundEnabled}
                         onPlaySoundChange={setSimulatedSoundEnabled}
                         onSimulatedNotePlayed={handleSimulatedNotePlayed}
                         onRestartFromBeginning={resetPracticeSequence}
+                        onTransportStateChange={handleSimulatedTransportStateChange}
+                        onSpeedMultiplierChange={setSimulatedSpeedMultiplier}
                       />
                     )}
 
                     {/* Practice Area */}
                     <div className="mac-panel p-4">
                       <h2 className="text-xl font-semibold mb-3">Practice Area</h2>
+                      {selectedSong && (
+                        <div className="mac-panel-soft p-3 mb-4">
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            <label className="text-sm text-gray-200">
+                              <span className="block mb-1 text-gray-300">Timing Window</span>
+                              <select
+                                value={timingPreset}
+                                onChange={(e) => setTimingPreset(e.target.value as TimingPreset)}
+                                className="mac-select w-full"
+                              >
+                                <option value="easy">Easy (±180 ms)</option>
+                                <option value="normal">Normal (±120 ms)</option>
+                                <option value="hard">Hard (±70 ms)</option>
+                              </select>
+                            </label>
+                            <label className="text-sm text-gray-200">
+                              <span className="block mb-1 text-gray-300">Tempo</span>
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="range"
+                                  min={0.5}
+                                  max={1.5}
+                                  step={0.05}
+                                  value={tempoMultiplier}
+                                  onChange={(e) => setTempoMultiplier(parseFloat(e.target.value))}
+                                  className="w-full"
+                                />
+                                <span className="text-xs text-gray-300 min-w-[48px] text-right">
+                                  {Math.round(tempoMultiplier * 100)}%
+                                </span>
+                              </div>
+                            </label>
+                            <label className="text-sm text-gray-200">
+                              <span className="block mb-1 text-gray-300">Notes Ahead</span>
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="range"
+                                  min={2}
+                                  max={8}
+                                  step={1}
+                                  value={notesAheadTarget}
+                                  onChange={(e) => setNotesAheadTarget(parseInt(e.target.value, 10))}
+                                  className="w-full"
+                                />
+                                <span className="text-xs text-gray-300 min-w-[30px] text-right">
+                                  {notesAheadTarget}
+                                </span>
+                              </div>
+                            </label>
+                          </div>
+                        </div>
+                      )}
                       
                       <div className="grid grid-cols-1 gap-4">
                         {/* Main practice area */}
@@ -1668,16 +1840,23 @@ Current storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs 
                           {selectedInstrument === 'tin-whistle' ? (
                             practiceSequence.length > 0 && selectedSong ? (
                               <TinWhistleSequentialPractice
-                                sequence={activeTimedSequence}
+                                sequence={normalizedActiveTimedSequence}
                                 currentNoteIndex={currentNoteIndex}
-                                tempo={selectedSong.tempo || 120}
+                                tempo={flowTempo}
                                 lastPlayedNote={lastPlayedNote}
                                 isCorrectNote={isCorrectNote}
                                 loopModeActive={!!loopRange}
                                 loopRange={loopRange}
-                                loopNotesPreview={activeTimedSequence.map(item => midiNoteToName(item.note)).slice(0, 8)}
+                                loopNotesPreview={normalizedActiveTimedSequence.map(item => midiNoteToName(item.note)).slice(0, 8)}
                                 onApplyLoopRange={handleApplyLoopRange}
                                 onClearLoopRange={handleClearLoopRange}
+                                timingPreset={timingPreset}
+                                timingWindowMs={timingWindowMs}
+                                lastTimingDeviationMs={lastTimingDeviationMs}
+                                flowStartTimestampMs={flowStartTimestampMs}
+                                flowPausedAtTimestampMs={flowPausedAtTimestampMs}
+                                flowAccumulatedPauseMs={flowAccumulatedPauseMs}
+                                notesAheadTarget={notesAheadTarget}
                                 className="h-auto"
                               />
                             ) : (
@@ -1750,6 +1929,13 @@ Current storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs 
               currentTargetNote={currentTargetNote}
               lastPlayedNote={lastPlayedNote}
               isCorrectNote={isCorrectNote}
+              timingPreset={timingPreset}
+              timingWindowMs={timingWindowMs}
+              lastTimingDeviationMs={lastTimingDeviationMs}
+              flowStartTimestampMs={flowStartTimestampMs}
+              flowPausedAtTimestampMs={flowPausedAtTimestampMs}
+              flowAccumulatedPauseMs={flowAccumulatedPauseMs}
+              notesAheadTarget={notesAheadTarget}
               startPracticeSequence={handleStartDScalePractice}
               resetPracticeSequence={resetPracticeSequence}
               stopPracticeSequence={stopPracticeSequence}
@@ -1759,13 +1945,16 @@ Current storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs 
               <SimulatedMIDIPlayer
                 onMIDIMessage={handleMIDIMessage}
                 practiceSequence={practiceSequence}
+                timedSequence={practiceSequence.map((note, index) => ({ note, startTime: index, duration: 1 }))}
                 currentNoteIndex={currentNoteIndex}
-                tempo={selectedSong?.tempo || 120}
+                tempo={effectiveTempo}
                 isVisible={true}
                 playSound={simulatedSoundEnabled}
                 onPlaySoundChange={setSimulatedSoundEnabled}
                 onSimulatedNotePlayed={handleSimulatedNotePlayed}
                 onRestartFromBeginning={resetPracticeSequence}
+                onTransportStateChange={handleSimulatedTransportStateChange}
+                onSpeedMultiplierChange={setSimulatedSpeedMultiplier}
               />
             )}
           </div>

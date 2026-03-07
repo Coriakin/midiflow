@@ -1,38 +1,33 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { midiNoteToName } from '../types/midi';
 
-/**
- * Tin whistle fingering patterns
- * Each pattern represents 6 holes: [hole1, hole2, hole3, hole4, hole5, hole6]
- * true = covered/closed, false = open
- */
 const TIN_WHISTLE_FINGERINGS: Record<number, boolean[]> = {
-  62: [true, true, true, true, true, true],   // D4 (low D)
-  63: [true, true, true, true, true, false],  // D#4
-  64: [true, true, true, true, true, false],  // E4
-  65: [true, true, true, true, false, false], // F4
-  66: [true, true, true, true, false, false], // F#4
-  67: [true, true, true, false, false, false], // G4
-  68: [true, true, false, true, false, false], // G#4
-  69: [true, true, false, false, false, false], // A4
-  70: [true, false, true, false, false, false], // A#4
-  71: [true, false, false, false, false, false], // B4
-  72: [false, false, false, false, false, false], // C5
-  73: [true, false, true, false, false, false], // C#5
-  74: [true, true, true, true, true, true],   // D5 (second octave)
-  76: [true, true, true, true, true, false],  // E5
-  77: [true, true, true, true, false, false], // F5
-  78: [true, true, true, false, false, false], // F#5
-  79: [true, true, true, false, false, false], // G5
-  81: [true, true, false, false, false, false], // A5
-  83: [true, false, false, false, false, false], // B5
-  84: [false, false, false, false, false, false], // C6
+  62: [true, true, true, true, true, true],
+  63: [true, true, true, true, true, false],
+  64: [true, true, true, true, true, false],
+  65: [true, true, true, true, false, false],
+  66: [true, true, true, true, false, false],
+  67: [true, true, true, false, false, false],
+  68: [true, true, false, true, false, false],
+  69: [true, true, false, false, false, false],
+  70: [true, false, true, false, false, false],
+  71: [true, false, false, false, false, false],
+  72: [false, false, false, false, false, false],
+  73: [true, false, true, false, false, false],
+  74: [true, true, true, true, true, true],
+  76: [true, true, true, true, true, false],
+  77: [true, true, true, true, false, false],
+  78: [true, true, true, false, false, false],
+  79: [true, true, true, false, false, false],
+  81: [true, true, false, false, false, false],
+  83: [true, false, false, false, false, false],
+  84: [false, false, false, false, false, false]
 };
 
 const STAFF_LINE_SPACING = 8;
 const STAFF_TOP_PADDING = 4;
 const STAFF_NOTE_DIAMETER = 8;
-const STAFF_REFERENCE_NOTE = 64; // E4 line
+const STAFF_REFERENCE_NOTE = 64;
 const STAFF_LINE_INDICES = [0, 1, 2, 3, 4];
 
 const StaffNoteDisplay: React.FC<{ note: number }> = ({ note }) => {
@@ -46,7 +41,7 @@ const StaffNoteDisplay: React.FC<{ note: number }> = ({ note }) => {
 
   return (
     <div className="relative w-24 h-20">
-      {STAFF_LINE_INDICES.map(line => (
+      {STAFF_LINE_INDICES.map((line) => (
         <span
           key={line}
           className="absolute left-0 right-0 h-[1px] bg-white/20"
@@ -60,7 +55,7 @@ const StaffNoteDisplay: React.FC<{ note: number }> = ({ note }) => {
           height: STAFF_NOTE_DIAMETER,
           top: noteTop
         }}
-      ></span>
+      />
       {needsLedgerBelow && (
         <span
           className="absolute left-1/2 -translate-x-1/2 h-[2px] bg-white/60"
@@ -79,14 +74,14 @@ const StaffNoteDisplay: React.FC<{ note: number }> = ({ note }) => {
 
 interface NoteWithTiming {
   note: number;
-  startTime: number; // in beats relative to song start
-  duration: number; // in beats
+  startTime: number;
+  duration: number;
 }
 
 interface SequentialPracticeProps {
   sequence: NoteWithTiming[];
   currentNoteIndex: number;
-  tempo: number; // BPM
+  tempo: number;
   lastPlayedNote?: number | null;
   isCorrectNote?: boolean | null;
   loopModeActive?: boolean;
@@ -94,13 +89,16 @@ interface SequentialPracticeProps {
   loopNotesPreview?: string[];
   onApplyLoopRange?: (startIndex: number, endIndex: number) => void;
   onClearLoopRange?: () => void;
+  timingPreset: 'easy' | 'normal' | 'hard';
+  timingWindowMs: number;
+  lastTimingDeviationMs: number | null;
+  flowStartTimestampMs: number | null;
+  flowPausedAtTimestampMs: number | null;
+  flowAccumulatedPauseMs: number;
+  notesAheadTarget: number;
   className?: string;
 }
 
-/**
- * Sequential tin whistle practice with static note layout and timing feedback
- * Notes are displayed in a comfortable grid format for stress-free learning
- */
 export const TinWhistleSequentialPractice: React.FC<SequentialPracticeProps> = ({
   sequence,
   currentNoteIndex,
@@ -111,150 +109,93 @@ export const TinWhistleSequentialPractice: React.FC<SequentialPracticeProps> = (
   loopNotesPreview = [],
   onApplyLoopRange,
   onClearLoopRange,
+  timingPreset,
+  timingWindowMs,
+  lastTimingDeviationMs,
+  flowStartTimestampMs,
+  flowPausedAtTimestampMs,
+  flowAccumulatedPauseMs,
+  notesAheadTarget,
   className = ''
 }) => {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [completedNotes, setCompletedNotes] = useState<Set<number>>(new Set());
-  const [correctNoteFeedback, setCorrectNoteFeedback] = useState<Set<number>>(new Set());
-  const [incorrectNoteFeedback, setIncorrectNoteFeedback] = useState<Set<number>>(new Set());
-  const [hasStarted, setHasStarted] = useState(false);
-  const [isCompleted, setIsCompleted] = useState(false);
+  const laneRef = useRef<HTMLDivElement>(null);
+  const [laneWidth, setLaneWidth] = useState(960);
+  const [playheadBeat, setPlayheadBeat] = useState(0);
   const [selectionAnchorIndex, setSelectionAnchorIndex] = useState<number | null>(null);
   const [previewRange, setPreviewRange] = useState<{ start: number; end: number } | null>(null);
-  const [showHelpDetails, setShowHelpDetails] = useState(false);
 
-  // Reset state when sequence changes
   useEffect(() => {
-    setHasStarted(false);
-    setIsCompleted(false);
-    setCompletedNotes(new Set());
-    setCorrectNoteFeedback(new Set());
-    setIncorrectNoteFeedback(new Set());
+    const element = laneRef.current;
+    if (!element) {
+      return;
+    }
+
+    const observer = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      if (!entry) {
+        return;
+      }
+      setLaneWidth(entry.contentRect.width);
+    });
+
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (flowStartTimestampMs === null) {
+      setPlayheadBeat(0);
+      return;
+    }
+
+    let frameId = 0;
+    const tick = () => {
+      const now = performance.now();
+      const activePauseMs = flowPausedAtTimestampMs !== null ? Math.max(0, now - flowPausedAtTimestampMs) : 0;
+      const elapsedMs = Math.max(0, now - flowStartTimestampMs - flowAccumulatedPauseMs - activePauseMs);
+      const beats = elapsedMs / (60000 / Math.max(tempo, 1));
+      setPlayheadBeat(beats);
+      frameId = requestAnimationFrame(tick);
+    };
+
+    frameId = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frameId);
+  }, [flowStartTimestampMs, flowPausedAtTimestampMs, flowAccumulatedPauseMs, tempo]);
+
+  useEffect(() => {
     setSelectionAnchorIndex(null);
     setPreviewRange(null);
   }, [sequence]);
 
-  // Auto-scroll to keep current note in view
-  useEffect(() => {
-    if (containerRef.current && sequence.length > 0) {
-      // Add a small delay to ensure DOM has updated after note change
-      const scrollTimeout = setTimeout(() => {
-        const container = containerRef.current;
-        if (!container) return;
-        
-        // Find the current note element
-        const currentNoteElement = container.querySelector(`[data-note-index="${currentNoteIndex}"]`) as HTMLElement;
-        
-        if (currentNoteElement) {
-          const containerRect = container.getBoundingClientRect();
-          const noteRect = currentNoteElement.getBoundingClientRect();
-          
-          // Calculate the position to center the current note
-          const containerCenter = containerRect.width / 2;
-          const noteCenter = noteRect.left - containerRect.left + noteRect.width / 2;
-          const scrollOffset = noteCenter - containerCenter;
-          
-          // Add padding to show some context around the current note
-          const finalScrollPosition = container.scrollLeft + scrollOffset;
-          
-          // Smooth scroll to center the current note
-          container.scrollTo({
-            left: Math.max(0, finalScrollPosition), // Prevent negative scroll
-            behavior: 'smooth'
-          });
-        }
-      }, 100); // Small delay to ensure DOM is ready
-      
-      return () => clearTimeout(scrollTimeout);
+  const currentExpectedBeat = sequence[currentNoteIndex]?.startTime ?? 0;
+  const isFlowStarted = flowStartTimestampMs !== null;
+  const isFlowPaused = flowPausedAtTimestampMs !== null;
+
+  const pixelsPerBeat = useMemo(() => {
+    if (sequence.length === 0) {
+      return 130;
     }
-  }, [currentNoteIndex, sequence.length]);
 
-  // Auto-scroll to keep current note centered
-  useEffect(() => {
-    if (containerRef.current && currentNoteIndex >= 0 && hasStarted) {
-      const currentNoteElement = containerRef.current.querySelector(`[data-note-index="${currentNoteIndex}"]`) as HTMLElement;
-      if (currentNoteElement) {
-        currentNoteElement.scrollIntoView({
-          behavior: 'smooth',
-          block: 'center',
-          inline: 'center'
-        });
-      }
-    }
-  }, [currentNoteIndex, hasStarted]);
+    const viewWidth = Math.max(320, laneWidth - 180);
+    const lookAheadIndex = Math.min(sequence.length - 1, currentNoteIndex + Math.max(2, notesAheadTarget));
+    const currentStartBeat = sequence[currentNoteIndex]?.startTime ?? 0;
+    const lookAheadBeat = sequence[lookAheadIndex]?.startTime ?? currentStartBeat + 2;
+    const lookAheadDuration = sequence[lookAheadIndex]?.duration ?? 1;
+    const beatSpan = Math.max(1, lookAheadBeat - currentStartBeat + lookAheadDuration);
+    return Math.min(260, Math.max(60, viewWidth / beatSpan));
+  }, [sequence, laneWidth, currentNoteIndex, notesAheadTarget]);
 
-  // Handle correct/incorrect note feedback timing
-  useEffect(() => {
-    if (currentNoteIndex >= 0) {
-      if (isCorrectNote === true) {
-        // Start the practice if this is the first note
-        if (!hasStarted) {
-          setHasStarted(true);
-        }
-
-        // Add to completed notes
-        setCompletedNotes(prev => new Set([...prev, currentNoteIndex]));
-        
-        // Show green feedback for 2 seconds
-        setCorrectNoteFeedback(prev => new Set([...prev, currentNoteIndex]));
-        
-        setTimeout(() => {
-          setCorrectNoteFeedback(prev => {
-            const newSet = new Set(prev);
-            newSet.delete(currentNoteIndex);
-            return newSet;
-          });
-        }, 2000);
-      } else if (isCorrectNote === false) {
-        // Show red feedback for incorrect note for 1 second (during auto-recovery period)
-        setIncorrectNoteFeedback(prev => new Set([...prev, currentNoteIndex]));
-        
-        setTimeout(() => {
-          setIncorrectNoteFeedback(prev => {
-            const newSet = new Set(prev);
-            newSet.delete(currentNoteIndex);
-            return newSet;
-          });
-        }, 1000);
-      }
-    }
-  }, [isCorrectNote, currentNoteIndex, hasStarted]);
-
-  // Render fingering chart for a note
-  const renderFingeringChart = (note: number, size: 'small' | 'large' = 'small') => {
-    const fingering = TIN_WHISTLE_FINGERINGS[note] || [false, false, false, false, false, false];
-    const chartSize = size === 'large' ? 'w-16 h-24' : 'w-12 h-16';
-    const holeSize = size === 'large' ? 'w-4 h-4' : 'w-3 h-3';
-
-    return (
-      <div className={`${chartSize} bg-amber-700 rounded-lg border-2 border-amber-600 flex flex-col justify-between p-1 relative shadow-lg`}>
-        {fingering.map((isCovered, index) => (
-          <div
-            key={index}
-            className={`${holeSize} rounded-full border-2 mx-auto ${
-              isCovered
-                ? 'bg-gray-800 border-gray-600' // Covered hole (dark)
-                : 'bg-white border-gray-300'     // Open hole (light)
-            }`}
-          />
-        ))}
-      </div>
-    );
-  };
-
-  // Calculate metronome pulse intensity (simplified without timeline)
-  const getCurrentBeat = () => {
-    // Use a simple beat counter based on practice progress
-    return currentNoteIndex;
-  };
-
-  const currentBeat = getCurrentBeat();
-  const metronomeIntensity = !hasStarted || isCompleted ? 0 : Math.abs(Math.sin((currentBeat % 1) * Math.PI));
   const loopRangeLabel = loopRange ? `${loopRange.start + 1}-${loopRange.end + 1}` : '';
   const remainingLoopNotes = Math.max(0, sequence.length - loopNotesPreview.length);
   const loopNotesText = loopNotesPreview.length > 0
     ? `${loopNotesPreview.join(' · ')}${remainingLoopNotes > 0 ? ` +${remainingLoopNotes} more` : ''}`
     : 'No notes available';
+
+  const hitLineX = 116;
+  const isTimingEarly = (lastTimingDeviationMs ?? 0) < 0;
+  const timingText = lastTimingDeviationMs === null
+    ? `Window ±${timingWindowMs}ms`
+    : `${isTimingEarly ? 'Early' : 'Late'} ${Math.abs(lastTimingDeviationMs).toFixed(0)}ms`;
 
   const handleNoteClick = (index: number, event: React.MouseEvent<HTMLDivElement>) => {
     if (sequence.length === 0 || !onApplyLoopRange) {
@@ -299,6 +240,25 @@ export const TinWhistleSequentialPractice: React.FC<SequentialPracticeProps> = (
     });
   };
 
+  const renderFingeringChart = (note: number) => {
+    const fingering = TIN_WHISTLE_FINGERINGS[note] || [false, false, false, false, false, false];
+
+    return (
+      <div className="w-12 h-16 bg-amber-700 rounded-lg border border-amber-500/65 flex flex-col justify-between p-1.5 shadow-md">
+        {fingering.map((isCovered, index) => (
+          <div
+            key={index}
+            className={`w-3 h-3 rounded-full border mx-auto ${
+              isCovered
+                ? 'bg-gray-800 border-gray-600'
+                : 'bg-white border-gray-300'
+            }`}
+          />
+        ))}
+      </div>
+    );
+  };
+
   return (
     <div className={`relative mac-panel border border-gray-600 overflow-hidden ${className}`}>
       {loopModeActive && (
@@ -322,49 +282,24 @@ export const TinWhistleSequentialPractice: React.FC<SequentialPracticeProps> = (
         </div>
       )}
 
-      {/* Header with metronome */}
       <div className="mac-panel-soft p-4 border-b border-gray-600">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-            Sequential Practice
-            {!hasStarted ? (
-              <span className="text-blue-300 text-sm font-normal animate-pulse">
-                Play the first note to start
-              </span>
-            ) : isCompleted ? (
-              <span className="text-green-400 text-sm font-normal">
-                Song Complete
-              </span>
-            ) : null}
+            Rhythm Lane
+            {!isFlowStarted ? (
+              <span className="text-blue-300 text-sm font-normal animate-pulse">Play first note to start</span>
+            ) : isFlowPaused ? (
+              <span className="text-amber-300 text-sm font-normal">Paused: correct fingering to continue</span>
+            ) : (
+              <span className="text-green-300 text-sm font-normal">Running</span>
+            )}
           </h3>
-          <div className="flex items-center justify-between sm:justify-end gap-4 sm:gap-6">
-            {/* Metronome */}
-            <div className="flex items-center space-x-2">
-              <span className="text-sm text-gray-300">♩ = {tempo}</span>
-              <div 
-                className={`w-6 h-6 rounded-full transition-all duration-100 ${
-                  !hasStarted
-                    ? 'bg-blue-500 opacity-50'
-                    : isCompleted
-                      ? 'bg-green-500 opacity-70'
-                      : metronomeIntensity > 0.8 ? 'bg-yellow-400 scale-125' : 'bg-yellow-600'
-                }`}
-                style={{
-                  opacity: !hasStarted || isCompleted ? 0.5 : 0.3 + (metronomeIntensity * 0.7),
-                  transform: !hasStarted || isCompleted ? 'scale(1)' : `scale(${1 + metronomeIntensity * 0.25})`
-                }}
-              />
-              <span className="text-xs text-gray-500">
-                Beat {Math.floor(currentBeat) + 1}
-                {!hasStarted && <span className="text-blue-400 ml-1">(WAITING)</span>}
-                {hasStarted && isCompleted && <span className="text-green-400 ml-1">(COMPLETE)</span>}
-              </span>
-            </div>
-            
-            {/* Progress */}
-            <div className="text-sm text-gray-300 text-right min-w-[60px]">
-              {currentNoteIndex + 1} / {sequence.length}
-            </div>
+          <div className="flex items-center gap-4 text-sm">
+            <span className="text-gray-300">Preset: {timingPreset}</span>
+            <span className={`font-medium ${lastTimingDeviationMs === null ? 'text-gray-300' : isCorrectNote ? 'text-green-300' : 'text-red-300'}`}>
+              {timingText}
+            </span>
+            <span className="text-gray-400">{currentNoteIndex + 1} / {sequence.length}</span>
           </div>
         </div>
       </div>
@@ -372,113 +307,79 @@ export const TinWhistleSequentialPractice: React.FC<SequentialPracticeProps> = (
       {loopModeActive && (
         <div className="bg-indigo-950/40 border-b border-indigo-700/40 px-4 py-2">
           <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between text-xs">
-            <span className="text-indigo-100">
-              Loop notes: {loopNotesText}
-            </span>
+            <span className="text-indigo-100">Loop notes: {loopNotesText}</span>
             <span className="text-indigo-300">Change Selection: click a note, then Shift-click another</span>
           </div>
         </div>
       )}
 
-      {/* Main practice area - Horizontally scrollable note layout */}
-      <div 
-        ref={containerRef}
-        className="relative bg-gray-900/35 p-6 overflow-x-auto overflow-y-hidden mac-scroll"
-        style={{ minHeight: '400px' }}
-      >
-        {/* Horizontally arranged practice notes */}
-        <div className="flex gap-6 items-start" style={{ minWidth: 'max-content' }}>
-          {sequence.map((noteItem, index) => {
-            const isCurrentNote = index === currentNoteIndex;
-            const isCompleted = completedNotes.has(index);
-            const showGreenFeedback = correctNoteFeedback.has(index);
-            const showRedFeedback = incorrectNoteFeedback.has(index);
-            const isPastNote = index < currentNoteIndex;
-            const isSelectionAnchor = selectionAnchorIndex === index;
-            const isInPreviewRange = previewRange !== null && index >= previewRange.start && index <= previewRange.end;
-            
-            return (
-              <div
-                key={index}
-                data-note-index={index}
-                role="button"
-                tabIndex={0}
-                onClick={(event) => handleNoteClick(index, event)}
-                onMouseEnter={(event) => handleNoteMouseEnter(index, event)}
-                title="Click to set loop start. Shift-click another note to complete selection."
-                className={`flex flex-col items-center transition-all duration-500 p-4 rounded-lg flex-shrink-0 ${
-                  showRedFeedback
-                    ? 'bg-red-600 ring-4 ring-red-400 shadow-lg scale-110'
-                    : isCurrentNote
-                      ? 'bg-blue-600 ring-4 ring-yellow-400 shadow-lg scale-110'
-                      : isSelectionAnchor
-                        ? 'bg-gray-800 ring-1 ring-indigo-300'
-                        : isInPreviewRange
-                          ? 'bg-indigo-900/45'
-                      : isPastNote || isCompleted
-                        ? 'bg-gray-700 opacity-60'
-                        : 'bg-gray-800'
-                } cursor-pointer`}
-                style={{ minWidth: '140px' }}
-              >
-                <div className="flex flex-col items-center gap-2 mb-2">
-                  {/* Note name */}
-                  <div className={`text-sm font-medium px-3 py-1 rounded shadow-md ${
-                    showRedFeedback
-                      ? 'bg-red-500 text-white border-2 border-red-300'
-                      : isCurrentNote 
-                        ? 'bg-yellow-500 text-black border-2 border-yellow-300' 
-                        : isPastNote || isCompleted
-                          ? 'bg-gray-700 text-gray-400 border border-gray-600'
-                          : 'bg-gray-600 text-white border border-gray-500'
+      <div ref={laneRef} className="relative bg-gray-900/35 overflow-hidden" style={{ minHeight: '360px' }}>
+        <div className="absolute inset-y-0 w-px bg-yellow-300/80" style={{ left: hitLineX }} />
+        <div className="absolute top-0 bottom-0 w-28 bg-gradient-to-r from-gray-900/55 to-transparent pointer-events-none" />
+
+        {sequence.map((noteItem, index) => {
+          const isCurrentNote = index === currentNoteIndex;
+          const isPastNote = index < currentNoteIndex;
+          const isSelectionAnchor = selectionAnchorIndex === index;
+          const isInPreviewRange = previewRange !== null && index >= previewRange.start && index <= previewRange.end;
+          const noteLeft = hitLineX + (noteItem.startTime - playheadBeat) * pixelsPerBeat;
+          const noteWidth = Math.max(68, noteItem.duration * pixelsPerBeat);
+
+          if (noteLeft > laneWidth + 180 || noteLeft + noteWidth < -180) {
+            return null;
+          }
+
+          return (
+            <div
+              key={`${index}-${noteItem.startTime}`}
+              data-note-index={index}
+              role="button"
+              tabIndex={0}
+              title="Click a note, then Shift-click another to loop a section"
+              onClick={(event) => handleNoteClick(index, event)}
+              onMouseEnter={(event) => handleNoteMouseEnter(index, event)}
+              className={`absolute top-10 p-3 rounded-lg transition-colors cursor-pointer ${
+                isCurrentNote
+                  ? isCorrectNote === false
+                    ? 'bg-red-600/90 ring-2 ring-red-300'
+                    : 'bg-blue-600/90 ring-2 ring-yellow-300'
+                  : isSelectionAnchor
+                    ? 'bg-gray-800 ring-1 ring-indigo-300'
+                    : isInPreviewRange
+                      ? 'bg-indigo-900/60 ring-1 ring-indigo-500/50'
+                      : isPastNote
+                        ? 'bg-gray-700/50 opacity-60'
+                        : 'bg-gray-800/90'
+              }`}
+              style={{ left: noteLeft, width: noteWidth }}
+            >
+              <div className="flex items-start gap-3">
+                {renderFingeringChart(noteItem.note)}
+                <div>
+                  <div className={`text-sm font-semibold px-2 py-0.5 rounded inline-block ${
+                    isCurrentNote ? 'bg-yellow-400 text-black' : 'bg-gray-700 text-white'
                   }`}>
                     <span className={noteItem.note >= 74 ? 'border-b-2 border-orange-400' : ''}>
                       {midiNoteToName(noteItem.note)}
                     </span>
                   </div>
-
-                  <StaffNoteDisplay note={noteItem.note} />
-                </div>
-
-                {/* Fingering chart */}
-                <div className={`transition-all duration-500 ${
-                  showGreenFeedback
-                    ? 'bg-green-500/35 p-3 rounded-lg shadow-lg scale-110 border-2 border-green-300'
-                    : showRedFeedback
-                      ? 'bg-red-500/35 p-3 rounded-lg shadow-lg scale-110 border-2 border-red-300'
-                      : isCurrentNote
-                        ? 'bg-blue-500/35 p-3 rounded-lg shadow-lg'
-                        : isPastNote || isCompleted
-                          ? 'opacity-40 filter grayscale bg-gray-800 p-2 rounded'
-                          : 'bg-gray-700 p-2 rounded border border-gray-600'
-                }`}>
-                  {renderFingeringChart(noteItem.note, isCurrentNote ? 'large' : 'small')}
+                  <div className="text-[10px] text-gray-300 mt-1">{noteItem.duration.toFixed(2)} beats</div>
                 </div>
               </div>
-            );
-          })}
+              <div className="mt-2 opacity-80">
+                <StaffNoteDisplay note={noteItem.note} />
+              </div>
+            </div>
+          );
+        })}
+
+        <div className="absolute bottom-4 left-4 text-xs text-gray-300 bg-gray-900/80 px-3 py-2 rounded border border-gray-700">
+          Playhead: {playheadBeat.toFixed(2)} beats · Target beat: {currentExpectedBeat.toFixed(2)}
         </div>
       </div>
 
-      {/* Footer with instructions */}
-      <div className="mac-panel-soft p-3 border-t border-gray-600">
-        <div className="text-sm text-gray-300 text-center">
-          Play each note in sequence at your own pace.
-          <div className="mt-2 text-xs text-gray-400">
-            Tip: Click a note, then Shift-click another note to loop a section.
-            <button
-              onClick={() => setShowHelpDetails(prev => !prev)}
-              className="ml-2 text-blue-300 hover:text-blue-200 underline underline-offset-2"
-            >
-              {showHelpDetails ? 'Hide details' : 'Show details'}
-            </button>
-          </div>
-          {showHelpDetails && (
-            <div className="mt-1 text-xs text-gray-500">
-              Practice view keeps current note centered • Incorrect notes auto-recover after 1 second
-            </div>
-          )}
-        </div>
+      <div className="mac-panel-soft p-3 border-t border-gray-600 text-center text-xs text-gray-400">
+        Notes flow right to left by MIDI timing. Sustain length controls box width. Wrong fingering pauses flow.
       </div>
     </div>
   );

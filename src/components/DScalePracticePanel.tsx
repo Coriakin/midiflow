@@ -12,6 +12,13 @@ interface DScalePracticePanelProps {
   currentTargetNote: number | null;
   lastPlayedNote: number | null;
   isCorrectNote: boolean | null;
+  timingPreset: 'easy' | 'normal' | 'hard';
+  timingWindowMs: number;
+  lastTimingDeviationMs: number | null;
+  flowStartTimestampMs: number | null;
+  flowPausedAtTimestampMs: number | null;
+  flowAccumulatedPauseMs: number;
+  notesAheadTarget: number;
   startPracticeSequence: () => void;
   stopPracticeSequence: () => void;
   resetPracticeSequence: () => void;
@@ -24,6 +31,13 @@ export const DScalePracticePanel: React.FC<DScalePracticePanelProps> = ({
   currentTargetNote,
   lastPlayedNote,
   isCorrectNote,
+  timingPreset,
+  timingWindowMs,
+  lastTimingDeviationMs,
+  flowStartTimestampMs,
+  flowPausedAtTimestampMs,
+  flowAccumulatedPauseMs,
+  notesAheadTarget,
   startPracticeSequence,
   stopPracticeSequence,
   resetPracticeSequence,
@@ -109,6 +123,13 @@ export const DScalePracticePanel: React.FC<DScalePracticePanelProps> = ({
             tempo={120}
             lastPlayedNote={lastPlayedNote}
             isCorrectNote={isCorrectNote}
+            timingPreset={timingPreset}
+            timingWindowMs={timingWindowMs}
+            lastTimingDeviationMs={lastTimingDeviationMs}
+            flowStartTimestampMs={flowStartTimestampMs}
+            flowPausedAtTimestampMs={flowPausedAtTimestampMs}
+            flowAccumulatedPauseMs={flowAccumulatedPauseMs}
+            notesAheadTarget={notesAheadTarget}
             className="h-auto"
           />
         ) : (
