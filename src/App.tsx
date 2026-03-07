@@ -1829,14 +1829,8 @@ Current storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs 
                   )}
 
                   <div className="mt-4 space-y-4">
-                    <div className="mac-panel p-4">
-                      <h2 className="text-xl font-semibold mb-3">Create Practice Song (Manual)</h2>
-                      <SongInput onSongCreate={handleSongCreate} />
-                    </div>
-                    <div className="mac-panel p-4">
-                      <h2 className="text-xl font-semibold mb-3">Import MIDI File</h2>
-                      <MIDIFileUploader onMIDISongCreate={handleMIDISongCreate} />
-                    </div>
+                    <SongInput onSongCreate={handleSongCreate} />
+                    <MIDIFileUploader onMIDISongCreate={handleMIDISongCreate} />
                   </div>
                 </div>
               </div>
