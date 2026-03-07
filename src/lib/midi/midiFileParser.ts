@@ -1,6 +1,43 @@
 import MidiParser from 'midi-parser-js';
 import { ParsedMIDIFile, MIDITrackInfo, GM_INSTRUMENT_NAMES, MIDISong } from '../../types/midi';
 
+type NoteWithTiming = { note: number; startTime: number; duration: number };
+
+function toMonophonicMelody(notes: NoteWithTiming[]): NoteWithTiming[] {
+  if (notes.length <= 1) {
+    return notes;
+  }
+
+  const sorted = [...notes].sort((a, b) => (
+    a.startTime === b.startTime ? b.note - a.note : a.startTime - b.startTime
+  ));
+
+  const grouped: NoteWithTiming[] = [];
+  const START_GROUP_EPSILON = 0.0005;
+
+  for (const note of sorted) {
+    const last = grouped[grouped.length - 1];
+    if (!last || Math.abs(note.startTime - last.startTime) > START_GROUP_EPSILON) {
+      grouped.push({ ...note });
+    } else if (note.note > last.note) {
+      grouped[grouped.length - 1] = { ...note };
+    }
+  }
+
+  const monophonic: NoteWithTiming[] = grouped.map((note) => ({ ...note }));
+  for (let i = 0; i < monophonic.length - 1; i += 1) {
+    const current = monophonic[i];
+    const next = monophonic[i + 1];
+    const currentEnd = current.startTime + current.duration;
+
+    if (currentEnd > next.startTime) {
+      current.duration = Math.max(0.1, next.startTime - current.startTime);
+    }
+  }
+
+  return monophonic;
+}
+
 /**
  * Parse a MIDI file and extract track information
  */
@@ -125,7 +162,11 @@ export function parseMIDIFile(file: File): Promise<ParsedMIDIFile> {
 /**
  * Extract notes from a specific track in a MIDI file
  */
-export function extractNotesFromTrack(file: File, trackIndex: number): Promise<{ notes: number[]; tempo: number; notesWithTiming?: Array<{ note: number; startTime: number; duration: number }> }> {
+export function extractNotesFromTrack(
+  file: File,
+  trackIndex: number,
+  options: { monophonic?: boolean } = {}
+): Promise<{ notes: number[]; tempo: number; notesWithTiming?: Array<{ note: number; startTime: number; duration: number }> }> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     
@@ -141,9 +182,8 @@ export function extractNotesFromTrack(file: File, trackIndex: number): Promise<{
         }
         
         const track = midiData.track[trackIndex];
-        const notes: number[] = [];
-        const notesWithTiming: Array<{ note: number; startTime: number; duration: number }> = [];
-        const noteOnEvents: Map<number, { tick: number; velocity: number }> = new Map();
+        const notesWithTiming: NoteWithTiming[] = [];
+        const noteOnEvents: Map<number, Array<{ tick: number; velocity: number }>> = new Map();
         
         let currentTick = 0;
         let tempo = 120; // Default BPM
@@ -169,44 +209,59 @@ export function extractNotesFromTrack(file: File, trackIndex: number): Promise<{
             const velocity = event.data[1];
             
             if (velocity > 0) {
-              notes.push(noteNumber);
-              noteOnEvents.set(noteNumber, { tick: currentTick, velocity });
+              const activeNotes = noteOnEvents.get(noteNumber) || [];
+              activeNotes.push({ tick: currentTick, velocity });
+              noteOnEvents.set(noteNumber, activeNotes);
             } else {
               // Velocity 0 is note off
-              const noteOn = noteOnEvents.get(noteNumber);
+              const activeNotes = noteOnEvents.get(noteNumber) || [];
+              const noteOn = activeNotes.shift();
               if (noteOn) {
                 const startTime = noteOn.tick / ticksPerBeat; // in beats
                 const duration = (currentTick - noteOn.tick) / ticksPerBeat; // in beats
                 notesWithTiming.push({ note: noteNumber, startTime, duration });
+              }
+              if (activeNotes.length > 0) {
+                noteOnEvents.set(noteNumber, activeNotes);
+              } else {
                 noteOnEvents.delete(noteNumber);
               }
             }
           } else if (event.type === 8 && event.data && event.data.length >= 2) { // Note Off
             const noteNumber = event.data[0];
-            const noteOn = noteOnEvents.get(noteNumber);
+            const activeNotes = noteOnEvents.get(noteNumber) || [];
+            const noteOn = activeNotes.shift();
             if (noteOn) {
               const startTime = noteOn.tick / ticksPerBeat; // in beats
               const duration = (currentTick - noteOn.tick) / ticksPerBeat; // in beats
               notesWithTiming.push({ note: noteNumber, startTime, duration });
+            }
+            if (activeNotes.length > 0) {
+              noteOnEvents.set(noteNumber, activeNotes);
+            } else {
               noteOnEvents.delete(noteNumber);
             }
           }
         });
         
         // Handle any remaining note-on events (notes that never got note-off)
-        noteOnEvents.forEach((noteOn, noteNumber) => {
-          const startTime = noteOn.tick / ticksPerBeat;
-          const duration = 0.5; // Default duration for hanging notes
-          notesWithTiming.push({ note: noteNumber, startTime, duration });
+        noteOnEvents.forEach((activeNotes, noteNumber) => {
+          activeNotes.forEach((noteOn) => {
+            const startTime = noteOn.tick / ticksPerBeat;
+            const duration = 0.5; // Default duration for hanging notes
+            notesWithTiming.push({ note: noteNumber, startTime, duration });
+          });
         });
         
         // Sort notes with timing by start time
         notesWithTiming.sort((a, b) => a.startTime - b.startTime);
+        const useMonophonic = options.monophonic !== false;
+        const extractedTiming = useMonophonic ? toMonophonicMelody(notesWithTiming) : notesWithTiming;
         
         resolve({
-          notes: notes.length > 0 ? notes : notesWithTiming.map(n => n.note),
+          notes: extractedTiming.map(n => n.note),
           tempo,
-          notesWithTiming: notesWithTiming.length > 0 ? notesWithTiming : undefined
+          notesWithTiming: extractedTiming.length > 0 ? extractedTiming : undefined
         });
       } catch (error) {
         reject(new Error(`Failed to extract notes from track: ${error}`));
@@ -256,7 +311,11 @@ export function createMIDISongFromFile(
 /**
  * Extract notes from a specific track using ArrayBuffer data
  */
-export function extractNotesFromArrayBuffer(fileData: ArrayBuffer, trackIndex: number): { notes: number[]; tempo: number; notesWithTiming?: Array<{ note: number; startTime: number; duration: number }> } {
+export function extractNotesFromArrayBuffer(
+  fileData: ArrayBuffer,
+  trackIndex: number,
+  options: { monophonic?: boolean } = {}
+): { notes: number[]; tempo: number; notesWithTiming?: Array<{ note: number; startTime: number; duration: number }> } {
   const uint8Array = new Uint8Array(fileData);
   const midiData = MidiParser.parse(uint8Array);
   
@@ -265,9 +324,8 @@ export function extractNotesFromArrayBuffer(fileData: ArrayBuffer, trackIndex: n
   }
   
   const track = midiData.track[trackIndex];
-  const notes: number[] = [];
-  const notesWithTiming: Array<{ note: number; startTime: number; duration: number }> = [];
-  const noteOnEvents: Map<number, { tick: number; velocity: number }> = new Map();
+  const notesWithTiming: NoteWithTiming[] = [];
+  const noteOnEvents: Map<number, Array<{ tick: number; velocity: number }>> = new Map();
   
   let currentTick = 0;
   let tempo = 120; // Default BPM
@@ -294,39 +352,54 @@ export function extractNotesFromArrayBuffer(fileData: ArrayBuffer, trackIndex: n
       const velocity = event.data[1];
       
       if (velocity > 0) {
-        notes.push(noteNumber);
-        noteOnEvents.set(noteNumber, { tick: currentTick, velocity });
+        const activeNotes = noteOnEvents.get(noteNumber) || [];
+        activeNotes.push({ tick: currentTick, velocity });
+        noteOnEvents.set(noteNumber, activeNotes);
       } else {
         // Velocity 0 is note off
-        const noteOn = noteOnEvents.get(noteNumber);
+        const activeNotes = noteOnEvents.get(noteNumber) || [];
+        const noteOn = activeNotes.shift();
         if (noteOn) {
           const startTime = noteOn.tick / ticksPerBeat; // in beats
           const duration = (currentTick - noteOn.tick) / ticksPerBeat; // in beats
           notesWithTiming.push({ note: noteNumber, startTime, duration });
+        }
+        if (activeNotes.length > 0) {
+          noteOnEvents.set(noteNumber, activeNotes);
+        } else {
           noteOnEvents.delete(noteNumber);
         }
       }
     } else if (event.type === 8 && event.data && event.data.length >= 2) { // Note Off
       const noteNumber = event.data[0];
-      const noteOn = noteOnEvents.get(noteNumber);
+      const activeNotes = noteOnEvents.get(noteNumber) || [];
+      const noteOn = activeNotes.shift();
       if (noteOn) {
         const startTime = noteOn.tick / ticksPerBeat; // in beats
         const duration = (currentTick - noteOn.tick) / ticksPerBeat; // in beats
         notesWithTiming.push({ note: noteNumber, startTime, duration });
+      }
+      if (activeNotes.length > 0) {
+        noteOnEvents.set(noteNumber, activeNotes);
+      } else {
         noteOnEvents.delete(noteNumber);
       }
     }
   });
   
   // Handle any remaining note-on events (notes that never had note-off)
-  noteOnEvents.forEach((noteOn, noteNumber) => {
-    const startTime = noteOn.tick / ticksPerBeat;
-    const duration = 0.5; // Default half-beat duration
-    notesWithTiming.push({ note: noteNumber, startTime, duration });
+  noteOnEvents.forEach((activeNotes, noteNumber) => {
+    activeNotes.forEach((noteOn) => {
+      const startTime = noteOn.tick / ticksPerBeat;
+      const duration = 0.5; // Default half-beat duration
+      notesWithTiming.push({ note: noteNumber, startTime, duration });
+    });
   });
   
   // Sort notes by timing
   notesWithTiming.sort((a, b) => a.startTime - b.startTime);
+  const useMonophonic = options.monophonic !== false;
+  const extractedTiming = useMonophonic ? toMonophonicMelody(notesWithTiming) : notesWithTiming;
   
-  return { notes, tempo, notesWithTiming };
+  return { notes: extractedTiming.map((note) => note.note), tempo, notesWithTiming: extractedTiming };
 }
