@@ -98,20 +98,6 @@ export const SimulatedMIDIPlayer: React.FC<SimulatedMIDIPlayerProps> = ({
     playerStateRef.current = playerState;
   }, [playerState]);
 
-  // Update sequence when practiceSequence changes
-  useEffect(() => {
-    if (practiceSequence.length > 0 && JSON.stringify(practiceSequence) !== JSON.stringify(playerState.sequence)) {
-      console.log(`🎭 Simulator: Updating sequence from:`, playerState.sequence.slice(0, 10).map(note => `${midiNoteToName(note)}(${note})`));
-      console.log(`🎭 Simulator: Updating sequence to:`, practiceSequence.slice(0, 10).map(note => `${midiNoteToName(note)}(${note})`));
-      console.log(`🎭 Simulator: Full new sequence:`, practiceSequence.map(note => `${midiNoteToName(note)}(${note})`));
-      setPlayerState(prev => ({
-        ...prev,
-        sequence: [...practiceSequence],
-        lastPlayedIndex: -1 // Reset when sequence changes
-      }));
-    }
-  }, [practiceSequence, playerState.sequence]);
-
   useEffect(() => {
     if (!onTransportStateChange) {
       return;
@@ -195,6 +181,41 @@ export const SimulatedMIDIPlayer: React.FC<SimulatedMIDIPlayerProps> = ({
       now - transportStartMsRef.current - transportAccumulatedPauseMsRef.current - activePauseMs
     );
   }, []);
+
+  // Update sequence when practiceSequence changes
+  useEffect(() => {
+    const sequenceChanged = JSON.stringify(practiceSequence) !== JSON.stringify(playerState.sequence);
+    if (!sequenceChanged) {
+      return;
+    }
+
+    console.log(`🎭 Simulator: Updating sequence from:`, playerState.sequence.slice(0, 10).map(note => `${midiNoteToName(note)}(${note})`));
+    console.log(`🎭 Simulator: Updating sequence to:`, practiceSequence.slice(0, 10).map(note => `${midiNoteToName(note)}(${note})`));
+    console.log(`🎭 Simulator: Full new sequence:`, practiceSequence.map(note => `${midiNoteToName(note)}(${note})`));
+
+    if (practiceSequence.length === 0) {
+      if (intervalRef.current) {
+        clearTimeout(intervalRef.current);
+        intervalRef.current = null;
+      }
+      if (retryTimerRef.current) {
+        clearTimeout(retryTimerRef.current);
+        retryTimerRef.current = null;
+      }
+      if (restartTimerRef.current) {
+        clearTimeout(restartTimerRef.current);
+        restartTimerRef.current = null;
+      }
+      resetTransportClock();
+    }
+
+    setPlayerState(prev => ({
+      ...prev,
+      sequence: [...practiceSequence],
+      lastPlayedIndex: -1,
+      ...(practiceSequence.length === 0 ? { isPlaying: false, isPaused: false } : {})
+    }));
+  }, [practiceSequence, playerState.sequence, resetTransportClock]);
 
   const getRandomWrongNote = useCallback((correctNote: number): number => {
     // Generate a random note that's not the correct one, within tin whistle range
