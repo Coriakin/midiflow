@@ -191,6 +191,24 @@ function App() {
     );
   };
 
+  const hasTimingData = (song: AnySong | Song) =>
+    !!song.notesWithTiming && song.notesWithTiming.length > 0;
+
+  const renderTimedBadge = (isSelected: boolean) => {
+    if (isSelected) {
+      return (
+        <span className="px-1.5 py-0.5 rounded border border-white/40 bg-white/10 text-white text-[10px] uppercase tracking-wide">
+          Timed
+        </span>
+      );
+    }
+    return (
+      <span className="px-1.5 py-0.5 rounded border border-purple-400/60 bg-purple-900/40 text-purple-200 text-[10px] uppercase tracking-wide">
+        Timed
+      </span>
+    );
+  };
+
   const fullTimedSequence: NoteWithTiming[] = useMemo(() => {
     if (!selectedSong) {
       return [];
@@ -1431,6 +1449,12 @@ Current storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs 
                                     <span>{song.notes.length} notes</span>
                                     <span>•</span>
                                     <span>{song.tempo} BPM</span>
+                                    {hasTimingData(song) && (
+                                      <>
+                                        <span>•</span>
+                                        {renderTimedBadge(isSelectedSong)}
+                                      </>
+                                    )}
                                     <span>•</span>
                                     {renderSongOriginBadge('built-in', isSelectedSong)}
                                   </div>
@@ -1527,6 +1551,12 @@ Current storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs 
                                     <span>{song.notes.length} notes</span>
                                     <span>•</span>
                                     <span>{song.tempo} BPM</span>
+                                    {hasTimingData(song) && (
+                                      <>
+                                        <span>•</span>
+                                        {renderTimedBadge(isSelectedSong)}
+                                      </>
+                                    )}
                                     <span>•</span>
                                     {renderSongOriginBadge('midi', isSelectedSong)}
                                     <span>•</span>
@@ -1700,6 +1730,12 @@ Current storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs 
                                     <span>{song.notes.length} notes</span>
                                     <span>•</span>
                                     <span>{song.tempo} BPM</span>
+                                    {hasTimingData(song) && (
+                                      <>
+                                        <span>•</span>
+                                        {renderTimedBadge(isSelectedSong)}
+                                      </>
+                                    )}
                                     <span>•</span>
                                     {renderSongOriginBadge('manual', isSelectedSong)}
                                   </div>
