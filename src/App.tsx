@@ -146,6 +146,7 @@ function App() {
     }
     return true;
   });
+  const [simulatedSpeedMultiplier, setSimulatedSpeedMultiplier] = useState<number>(1);
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -211,6 +212,7 @@ function App() {
   const activePracticeSequence = normalizedActiveTimedSequence.map(noteItem => noteItem.note);
   const timingWindowMs = TIMING_WINDOW_MS[timingPreset];
   const effectiveTempo = (selectedSong?.tempo || 120) * tempoMultiplier;
+  const flowTempo = Math.max(1, effectiveTempo * simulatedSpeedMultiplier);
 
   // Built-in songs for quick testing
   const builtInSongs: Song[] = [
@@ -723,7 +725,7 @@ function App() {
         }
 
         const expectedBeat = getExpectedBeatForCurrentIndex();
-        const expectedMs = (expectedBeat * 60000) / Math.max(effectiveTempo, 1);
+        const expectedMs = (expectedBeat * 60000) / flowTempo;
         const elapsedMs = getEffectiveElapsedMs(timestampMs);
         const timingDeviationMs = elapsedMs - expectedMs;
         const timingWithinWindow = Math.abs(timingDeviationMs) <= timingWindowMs;
@@ -772,7 +774,7 @@ function App() {
     loopRange,
     normalizedActiveTimedSequence,
     timingWindowMs,
-    effectiveTempo,
+    flowTempo,
     flowStartTimestampMs,
     flowPausedAtTimestampMs,
     flowAccumulatedPauseMs
@@ -1772,6 +1774,7 @@ Current storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs 
                         onSimulatedNotePlayed={handleSimulatedNotePlayed}
                         onRestartFromBeginning={resetPracticeSequence}
                         onTransportStateChange={handleSimulatedTransportStateChange}
+                        onSpeedMultiplierChange={setSimulatedSpeedMultiplier}
                       />
                     )}
 
@@ -1839,7 +1842,7 @@ Current storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs 
                               <TinWhistleSequentialPractice
                                 sequence={normalizedActiveTimedSequence}
                                 currentNoteIndex={currentNoteIndex}
-                                tempo={effectiveTempo}
+                                tempo={flowTempo}
                                 lastPlayedNote={lastPlayedNote}
                                 isCorrectNote={isCorrectNote}
                                 loopModeActive={!!loopRange}
@@ -1951,6 +1954,7 @@ Current storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs 
                 onSimulatedNotePlayed={handleSimulatedNotePlayed}
                 onRestartFromBeginning={resetPracticeSequence}
                 onTransportStateChange={handleSimulatedTransportStateChange}
+                onSpeedMultiplierChange={setSimulatedSpeedMultiplier}
               />
             )}
           </div>

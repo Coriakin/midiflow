@@ -53,6 +53,7 @@ interface SimulatedMIDIPlayerProps {
   onSimulatedNotePlayed?: (note: number, velocity?: number) => void;
   onRestartFromBeginning?: () => void;
   onTransportStateChange?: (state: 'playing' | 'paused' | 'stopped') => void;
+  onSpeedMultiplierChange?: (multiplier: number) => void;
 }
 
 /**
@@ -70,7 +71,8 @@ export const SimulatedMIDIPlayer: React.FC<SimulatedMIDIPlayerProps> = ({
   onPlaySoundChange,
   onSimulatedNotePlayed,
   onRestartFromBeginning,
-  onTransportStateChange
+  onTransportStateChange,
+  onSpeedMultiplierChange
 }) => {
   const [playerState, setPlayerState] = useState<SimulatedPlayerState>({
     isPlaying: false,
@@ -82,11 +84,13 @@ export const SimulatedMIDIPlayer: React.FC<SimulatedMIDIPlayerProps> = ({
   });
 
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const retryTimerRef = useRef<NodeJS.Timeout | null>(null);
   const restartTimerRef = useRef<NodeJS.Timeout | null>(null);
   const playerStateRef = useRef(playerState);
   const transportStartMsRef = useRef<number | null>(null);
   const transportPausedAtMsRef = useRef<number | null>(null);
   const transportAccumulatedPauseMsRef = useRef<number>(0);
+  const correctionStallActiveRef = useRef<boolean>(false);
   const [isExpanded, setIsExpanded] = useState(false);
 
   // Keep ref in sync with state
@@ -121,6 +125,10 @@ export const SimulatedMIDIPlayer: React.FC<SimulatedMIDIPlayerProps> = ({
     onTransportStateChange(playerState.isPaused ? 'paused' : 'stopped');
   }, [playerState.isPlaying, playerState.isPaused, onTransportStateChange]);
 
+  useEffect(() => {
+    onSpeedMultiplierChange?.(playerState.speedMultiplier);
+  }, [playerState.speedMultiplier, onSpeedMultiplierChange]);
+
   const sendMIDINote = useCallback((midiNote: number, velocity: number = 80) => {
     const timestamp = performance.now();
     
@@ -150,6 +158,7 @@ export const SimulatedMIDIPlayer: React.FC<SimulatedMIDIPlayerProps> = ({
     transportStartMsRef.current = null;
     transportPausedAtMsRef.current = null;
     transportAccumulatedPauseMsRef.current = 0;
+    correctionStallActiveRef.current = false;
   }, []);
 
   const startTransportClock = useCallback(() => {
@@ -195,14 +204,14 @@ export const SimulatedMIDIPlayer: React.FC<SimulatedMIDIPlayerProps> = ({
     return availableNotes[randomIndex];
   }, []);
 
-  const playCurrentNote = useCallback(() => {
+  const playCurrentNote = useCallback((forceReplay: boolean = false) => {
     const currentState = playerStateRef.current;
     const sequence = currentState.sequence;
     
     console.log(`🎭 Simulator: playCurrentNote called - app index: ${currentNoteIndex}, last played: ${currentState.lastPlayedIndex}, sequence length: ${sequence.length}`);
     
     // Only play if the index has changed since last time
-    if (currentNoteIndex === currentState.lastPlayedIndex) {
+    if (!forceReplay && currentNoteIndex === currentState.lastPlayedIndex) {
       console.log(`🎭 Simulator: Skipping - already played index ${currentNoteIndex}`);
       return;
     }
@@ -233,13 +242,23 @@ export const SimulatedMIDIPlayer: React.FC<SimulatedMIDIPlayerProps> = ({
     }
 
     console.log(`🎭 Simulator: Playing note ${midiNoteToName(noteToPlay)} (${noteToPlay}) at app index ${currentNoteIndex}${noteToPlay !== targetNote ? ` [WRONG: expected ${midiNoteToName(targetNote)}]` : ''}`);
+
+    // Wrong-note retries should not advance transport time for future notes.
+    if (noteToPlay !== targetNote) {
+      pauseTransportClock();
+      correctionStallActiveRef.current = true;
+    } else if (correctionStallActiveRef.current) {
+      resumeTransportClock();
+      correctionStallActiveRef.current = false;
+    }
+
     const velocity = 80;
     sendMIDINote(noteToPlay, velocity);
     onSimulatedNotePlayed?.(noteToPlay, velocity);
 
     // Update the last played index
     setPlayerState(prev => ({ ...prev, lastPlayedIndex: currentNoteIndex }));
-  }, [sendMIDINote, getRandomWrongNote, currentNoteIndex, onSimulatedNotePlayed]);
+  }, [sendMIDINote, getRandomWrongNote, currentNoteIndex, onSimulatedNotePlayed, pauseTransportClock, resumeTransportClock]);
 
   // Auto-play when currentNoteIndex changes (if simulator is active)
   useEffect(() => {
@@ -270,6 +289,35 @@ export const SimulatedMIDIPlayer: React.FC<SimulatedMIDIPlayerProps> = ({
       };
     }
   }, [currentNoteIndex, playerState.isPlaying, playerState.lastPlayedIndex, playerState.speedMultiplier, tempo, timedSequence, playCurrentNote, getTransportElapsedMs]);
+
+  // Retry the same note when the index does not advance (e.g., wrong fingering at non-zero failure rate).
+  useEffect(() => {
+    if (!playerState.isPlaying) {
+      return;
+    }
+
+    if (currentNoteIndex !== playerState.lastPlayedIndex) {
+      return;
+    }
+
+    const quarterNoteMs = (60 * 1000) / Math.max(tempo, 1);
+    const retryDelayMs = Math.max(120, Math.min(900, (quarterNoteMs * 0.5) / Math.max(playerState.speedMultiplier, 0.05)));
+
+      const timeoutId = setTimeout(() => {
+        if (playerStateRef.current.isPlaying && currentNoteIndex === playerStateRef.current.lastPlayedIndex) {
+          playCurrentNote(true);
+        }
+      }, retryDelayMs);
+
+    retryTimerRef.current = timeoutId;
+
+    return () => {
+      clearTimeout(timeoutId);
+      if (retryTimerRef.current === timeoutId) {
+        retryTimerRef.current = null;
+      }
+    };
+  }, [playerState.isPlaying, playerState.lastPlayedIndex, currentNoteIndex, tempo, playerState.speedMultiplier, playCurrentNote]);
 
   const startPlaying = useCallback(() => {
     const currentState = playerStateRef.current;
@@ -304,10 +352,15 @@ export const SimulatedMIDIPlayer: React.FC<SimulatedMIDIPlayerProps> = ({
       clearTimeout(intervalRef.current);
       intervalRef.current = null;
     }
+    if (retryTimerRef.current) {
+      clearTimeout(retryTimerRef.current);
+      retryTimerRef.current = null;
+    }
   }, [resetTransportClock]);
 
   const pausePlaying = useCallback(() => {
     pauseTransportClock();
+    correctionStallActiveRef.current = false;
     setPlayerState(prev => ({ ...prev, isPlaying: false, isPaused: true }));
     
     // Clear any pending timeout
@@ -315,10 +368,15 @@ export const SimulatedMIDIPlayer: React.FC<SimulatedMIDIPlayerProps> = ({
       clearTimeout(intervalRef.current);
       intervalRef.current = null;
     }
+    if (retryTimerRef.current) {
+      clearTimeout(retryTimerRef.current);
+      retryTimerRef.current = null;
+    }
   }, [pauseTransportClock]);
 
   const resumePlaying = useCallback(() => {
     resumeTransportClock();
+    correctionStallActiveRef.current = false;
     setPlayerState(prev => ({ ...prev, isPlaying: true, isPaused: false }));
   }, [resumeTransportClock]);
 
@@ -326,6 +384,10 @@ export const SimulatedMIDIPlayer: React.FC<SimulatedMIDIPlayerProps> = ({
     if (intervalRef.current) {
       clearTimeout(intervalRef.current);
       intervalRef.current = null;
+    }
+    if (retryTimerRef.current) {
+      clearTimeout(retryTimerRef.current);
+      retryTimerRef.current = null;
     }
     if (restartTimerRef.current) {
       clearTimeout(restartTimerRef.current);
@@ -360,6 +422,9 @@ export const SimulatedMIDIPlayer: React.FC<SimulatedMIDIPlayerProps> = ({
     return () => {
       if (intervalRef.current) {
         clearTimeout(intervalRef.current);
+      }
+      if (retryTimerRef.current) {
+        clearTimeout(retryTimerRef.current);
       }
       if (restartTimerRef.current) {
         clearTimeout(restartTimerRef.current);
