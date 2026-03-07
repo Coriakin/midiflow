@@ -31,11 +31,18 @@ type NoteWithTiming = {
 };
 
 type TimingPreset = 'easy' | 'normal' | 'hard';
+type SongOrigin = 'built-in' | 'midi' | 'manual';
 
 const TIMING_WINDOW_MS: Record<TimingPreset, number> = {
   easy: 180,
   normal: 120,
   hard: 70
+};
+
+const SONG_ORIGIN_META: Record<SongOrigin, { label: string; colorClass: string }> = {
+  'built-in': { label: 'Built-in', colorClass: 'text-green-300' },
+  midi: { label: 'MIDI-derived', colorClass: 'text-blue-300' },
+  manual: { label: 'Manual', colorClass: 'text-yellow-300' }
 };
 
 function App() {
@@ -159,6 +166,22 @@ function App() {
   // About content state
   const [aboutContent, setAboutContent] = useState<string>('');
   const [aboutError, setAboutError] = useState<string | null>(null);
+
+  const renderSongOriginBadge = (origin: SongOrigin, isSelected: boolean) => {
+    const meta = SONG_ORIGIN_META[origin];
+    if (isSelected) {
+      return (
+        <span className="px-1.5 py-0.5 rounded border border-white/40 bg-white/10 text-white text-[10px] uppercase tracking-wide">
+          {meta.label}
+        </span>
+      );
+    }
+    return (
+      <span className={`px-1.5 py-0.5 rounded border border-gray-500/60 bg-gray-800/70 text-[10px] uppercase tracking-wide ${meta.colorClass}`}>
+        {meta.label}
+      </span>
+    );
+  };
 
   const fullTimedSequence: NoteWithTiming[] = useMemo(() => {
     if (!selectedSong) {
@@ -1356,6 +1379,9 @@ Current storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs 
                   {/* Song Selection */}
                   <div>
                     <h4 className="text-sm font-medium text-gray-300 mb-2">Select a song to practice:</h4>
+                    <p className="text-xs text-gray-400 mb-3">
+                      MIDI-derived songs usually preserve source timing better, but quality depends on source MIDI and track selection.
+                    </p>
                   
                   {/* Built-in Songs Section */}
                   {builtInSongs.length > 0 && (
@@ -1367,26 +1393,31 @@ Current storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs 
                       <div className="mac-panel-soft p-5 min-h-[300px] overflow-y-auto mac-scroll">
                         <div className="space-y-2">
                           {builtInSongs.map(song => (
+                            (() => {
+                              const isSelectedSong = selectedSong?.id === song.id;
+                              return (
                             <div
                               key={song.id}
                               onClick={() => {
                                 startSongPractice(song);
                                 setPracticeSubTab('practice');
                               }}
-                              className={`flex items-center justify-between p-2 rounded cursor-pointer transition-colors ${selectedSong?.id === song.id ? 'bg-blue-600 text-white' : 'hover:bg-gray-600 text-gray-300'}`}
+                              className={`flex items-center justify-between p-2 rounded cursor-pointer transition-colors ${isSelectedSong ? 'bg-blue-600 text-white' : 'hover:bg-gray-600 text-gray-300'}`}
                             >
                               <div className="flex items-center space-x-3 flex-1 min-w-0">
-                                <div className={`w-3 h-3 rounded-full flex-shrink-0 ${selectedSong?.id === song.id ? 'bg-white' : 'bg-gray-500'}`}></div>
+                                <div className={`w-3 h-3 rounded-full flex-shrink-0 ${isSelectedSong ? 'bg-white' : 'bg-gray-500'}`}></div>
                                 <div className="flex-1 min-w-0">
                                   <div className="font-medium truncate">{song.title}</div>
                                   <div className="text-xs text-gray-400 flex items-center space-x-2">
                                     <span>{song.notes.length} notes</span>
                                     <span>•</span>
                                     <span>{song.tempo} BPM</span>
+                                    <span>•</span>
+                                    {renderSongOriginBadge('built-in', isSelectedSong)}
                                   </div>
                                 </div>
                               </div>
-                              {selectedSong?.id === song.id && (
+                              {isSelectedSong && (
                                 <div className="flex-shrink-0 ml-2">
                                   <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -1394,6 +1425,8 @@ Current storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs 
                                 </div>
                               )}
                             </div>
+                              );
+                            })()
                           ))}
                         </div>
                       </div>
@@ -1411,12 +1444,15 @@ Current storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs 
                         <div className="space-y-1">
                           {/* MIDI Songs */}
                           {midiSongs.map(song => (
+                            (() => {
+                              const isSelectedSong = selectedSong?.id === song.id;
+                              return (
                             <div
                               key={song.id}
-                              className={`flex items-center justify-between p-2 rounded transition-colors ${selectedSong?.id === song.id ? 'bg-blue-600 text-white' : 'hover:bg-gray-600 text-gray-300'}`}
+                              className={`flex items-center justify-between p-2 rounded transition-colors ${isSelectedSong ? 'bg-blue-600 text-white' : 'hover:bg-gray-600 text-gray-300'}`}
                             >
                               <div className="flex items-center space-x-3 flex-1 min-w-0">
-                                <div className={`w-3 h-3 rounded-full flex-shrink-0 ${selectedSong?.id === song.id ? 'bg-white' : 'bg-gray-500'}`}></div>
+                                <div className={`w-3 h-3 rounded-full flex-shrink-0 ${isSelectedSong ? 'bg-white' : 'bg-gray-500'}`}></div>
                                 <div className="flex-1 min-w-0">
                                   {editingSongId === song.id ? (
                                     <div className="flex items-center space-x-2">
@@ -1472,6 +1508,8 @@ Current storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs 
                                     <span>{song.notes.length} notes</span>
                                     <span>•</span>
                                     <span>{song.tempo} BPM</span>
+                                    <span>•</span>
+                                    {renderSongOriginBadge('midi', isSelectedSong)}
                                     <span>•</span>
                                     <span className="text-purple-400">Track {song.selectedTrack + 1}</span>
                                   </div>
@@ -1559,7 +1597,7 @@ Current storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs 
                                   </svg>
                                 </button>
                                 
-                                {selectedSong?.id === song.id && (
+                                {isSelectedSong && (
                                   <div className="flex-shrink-0">
                                     <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                                       <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -1568,20 +1606,25 @@ Current storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs 
                                 )}
                               </div>
                             </div>
+                              );
+                            })()
                           ))}
                           {/* Manual Songs */}
                           {songs.map(song => (
+                            (() => {
+                              const isSelectedSong = selectedSong?.id === song.id;
+                              return (
                             <div
                               key={song.id}
                               className={`flex items-center justify-between p-2 rounded transition-colors ${
-                                selectedSong?.id === song.id
+                                isSelectedSong
                                   ? 'bg-blue-600 text-white'
                                   : 'hover:bg-gray-600 text-gray-300'
                               }`}
                             >
                               <div className="flex items-center space-x-3 flex-1 min-w-0">
                                 <div className={`w-3 h-3 rounded-full flex-shrink-0 ${
-                                  selectedSong?.id === song.id ? 'bg-white' : 'bg-gray-500'
+                                  isSelectedSong ? 'bg-white' : 'bg-gray-500'
                                 }`}></div>
                                 <div className="flex-1 min-w-0">
                                   {editingSongId === song.id ? (
@@ -1639,7 +1682,7 @@ Current storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs 
                                     <span>•</span>
                                     <span>{song.tempo} BPM</span>
                                     <span>•</span>
-                                    <span className="text-yellow-400">Manual</span>
+                                    {renderSongOriginBadge('manual', isSelectedSong)}
                                   </div>
                                 </div>
                               </div>
@@ -1674,6 +1717,8 @@ Current storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs 
                                 </button>
                               </div>
                             </div>
+                              );
+                            })()
                           ))}
                         </div>
                       </div>
