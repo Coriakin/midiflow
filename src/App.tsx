@@ -161,12 +161,19 @@ function App() {
 
   // Tab state
   const [activeTab, setActiveTab] = useState<'practice' | 'd-scale' | 'settings' | 'about'>('practice');
-  const [practiceSubTab, setPracticeSubTab] = useState<'library' | 'practice' | 'create'>('library');
+  const [practiceSubTab, setPracticeSubTab] = useState<'library' | 'practice'>('library');
   const isDScaleTabActive = activeTab === 'd-scale';
+  const hasSelectedSong = selectedSong !== null;
 
   // About content state
   const [aboutContent, setAboutContent] = useState<string>('');
   const [aboutError, setAboutError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!hasSelectedSong && practiceSubTab === 'practice') {
+      setPracticeSubTab('library');
+    }
+  }, [hasSelectedSong, practiceSubTab]);
 
   const renderSongOriginBadge = (origin: SongOrigin, isSelected: boolean) => {
     const meta = SONG_ORIGIN_META[origin];
@@ -1364,28 +1371,24 @@ Current storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs 
                 Song Library
               </button>
               <button
-                onClick={() => setPracticeSubTab('practice')}
+                onClick={() => {
+                  if (!hasSelectedSong) {
+                    return;
+                  }
+                  setPracticeSubTab('practice');
+                }}
+                disabled={!hasSelectedSong}
                 className={`flex-1 text-center px-4 py-2 text-sm font-semibold transition-colors ${
                   practiceSubTab === 'practice'
                     ? 'is-active'
                     : ''
-                }`}
+                } disabled:opacity-50 disabled:cursor-not-allowed`}
               >
                 Practice Song
               </button>
-              <button
-                onClick={() => setPracticeSubTab('create')}
-                className={`flex-1 text-center px-4 py-2 text-sm font-semibold transition-colors ${
-                  practiceSubTab === 'create'
-                    ? 'is-active'
-                    : ''
-                }`}
-              >
-                Create Practice Song
-              </button>
             </div>
             <p className="mt-2 text-xs text-gray-400">
-              Switch between browsing the song library, practicing the selected song, and creating a new practice song.
+              Switch between browsing the song library and practicing the selected song.
             </p>
           </div>
 
@@ -1744,10 +1747,21 @@ Current storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs 
                   {(builtInSongs.length === 0 && midiSongs.length === 0 && songs.length === 0) && (
                     <div className="mac-panel-soft p-4">
                       <div className="text-center text-gray-500 py-4">
-                        No songs available. Create a song or upload a MIDI file above to get started.
+                        No songs available yet. Use the creation tools below to add your first song.
                       </div>
                     </div>
                   )}
+
+                  <div className="mt-4 space-y-4">
+                    <div className="mac-panel p-4">
+                      <h2 className="text-xl font-semibold mb-3">Create Practice Song (Manual)</h2>
+                      <SongInput onSongCreate={handleSongCreate} />
+                    </div>
+                    <div className="mac-panel p-4">
+                      <h2 className="text-xl font-semibold mb-3">Import MIDI File</h2>
+                      <MIDIFileUploader onMIDISongCreate={handleMIDISongCreate} />
+                    </div>
+                  </div>
                 </div>
               </div>
             </>
@@ -1906,18 +1920,6 @@ Current storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs 
               </>
             )}
 
-            {practiceSubTab === 'create' && (
-              <>
-                <div className="mac-panel p-4">
-                  <h2 className="text-xl font-semibold mb-3">Create Practice Song (Manual)</h2>
-                  <SongInput onSongCreate={handleSongCreate} />
-                </div>
-                <div className="mac-panel p-4">
-                  <h2 className="text-xl font-semibold mb-3">Import MIDI File</h2>
-                  <MIDIFileUploader onMIDISongCreate={handleMIDISongCreate} />
-                </div>
-              </>
-            )}
           </div>
         )}
         {activeTab === 'd-scale' && (
