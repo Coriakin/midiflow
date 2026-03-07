@@ -29,15 +29,22 @@ import { midiNoteToName } from '../types/midi';
 interface SimulatedPlayerState {
   isPlaying: boolean;
   isPaused: boolean;
-  speed: number; // 1.0 = normal speed, 0.5 = half speed, etc.
+  speedMultiplier: number; // 1.0 = normal speed, 0.5 = half speed, etc.
   failureRate: number; // 0-100, percentage chance of playing wrong note
   sequence: number[];
   lastPlayedIndex: number; // Track the last index we played
 }
 
+type TimedNote = {
+  note: number;
+  startTime: number;
+  duration: number;
+};
+
 interface SimulatedMIDIPlayerProps {
   onMIDIMessage: (message: MIDIMessage) => void;
   practiceSequence: number[];
+  timedSequence?: TimedNote[];
   currentNoteIndex?: number; // Add this to sync with app state
   tempo?: number; // BPM for timing calculations
   isVisible?: boolean;
@@ -45,6 +52,7 @@ interface SimulatedMIDIPlayerProps {
   onPlaySoundChange: (enabled: boolean) => void;
   onSimulatedNotePlayed?: (note: number, velocity?: number) => void;
   onRestartFromBeginning?: () => void;
+  onTransportStateChange?: (state: 'playing' | 'paused' | 'stopped') => void;
 }
 
 /**
@@ -54,18 +62,20 @@ interface SimulatedMIDIPlayerProps {
 export const SimulatedMIDIPlayer: React.FC<SimulatedMIDIPlayerProps> = ({
   onMIDIMessage,
   practiceSequence,
+  timedSequence = [],
   currentNoteIndex = 0,
   tempo = 120,
   isVisible = true,
   playSound,
   onPlaySoundChange,
   onSimulatedNotePlayed,
-  onRestartFromBeginning
+  onRestartFromBeginning,
+  onTransportStateChange
 }) => {
   const [playerState, setPlayerState] = useState<SimulatedPlayerState>({
     isPlaying: false,
     isPaused: false,
-    speed: 0.25, // 0.25x is now the default normal speed
+    speedMultiplier: 1,
     failureRate: 0,
     sequence: [],
     lastPlayedIndex: -1
@@ -74,6 +84,9 @@ export const SimulatedMIDIPlayer: React.FC<SimulatedMIDIPlayerProps> = ({
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const restartTimerRef = useRef<NodeJS.Timeout | null>(null);
   const playerStateRef = useRef(playerState);
+  const transportStartMsRef = useRef<number | null>(null);
+  const transportPausedAtMsRef = useRef<number | null>(null);
+  const transportAccumulatedPauseMsRef = useRef<number>(0);
   const [isExpanded, setIsExpanded] = useState(false);
 
   // Keep ref in sync with state
@@ -94,6 +107,19 @@ export const SimulatedMIDIPlayer: React.FC<SimulatedMIDIPlayerProps> = ({
       }));
     }
   }, [practiceSequence, playerState.sequence]);
+
+  useEffect(() => {
+    if (!onTransportStateChange) {
+      return;
+    }
+
+    if (playerState.isPlaying) {
+      onTransportStateChange('playing');
+      return;
+    }
+
+    onTransportStateChange(playerState.isPaused ? 'paused' : 'stopped');
+  }, [playerState.isPlaying, playerState.isPaused, onTransportStateChange]);
 
   const sendMIDINote = useCallback((midiNote: number, velocity: number = 80) => {
     const timestamp = performance.now();
@@ -119,6 +145,47 @@ export const SimulatedMIDIPlayer: React.FC<SimulatedMIDIPlayerProps> = ({
       onMIDIMessage(noteOffMessage);
     }, 150);
   }, [onMIDIMessage]);
+
+  const resetTransportClock = useCallback(() => {
+    transportStartMsRef.current = null;
+    transportPausedAtMsRef.current = null;
+    transportAccumulatedPauseMsRef.current = 0;
+  }, []);
+
+  const startTransportClock = useCallback(() => {
+    transportStartMsRef.current = performance.now();
+    transportPausedAtMsRef.current = null;
+    transportAccumulatedPauseMsRef.current = 0;
+  }, []);
+
+  const pauseTransportClock = useCallback(() => {
+    if (transportStartMsRef.current === null || transportPausedAtMsRef.current !== null) {
+      return;
+    }
+    transportPausedAtMsRef.current = performance.now();
+  }, []);
+
+  const resumeTransportClock = useCallback(() => {
+    if (transportPausedAtMsRef.current === null) {
+      return;
+    }
+    const now = performance.now();
+    transportAccumulatedPauseMsRef.current += Math.max(0, now - transportPausedAtMsRef.current);
+    transportPausedAtMsRef.current = null;
+  }, []);
+
+  const getTransportElapsedMs = useCallback((now: number) => {
+    if (transportStartMsRef.current === null) {
+      return 0;
+    }
+    const activePauseMs = transportPausedAtMsRef.current !== null
+      ? Math.max(0, now - transportPausedAtMsRef.current)
+      : 0;
+    return Math.max(
+      0,
+      now - transportStartMsRef.current - transportAccumulatedPauseMsRef.current - activePauseMs
+    );
+  }, []);
 
   const getRandomWrongNote = useCallback((correctNote: number): number => {
     // Generate a random note that's not the correct one, within tin whistle range
@@ -179,34 +246,30 @@ export const SimulatedMIDIPlayer: React.FC<SimulatedMIDIPlayerProps> = ({
     if (playerState.isPlaying && currentNoteIndex !== playerState.lastPlayedIndex) {
       console.log(`🎭 Simulator: Index changed from ${playerState.lastPlayedIndex} to ${currentNoteIndex}, auto-playing note`);
       
-      // For the first note (when starting), play immediately
-      // For subsequent notes, add a small delay to simulate human timing
-      if (playerState.lastPlayedIndex === -1) {
-        // First note - play immediately
-        playCurrentNote();
-      } else {
-        // Subsequent notes - add timing delay
-        const quarterNoteMs = (60 * 1000) / tempo;
-        const delayMs = (quarterNoteMs / playerState.speed) * 0.25; // Quarter of a beat delay
-        
-        console.log(`🎭 Simulator: Adding ${delayMs}ms delay for note timing`);
-        
-        const timeoutId = setTimeout(() => {
-          if (playerStateRef.current.isPlaying) {
-            playCurrentNote();
-          }
-        }, delayMs);
-        
-        intervalRef.current = timeoutId;
-        
-        return () => {
-          if (timeoutId) {
-            clearTimeout(timeoutId);
-          }
-        };
-      }
+      // Delay is computed from absolute transport time to prevent cumulative drift.
+      const quarterNoteMs = (60 * 1000) / Math.max(tempo, 1);
+      const expectedStartBeat = timedSequence[currentNoteIndex]?.startTime ?? currentNoteIndex;
+      const expectedElapsedMs = (expectedStartBeat * quarterNoteMs) / Math.max(playerState.speedMultiplier, 0.05);
+      const elapsedMs = getTransportElapsedMs(performance.now());
+      const delayMs = Math.max(0, expectedElapsedMs - elapsedMs);
+
+      console.log(`🎭 Simulator: Scheduling in ${delayMs}ms (expected=${expectedElapsedMs}ms elapsed=${elapsedMs}ms)`);
+
+      const timeoutId = setTimeout(() => {
+        if (playerStateRef.current.isPlaying) {
+          playCurrentNote();
+        }
+      }, delayMs);
+
+      intervalRef.current = timeoutId;
+
+      return () => {
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+        }
+      };
     }
-  }, [currentNoteIndex, playerState.isPlaying, playerState.lastPlayedIndex, playerState.speed, tempo, playCurrentNote]);
+  }, [currentNoteIndex, playerState.isPlaying, playerState.lastPlayedIndex, playerState.speedMultiplier, tempo, timedSequence, playCurrentNote, getTransportElapsedMs]);
 
   const startPlaying = useCallback(() => {
     const currentState = playerStateRef.current;
@@ -216,6 +279,7 @@ export const SimulatedMIDIPlayer: React.FC<SimulatedMIDIPlayerProps> = ({
     }
 
     console.log(`🎭 Simulator: Starting simulator at tempo ${tempo} BPM`);
+    startTransportClock();
     setPlayerState(prev => ({ 
       ...prev, 
       isPlaying: true, 
@@ -224,9 +288,10 @@ export const SimulatedMIDIPlayer: React.FC<SimulatedMIDIPlayerProps> = ({
     }));
     
     // The auto-play effect will handle playing notes when currentNoteIndex changes
-  }, [tempo]);
+  }, [tempo, startTransportClock]);
 
   const stopPlaying = useCallback(() => {
+    resetTransportClock();
     setPlayerState(prev => ({ 
       ...prev, 
       isPlaying: false, 
@@ -239,9 +304,10 @@ export const SimulatedMIDIPlayer: React.FC<SimulatedMIDIPlayerProps> = ({
       clearTimeout(intervalRef.current);
       intervalRef.current = null;
     }
-  }, []);
+  }, [resetTransportClock]);
 
   const pausePlaying = useCallback(() => {
+    pauseTransportClock();
     setPlayerState(prev => ({ ...prev, isPlaying: false, isPaused: true }));
     
     // Clear any pending timeout
@@ -249,11 +315,12 @@ export const SimulatedMIDIPlayer: React.FC<SimulatedMIDIPlayerProps> = ({
       clearTimeout(intervalRef.current);
       intervalRef.current = null;
     }
-  }, []);
+  }, [pauseTransportClock]);
 
   const resumePlaying = useCallback(() => {
+    resumeTransportClock();
     setPlayerState(prev => ({ ...prev, isPlaying: true, isPaused: false }));
-  }, []);
+  }, [resumeTransportClock]);
 
   const restartPlaying = useCallback(() => {
     if (intervalRef.current) {
@@ -272,10 +339,12 @@ export const SimulatedMIDIPlayer: React.FC<SimulatedMIDIPlayerProps> = ({
       isPaused: false,
       lastPlayedIndex: -1
     }));
+    resetTransportClock();
 
     onRestartFromBeginning?.();
 
     restartTimerRef.current = setTimeout(() => {
+      startTransportClock();
       setPlayerState(prev => ({
         ...prev,
         isPlaying: true,
@@ -284,7 +353,7 @@ export const SimulatedMIDIPlayer: React.FC<SimulatedMIDIPlayerProps> = ({
       }));
       restartTimerRef.current = null;
     }, 0);
-  }, [onRestartFromBeginning]);
+  }, [onRestartFromBeginning, resetTransportClock, startTransportClock]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -338,18 +407,18 @@ export const SimulatedMIDIPlayer: React.FC<SimulatedMIDIPlayerProps> = ({
             <div>
               <label className="block text-gray-300 text-sm mb-1">Speed</label>
               <select
-                value={playerState.speed}
-                onChange={(e) => setPlayerState(prev => ({ ...prev, speed: parseFloat(e.target.value) }))}
+                value={playerState.speedMultiplier}
+                onChange={(e) => setPlayerState(prev => ({ ...prev, speedMultiplier: parseFloat(e.target.value) }))}
                 className="mac-select text-sm"
                 disabled={playerState.isPlaying}
               >
-                <option value={0.125}>0.5x (Very Slow)</option>
-                <option value={0.1875}>0.75x (Slow)</option>
-                <option value={0.25}>1x (Normal)</option>
-                <option value={0.375}>1.5x (Slightly Fast)</option>
-                <option value={0.5}>2x (Fast)</option>
-                <option value={1.0}>4x (Very Fast)</option>
-                <option value={1.5}>6x (Extremely Fast)</option>
+                <option value={0.5}>0.5x (Very Slow)</option>
+                <option value={0.75}>0.75x (Slow)</option>
+                <option value={1}>1x (Normal)</option>
+                <option value={1.5}>1.5x (Slightly Fast)</option>
+                <option value={2}>2x (Fast)</option>
+                <option value={4}>4x (Very Fast)</option>
+                <option value={6}>6x (Extremely Fast)</option>
               </select>
             </div>
 

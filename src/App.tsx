@@ -743,6 +743,20 @@ function App() {
     void playWhistleNote(note, velocity);
   };
 
+  const handleSimulatedTransportStateChange = (state: 'playing' | 'paused' | 'stopped') => {
+    if (state === 'playing') {
+      return;
+    }
+
+    if (state === 'stopped') {
+      resetPracticeSequence();
+      return;
+    }
+
+    const now = performance.now();
+    pauseFlowClock(now);
+  };
+
   // Listen for real MIDI messages for sequential practice
   useEffect(() => {
     addMessageListener(handleMIDIMessage);
@@ -1749,6 +1763,7 @@ Current storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs 
                       <SimulatedMIDIPlayer
                         onMIDIMessage={handleMIDIMessage}
                         practiceSequence={practiceSequence}
+                        timedSequence={normalizedActiveTimedSequence}
                         currentNoteIndex={currentNoteIndex}
                         tempo={effectiveTempo}
                         isVisible={true}
@@ -1756,6 +1771,7 @@ Current storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs 
                         onPlaySoundChange={setSimulatedSoundEnabled}
                         onSimulatedNotePlayed={handleSimulatedNotePlayed}
                         onRestartFromBeginning={resetPracticeSequence}
+                        onTransportStateChange={handleSimulatedTransportStateChange}
                       />
                     )}
 
@@ -1926,6 +1942,7 @@ Current storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs 
               <SimulatedMIDIPlayer
                 onMIDIMessage={handleMIDIMessage}
                 practiceSequence={practiceSequence}
+                timedSequence={practiceSequence.map((note, index) => ({ note, startTime: index, duration: 1 }))}
                 currentNoteIndex={currentNoteIndex}
                 tempo={effectiveTempo}
                 isVisible={true}
@@ -1933,6 +1950,7 @@ Current storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs 
                 onPlaySoundChange={setSimulatedSoundEnabled}
                 onSimulatedNotePlayed={handleSimulatedNotePlayed}
                 onRestartFromBeginning={resetPracticeSequence}
+                onTransportStateChange={handleSimulatedTransportStateChange}
               />
             )}
           </div>
