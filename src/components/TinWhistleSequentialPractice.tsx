@@ -353,7 +353,8 @@ export const TinWhistleSequentialPractice: React.FC<SequentialPracticeProps> = (
               }`}
               style={{ left: noteLeft, width: noteWidth }}
             >
-              <div className="flex items-start justify-between gap-3">
+              <div className="flex items-start gap-3">
+                {renderFingeringChart(noteItem.note)}
                 <div>
                   <div className={`text-sm font-semibold px-2 py-0.5 rounded inline-block ${
                     isCurrentNote ? 'bg-yellow-400 text-black' : 'bg-gray-700 text-white'
@@ -364,7 +365,6 @@ export const TinWhistleSequentialPractice: React.FC<SequentialPracticeProps> = (
                   </div>
                   <div className="text-[10px] text-gray-300 mt-1">{noteItem.duration.toFixed(2)} beats</div>
                 </div>
-                {renderFingeringChart(noteItem.note)}
               </div>
               <div className="mt-2 opacity-80">
                 <StaffNoteDisplay note={noteItem.note} />
