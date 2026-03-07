@@ -3,10 +3,10 @@ import { TinWhistlePracticeBoard } from './TinWhistlePracticeBoard';
 import { TinWhistleSequentialPractice } from './TinWhistleSequentialPractice';
 import { midiNoteToName } from '../types/midi';
 
-export const D_SCALE_SEQUENCE = [62, 64, 66, 67, 69, 71, 74];
-
 interface DScalePracticePanelProps {
   isActive: boolean;
+  scaleName: string;
+  displaySequence: number[];
   practiceSequence: number[];
   currentNoteIndex: number;
   currentTargetNote: number | null;
@@ -26,6 +26,8 @@ interface DScalePracticePanelProps {
 
 export const DScalePracticePanel: React.FC<DScalePracticePanelProps> = ({
   isActive,
+  scaleName,
+  displaySequence,
   practiceSequence,
   currentNoteIndex,
   currentTargetNote,
@@ -42,9 +44,9 @@ export const DScalePracticePanel: React.FC<DScalePracticePanelProps> = ({
   stopPracticeSequence,
   resetPracticeSequence,
 }) => {
-  const progressIndex = practiceSequence.length > 0 ? Math.min(currentNoteIndex + 1, D_SCALE_SEQUENCE.length) : 0;
+  const progressIndex = practiceSequence.length > 0 ? Math.min(currentNoteIndex + 1, displaySequence.length) : 0;
   const progressPercent =
-    D_SCALE_SEQUENCE.length > 0 ? Math.round((progressIndex / D_SCALE_SEQUENCE.length) * 100) : 0;
+    displaySequence.length > 0 ? Math.round((progressIndex / displaySequence.length) * 100) : 0;
 
   const heroBorderClass = isActive ? 'border-blue-400/60 shadow-[0_0_30px_rgba(95,156,255,0.22)]' : 'border-gray-700';
 
@@ -62,17 +64,17 @@ export const DScalePracticePanel: React.FC<DScalePracticePanelProps> = ({
     <div className="space-y-6">
       <div className={`mac-panel p-6 space-y-4 border ${heroBorderClass}`}>
         <div>
-          <h2 className="text-2xl font-bold">D Scale Practice</h2>
+          <h2 className="text-2xl font-bold">{scaleName} Scale Practice</h2>
           <p className="text-gray-300 mt-1">
-            Focused practice for the D major scale. Walk through the seven core notes with larger
+            Focused practice for the {scaleName} major scale. Walk through the seven core notes with larger
             fingering maps and live feedback.
           </p>
         </div>
 
         <div className="grid grid-cols-4 gap-3">
-          {D_SCALE_SEQUENCE.map((note) => (
+          {displaySequence.map((note, index) => (
             <div
-              key={note}
+              key={`${note}-${index}`}
               className={`p-4 rounded-xl border transition-colors ${
                 currentTargetNote === note
                   ? 'bg-blue-500/25 border-blue-300/55'
@@ -93,7 +95,7 @@ export const DScalePracticePanel: React.FC<DScalePracticePanelProps> = ({
             onClick={startPracticeSequence}
             className="mac-button mac-button-primary"
           >
-            Start D Scale
+            Start {scaleName} Scale
           </button>
           <button
             onClick={resetPracticeSequence}
@@ -110,7 +112,7 @@ export const DScalePracticePanel: React.FC<DScalePracticePanelProps> = ({
             Stop Practice
           </button>
           <div className="text-sm text-gray-300">
-            Progress: {progressIndex}/{D_SCALE_SEQUENCE.length} notes · {progressPercent}%
+            Progress: {progressIndex}/{displaySequence.length} notes · {progressPercent}%
           </div>
         </div>
       </div>

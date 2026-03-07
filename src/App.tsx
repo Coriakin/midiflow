@@ -7,7 +7,7 @@ import { MIDIFileUploader } from './components/MIDIFileUploader';
 import { MIDIPreview } from './components/MIDIPreview';
 import { MarkdownRenderer } from './components/MarkdownRenderer';
 import { SimulatedMIDIPlayer } from './components/SimulatedMIDIPlayer';
-import { DScalePracticePanel, D_SCALE_SEQUENCE } from './components/DScalePracticePanel';
+import { DScalePracticePanel } from './components/DScalePracticePanel';
 import type { MIDIMessage, InstrumentType, Song, MIDISong, AnySong } from './types/midi';
 import { midiNoteToName, INSTRUMENT_RANGES } from './types/midi';
 import { extractNotesFromArrayBuffer } from './lib/midi/midiFileParser';
@@ -32,12 +32,35 @@ type NoteWithTiming = {
 
 type TimingPreset = 'easy' | 'normal' | 'hard';
 type SongOrigin = 'built-in' | 'midi' | 'manual';
+type ScaleRoot = 'C' | 'C#' | 'D' | 'D#' | 'E' | 'F' | 'F#' | 'G' | 'G#' | 'A' | 'A#' | 'B';
 
 const TIMING_WINDOW_MS: Record<TimingPreset, number> = {
   easy: 180,
   normal: 120,
   hard: 70
 };
+
+const MAJOR_SCALE_ROOTS: ScaleRoot[] = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+const MAJOR_SCALE_INTERVALS = [0, 2, 4, 5, 7, 9, 12];
+const SCALE_ROOT_TO_BASE_MIDI: Record<ScaleRoot, number> = {
+  C: 60,
+  'C#': 61,
+  D: 62,
+  'D#': 63,
+  E: 64,
+  F: 65,
+  'F#': 66,
+  G: 67,
+  'G#': 68,
+  A: 69,
+  'A#': 70,
+  B: 71
+};
+
+const formatMajorScaleName = (root: ScaleRoot) => `${root} Major`;
+
+const buildMajorScaleSequence = (root: ScaleRoot) =>
+  MAJOR_SCALE_INTERVALS.map(interval => SCALE_ROOT_TO_BASE_MIDI[root] + interval);
 
 const SONG_ORIGIN_META: Record<SongOrigin, { label: string; colorClass: string }> = {
   'built-in': { label: 'Built-in', colorClass: 'text-green-300' },
@@ -62,6 +85,7 @@ function App() {
 
   const [lastNote, setLastNote] = useState<MIDIMessage | null>(null);
   const [selectedInstrument, setSelectedInstrument] = useState<InstrumentType>('tin-whistle');
+  const [selectedScaleRoot, setSelectedScaleRoot] = useState<ScaleRoot>('D');
   const [customRangeMin, setCustomRangeMin] = useState<number>(48);
   const [customRangeMax, setCustomRangeMax] = useState<number>(96);
   const [songs, setSongs] = useState<Song[]>([]);
@@ -164,6 +188,8 @@ function App() {
   const [practiceSubTab, setPracticeSubTab] = useState<'library' | 'practice'>('library');
   const isDScaleTabActive = activeTab === 'd-scale';
   const hasSelectedSong = selectedSong !== null;
+  const selectedScaleName = useMemo(() => formatMajorScaleName(selectedScaleRoot), [selectedScaleRoot]);
+  const selectedScaleSequence = useMemo(() => buildMajorScaleSequence(selectedScaleRoot), [selectedScaleRoot]);
 
   // About content state
   const [aboutContent, setAboutContent] = useState<string>('');
@@ -694,8 +720,8 @@ function App() {
         let sequenceName = 'sequence';
         if (selectedSong) {
           sequenceName = selectedSong.title;
-        } else if (practiceSequence.length === 7 && practiceSequence[0] === 62) {
-          sequenceName = 'D Major Scale';
+        } else {
+          sequenceName = `${selectedScaleName} Scale`;
         }
         showPracticeCompletion(sequenceName);
         setTimeout(() => {
@@ -1005,7 +1031,7 @@ function App() {
     setLoopRange(null);
     setLastTimingDeviationMs(null);
     resetFlowClock();
-    startPracticeSequence(D_SCALE_SEQUENCE);
+    startPracticeSequence(selectedScaleSequence);
   };
 
 
@@ -1088,7 +1114,7 @@ function App() {
               onClick={() => setActiveTab('d-scale')}
               className={isDScaleTabActive ? 'is-active' : ''}
             >
-              D Scale
+              {selectedScaleRoot} Scale
             </button>
             <button
               onClick={() => setActiveTab('settings')}
@@ -1186,6 +1212,20 @@ function App() {
                   <span className="text-xs text-gray-400 ml-2">
                     Range: {getCurrentInstrumentRange().MIN}-{getCurrentInstrumentRange().MAX}
                   </span>
+                </div>
+                <div className="flex flex-wrap items-center gap-2 mt-3">
+                  <label className="text-sm text-gray-300">Practice scale:</label>
+                  <select
+                    value={selectedScaleRoot}
+                    onChange={(e) => setSelectedScaleRoot(e.target.value as ScaleRoot)}
+                    className="mac-select text-sm"
+                  >
+                    {MAJOR_SCALE_ROOTS.map((scaleRoot) => (
+                      <option key={scaleRoot} value={scaleRoot}>
+                        {scaleRoot} Major
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 
                 {/* Custom Range Configuration */}
@@ -1962,6 +2002,8 @@ Current storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs 
           <div className="space-y-6">
             <DScalePracticePanel
               isActive={isDScaleTabActive}
+              scaleName={selectedScaleRoot}
+              displaySequence={selectedScaleSequence}
               practiceSequence={practiceSequence}
               currentNoteIndex={currentNoteIndex}
               currentTargetNote={currentTargetNote}
