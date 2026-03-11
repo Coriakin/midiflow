@@ -1,10 +1,11 @@
 import React from 'react';
 import { TinWhistleFallingPractice } from './TinWhistleFallingPractice';
 import { TinWhistleSequentialPractice } from './TinWhistleSequentialPractice';
-import type { PracticeLoopRange, PracticeRendererMode, PracticeViewModel } from '../types/practice';
+import type { PracticeFingeringDirection, PracticeLoopRange, PracticeRendererMode, PracticeViewModel } from '../types/practice';
 
 interface PracticeRendererHostProps {
   mode: PracticeRendererMode;
+  fingeringDirection: PracticeFingeringDirection;
   viewModel: PracticeViewModel;
   loopModeActive?: boolean;
   loopRange?: PracticeLoopRange | null;
@@ -16,6 +17,7 @@ interface PracticeRendererHostProps {
 
 export const PracticeRendererHost: React.FC<PracticeRendererHostProps> = ({
   mode,
+  fingeringDirection,
   viewModel,
   loopModeActive = false,
   loopRange = null,
@@ -25,7 +27,7 @@ export const PracticeRendererHost: React.FC<PracticeRendererHostProps> = ({
   className = ''
 }) => {
   if (mode === 'fingering-fall') {
-    return <TinWhistleFallingPractice viewModel={viewModel} className={className} />;
+    return <TinWhistleFallingPractice viewModel={viewModel} direction={fingeringDirection} className={className} />;
   }
 
   return (

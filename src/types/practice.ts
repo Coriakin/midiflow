@@ -1,6 +1,7 @@
 export type TimingPreset = 'easy' | 'normal' | 'hard';
 
 export type PracticeRendererMode = 'timeline-horizontal' | 'fingering-fall';
+export type PracticeFingeringDirection = 'top-to-bottom' | 'right-to-left';
 
 export interface TimedPracticeNote {
   note: number;

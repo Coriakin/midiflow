@@ -10,7 +10,7 @@ import { SimulatedMIDIPlayer } from './components/SimulatedMIDIPlayer';
 import { DScalePracticePanel } from './components/DScalePracticePanel';
 import type { MIDIMessage, InstrumentType, Song, MIDISong, AnySong } from './types/midi';
 import { midiNoteToName, INSTRUMENT_RANGES } from './types/midi';
-import type { PracticeRendererMode, PracticeViewModel, TimedPracticeNote, TimingPreset } from './types/practice';
+import type { PracticeFingeringDirection, PracticeRendererMode, PracticeViewModel, TimedPracticeNote, TimingPreset } from './types/practice';
 import { extractNotesFromArrayBuffer } from './lib/midi/midiFileParser';
 import { 
   saveMidiSongsToStorage, 
@@ -25,6 +25,7 @@ import { playWhistleNote } from './lib/audio/simulatedWhistleSynth';
 
 const SIMULATED_SOUND_ENABLED_KEY = 'midiflow.simulatedSound.enabled';
 const PRACTICE_RENDERER_MODE_KEY = 'midiflow.practiceRendererMode';
+const PRACTICE_FINGERING_DIRECTION_KEY = 'midiflow.practiceFingeringDirection';
 type SongOrigin = 'built-in' | 'midi' | 'manual';
 type ScaleRoot = 'C' | 'C#' | 'D' | 'D#' | 'E' | 'F' | 'F#' | 'G' | 'G#' | 'A' | 'A#' | 'B';
 
@@ -175,6 +176,13 @@ function App() {
     }
     return 'fingering-fall';
   });
+  const [practiceFingeringDirection, setPracticeFingeringDirection] = useState<PracticeFingeringDirection>(() => {
+    if (typeof window === 'undefined') {
+      return 'top-to-bottom';
+    }
+    const storedValue = window.localStorage.getItem(PRACTICE_FINGERING_DIRECTION_KEY);
+    return storedValue === 'right-to-left' ? 'right-to-left' : 'top-to-bottom';
+  });
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -189,6 +197,13 @@ function App() {
     }
     window.localStorage.setItem(PRACTICE_RENDERER_MODE_KEY, practiceRendererMode);
   }, [practiceRendererMode]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    window.localStorage.setItem(PRACTICE_FINGERING_DIRECTION_KEY, practiceFingeringDirection);
+  }, [practiceFingeringDirection]);
 
   // Song editing state
   const [editingSongId, setEditingSongId] = useState<string | null>(null);
@@ -1907,7 +1922,7 @@ Current storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs 
                       <h2 className="text-xl font-semibold mb-3">Practice Area</h2>
                       {selectedSong && (
                         <div className="mac-panel-soft p-3 mb-4">
-                          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                          <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
                             <label className="text-sm text-gray-200">
                               <span className="block mb-1 text-gray-300">Timing Window</span>
                               <select
@@ -1965,6 +1980,18 @@ Current storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs 
                                 <option value="fingering-fall">Falling Fingering</option>
                               </select>
                             </label>
+                            <label className="text-sm text-gray-200">
+                              <span className="block mb-1 text-gray-300">Fingering Flow</span>
+                              <select
+                                value={practiceFingeringDirection}
+                                onChange={(e) => setPracticeFingeringDirection(e.target.value as PracticeFingeringDirection)}
+                                className="mac-select w-full"
+                                disabled={practiceRendererMode !== 'fingering-fall'}
+                              >
+                                <option value="top-to-bottom">Top to Bottom</option>
+                                <option value="right-to-left">Right to Left</option>
+                              </select>
+                            </label>
                           </div>
                         </div>
                       )}
@@ -1976,6 +2003,7 @@ Current storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs 
                             practiceSequence.length > 0 && selectedSong ? (
                               <PracticeRendererHost
                                 mode={practiceRendererMode}
+                                fingeringDirection={practiceFingeringDirection}
                                 viewModel={practiceViewModel}
                                 loopModeActive={!!loopRange}
                                 loopRange={loopRange}
