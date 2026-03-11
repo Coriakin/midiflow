@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useMIDI } from './hooks/useMIDI';
 import { TinWhistlePracticeBoard } from './components/TinWhistlePracticeBoard';
-import { TinWhistleSequentialPractice } from './components/TinWhistleSequentialPractice';
+import { PracticeRendererHost } from './components/PracticeRendererHost';
 import { SongInput } from './components/SongInput';
 import { MIDIFileUploader } from './components/MIDIFileUploader';
 import { MIDIPreview } from './components/MIDIPreview';
@@ -10,6 +10,7 @@ import { SimulatedMIDIPlayer } from './components/SimulatedMIDIPlayer';
 import { DScalePracticePanel } from './components/DScalePracticePanel';
 import type { MIDIMessage, InstrumentType, Song, MIDISong, AnySong } from './types/midi';
 import { midiNoteToName, INSTRUMENT_RANGES } from './types/midi';
+import type { PracticeRendererMode, PracticeViewModel, TimedPracticeNote, TimingPreset } from './types/practice';
 import { extractNotesFromArrayBuffer } from './lib/midi/midiFileParser';
 import { 
   saveMidiSongsToStorage, 
@@ -23,14 +24,7 @@ import { loadMarkdownFile } from './utils/markdown';
 import { playWhistleNote } from './lib/audio/simulatedWhistleSynth';
 
 const SIMULATED_SOUND_ENABLED_KEY = 'midiflow.simulatedSound.enabled';
-
-type NoteWithTiming = {
-  note: number;
-  startTime: number;
-  duration: number;
-};
-
-type TimingPreset = 'easy' | 'normal' | 'hard';
+const PRACTICE_RENDERER_MODE_KEY = 'midiflow.practiceRendererMode';
 type SongOrigin = 'built-in' | 'midi' | 'manual';
 type ScaleRoot = 'C' | 'C#' | 'D' | 'D#' | 'E' | 'F' | 'F#' | 'G' | 'G#' | 'A' | 'A#' | 'B';
 
@@ -171,6 +165,16 @@ function App() {
     return true;
   });
   const [simulatedSpeedMultiplier, setSimulatedSpeedMultiplier] = useState<number>(1);
+  const [practiceRendererMode, setPracticeRendererMode] = useState<PracticeRendererMode>(() => {
+    if (typeof window === 'undefined') {
+      return 'fingering-fall';
+    }
+    const storedValue = window.localStorage.getItem(PRACTICE_RENDERER_MODE_KEY);
+    if (storedValue === 'timeline-horizontal' || storedValue === 'fingering-fall') {
+      return storedValue;
+    }
+    return 'fingering-fall';
+  });
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -178,6 +182,13 @@ function App() {
     }
     window.localStorage.setItem(SIMULATED_SOUND_ENABLED_KEY, String(simulatedSoundEnabled));
   }, [simulatedSoundEnabled]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    window.localStorage.setItem(PRACTICE_RENDERER_MODE_KEY, practiceRendererMode);
+  }, [practiceRendererMode]);
 
   // Song editing state
   const [editingSongId, setEditingSongId] = useState<string | null>(null);
@@ -235,7 +246,7 @@ function App() {
     );
   };
 
-  const fullTimedSequence: NoteWithTiming[] = useMemo(() => {
+  const fullTimedSequence: TimedPracticeNote[] = useMemo(() => {
     if (!selectedSong) {
       return [];
     }
@@ -245,11 +256,11 @@ function App() {
     return selectedSong.notes.map((note, index) => ({ note, startTime: index, duration: 1 }));
   }, [selectedSong]);
 
-  const activeTimedSequence: NoteWithTiming[] = useMemo(() => (
+  const activeTimedSequence: TimedPracticeNote[] = useMemo(() => (
     loopRange ? fullTimedSequence.slice(loopRange.start, loopRange.end + 1) : fullTimedSequence
   ), [fullTimedSequence, loopRange]);
 
-  const normalizedActiveTimedSequence: NoteWithTiming[] = useMemo(() => {
+  const normalizedActiveTimedSequence: TimedPracticeNote[] = useMemo(() => {
     if (activeTimedSequence.length === 0) {
       return [];
     }
@@ -264,6 +275,35 @@ function App() {
   const timingWindowMs = TIMING_WINDOW_MS[timingPreset];
   const effectiveTempo = (selectedSong?.tempo || 120) * tempoMultiplier;
   const flowTempo = Math.max(1, effectiveTempo * simulatedSpeedMultiplier);
+  const practiceViewModel: PracticeViewModel = useMemo(() => ({
+    sequence: normalizedActiveTimedSequence,
+    currentNoteIndex,
+    currentTargetNote,
+    lastPlayedNote,
+    isCorrectNote,
+    tempo: flowTempo,
+    timingPreset,
+    timingWindowMs,
+    lastTimingDeviationMs,
+    flowStartTimestampMs,
+    flowPausedAtTimestampMs,
+    flowAccumulatedPauseMs,
+    notesAheadTarget
+  }), [
+    normalizedActiveTimedSequence,
+    currentNoteIndex,
+    currentTargetNote,
+    lastPlayedNote,
+    isCorrectNote,
+    flowTempo,
+    timingPreset,
+    timingWindowMs,
+    lastTimingDeviationMs,
+    flowStartTimestampMs,
+    flowPausedAtTimestampMs,
+    flowAccumulatedPauseMs,
+    notesAheadTarget
+  ]);
 
   // Built-in songs for quick testing
   const builtInSongs: Song[] = [
@@ -1867,7 +1907,7 @@ Current storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs 
                       <h2 className="text-xl font-semibold mb-3">Practice Area</h2>
                       {selectedSong && (
                         <div className="mac-panel-soft p-3 mb-4">
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                             <label className="text-sm text-gray-200">
                               <span className="block mb-1 text-gray-300">Timing Window</span>
                               <select
@@ -1914,6 +1954,17 @@ Current storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs 
                                 </span>
                               </div>
                             </label>
+                            <label className="text-sm text-gray-200">
+                              <span className="block mb-1 text-gray-300">Practice View</span>
+                              <select
+                                value={practiceRendererMode}
+                                onChange={(e) => setPracticeRendererMode(e.target.value as PracticeRendererMode)}
+                                className="mac-select w-full"
+                              >
+                                <option value="timeline-horizontal">Timeline</option>
+                                <option value="fingering-fall">Falling Fingering</option>
+                              </select>
+                            </label>
                           </div>
                         </div>
                       )}
@@ -1923,24 +1974,14 @@ Current storage: ${info.midiSongs} MIDI songs, ${info.manualSongs} manual songs 
                         <div>
                           {selectedInstrument === 'tin-whistle' ? (
                             practiceSequence.length > 0 && selectedSong ? (
-                              <TinWhistleSequentialPractice
-                                sequence={normalizedActiveTimedSequence}
-                                currentNoteIndex={currentNoteIndex}
-                                tempo={flowTempo}
-                                lastPlayedNote={lastPlayedNote}
-                                isCorrectNote={isCorrectNote}
+                              <PracticeRendererHost
+                                mode={practiceRendererMode}
+                                viewModel={practiceViewModel}
                                 loopModeActive={!!loopRange}
                                 loopRange={loopRange}
                                 loopNotesPreview={normalizedActiveTimedSequence.map(item => midiNoteToName(item.note)).slice(0, 8)}
                                 onApplyLoopRange={handleApplyLoopRange}
                                 onClearLoopRange={handleClearLoopRange}
-                                timingPreset={timingPreset}
-                                timingWindowMs={timingWindowMs}
-                                lastTimingDeviationMs={lastTimingDeviationMs}
-                                flowStartTimestampMs={flowStartTimestampMs}
-                                flowPausedAtTimestampMs={flowPausedAtTimestampMs}
-                                flowAccumulatedPauseMs={flowAccumulatedPauseMs}
-                                notesAheadTarget={notesAheadTarget}
                                 className="h-auto"
                               />
                             ) : (

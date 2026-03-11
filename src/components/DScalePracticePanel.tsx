@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { TinWhistlePracticeBoard } from './TinWhistlePracticeBoard';
 import { TinWhistleSequentialPractice } from './TinWhistleSequentialPractice';
 import { midiNoteToName } from '../types/midi';
+import type { PracticeViewModel, TimingPreset } from '../types/practice';
 
 interface DScalePracticePanelProps {
   isActive: boolean;
@@ -12,7 +13,7 @@ interface DScalePracticePanelProps {
   currentTargetNote: number | null;
   lastPlayedNote: number | null;
   isCorrectNote: boolean | null;
-  timingPreset: 'easy' | 'normal' | 'hard';
+  timingPreset: TimingPreset;
   timingWindowMs: number;
   lastTimingDeviationMs: number | null;
   flowStartTimestampMs: number | null;
@@ -59,6 +60,35 @@ export const DScalePracticePanel: React.FC<DScalePracticePanelProps> = ({
       })),
     [practiceSequence]
   );
+
+  const practiceViewModel: PracticeViewModel = useMemo(() => ({
+    sequence: timedSequence,
+    currentNoteIndex,
+    currentTargetNote,
+    lastPlayedNote,
+    isCorrectNote,
+    tempo: 120,
+    timingPreset,
+    timingWindowMs,
+    lastTimingDeviationMs,
+    flowStartTimestampMs,
+    flowPausedAtTimestampMs,
+    flowAccumulatedPauseMs,
+    notesAheadTarget
+  }), [
+    timedSequence,
+    currentNoteIndex,
+    currentTargetNote,
+    lastPlayedNote,
+    isCorrectNote,
+    timingPreset,
+    timingWindowMs,
+    lastTimingDeviationMs,
+    flowStartTimestampMs,
+    flowPausedAtTimestampMs,
+    flowAccumulatedPauseMs,
+    notesAheadTarget
+  ]);
 
   return (
     <div className="space-y-6">
@@ -120,18 +150,7 @@ export const DScalePracticePanel: React.FC<DScalePracticePanelProps> = ({
       <div className="mac-panel-soft p-6 border border-gray-700">
         {practiceSequence.length > 0 ? (
           <TinWhistleSequentialPractice
-            sequence={timedSequence}
-            currentNoteIndex={currentNoteIndex}
-            tempo={120}
-            lastPlayedNote={lastPlayedNote}
-            isCorrectNote={isCorrectNote}
-            timingPreset={timingPreset}
-            timingWindowMs={timingWindowMs}
-            lastTimingDeviationMs={lastTimingDeviationMs}
-            flowStartTimestampMs={flowStartTimestampMs}
-            flowPausedAtTimestampMs={flowPausedAtTimestampMs}
-            flowAccumulatedPauseMs={flowAccumulatedPauseMs}
-            notesAheadTarget={notesAheadTarget}
+            viewModel={practiceViewModel}
             className="h-auto"
           />
         ) : (

@@ -1,38 +1,6 @@
 import React from 'react';
 import { midiNoteToName } from '../types/midi';
-
-/**
- * Tin whistle fingering patterns
- * Each pattern represents 6 holes: [hole1, hole2, hole3, hole4, hole5, hole6]
- * true = covered/closed, false = open
- * Based on standard D-tuned tin whistle fingering chart
- */
-const TIN_WHISTLE_FINGERINGS: Record<number, boolean[]> = {
-  // First octave - based on standard D-tuned tin whistle
-  62: [true, true, true, true, true, true],   // D4 (low D) - all holes covered - LOWEST NOTE
-  63: [true, true, true, true, true, false],  // D#4 - hole 6 open
-  64: [true, true, true, true, true, false],  // E4 - hole 6 open
-  65: [true, true, true, true, false, false], // F4 - holes 5,6 open  
-  66: [true, true, true, true, false, false], // F#4 - first 4 holes covered, last 2 open
-  67: [true, true, true, false, false, false], // G4 - holes 4,5,6 open
-  68: [true, true, false, true, false, false], // G#4 - cross-fingering (1,2,4 covered)
-  69: [true, true, false, false, false, false], // A4 - holes 3,4,5,6 open
-  70: [true, false, true, false, false, false], // A#4 - cross-fingering (1,3 covered)
-  71: [true, false, false, false, false, false], // B4 - holes 2,3,4,5,6 open
-  72: [false, false, false, false, false, false], // C5 - all holes open
-  73: [true, false, true, false, false, false], // C#5 - cross-fingering (1,3 covered, 2,4,5,6 open)
-  74: [true, true, true, true, true, true],   // D5 (second octave, requires harder blowing)
-  76: [true, true, true, true, true, false],  // E5
-  77: [true, true, true, true, false, false], // F5
-  78: [true, true, true, false, false, false], // F#5 
-  79: [true, true, true, false, false, false], // G5
-  81: [true, true, false, false, false, false], // A5
-  83: [true, false, false, false, false, false], // B5
-  84: [false, false, false, false, false, false], // C6
-};
-
-// Standard tin whistle note range in order
-const TIN_WHISTLE_NOTES = [62, 64, 65, 66, 67, 69, 71, 72, 74, 76, 77, 78, 79, 81, 83, 84];
+import { getTinWhistleFingering, TIN_WHISTLE_NOTES } from '../lib/tinWhistle';
 
 interface TinWhistlePracticeBoardProps {
   currentTargetNote?: number | null;
@@ -58,7 +26,7 @@ export const TinWhistlePracticeBoard: React.FC<TinWhistlePracticeBoardProps> = (
         <div className="flex-1">
           <div className="grid grid-cols-4 gap-3 mb-6">
             {TIN_WHISTLE_NOTES.map((midiNote) => {
-              const fingering = TIN_WHISTLE_FINGERINGS[midiNote];
+              const fingering = getTinWhistleFingering(midiNote);
               const noteName = midiNoteToName(midiNote);
               
               // Determine the styling based on current state
@@ -124,7 +92,7 @@ export const TinWhistlePracticeBoard: React.FC<TinWhistlePracticeBoardProps> = (
                 <div className="text-2xl font-bold text-white mb-3">
                   {midiNoteToName(currentTargetNote)}
                 </div>
-                <LargeFingeringChart fingering={TIN_WHISTLE_FINGERINGS[currentTargetNote]} />
+                <LargeFingeringChart fingering={getTinWhistleFingering(currentTargetNote)} />
               </div>
             </div>
           )}
@@ -146,7 +114,7 @@ export const TinWhistlePracticeBoard: React.FC<TinWhistlePracticeBoardProps> = (
                 <div className="text-xl font-bold text-white mb-3">
                   {midiNoteToName(lastPlayedNote)}
                 </div>
-                <LargeFingeringChart fingering={TIN_WHISTLE_FINGERINGS[lastPlayedNote]} />
+                <LargeFingeringChart fingering={getTinWhistleFingering(lastPlayedNote)} />
               </div>
             </div>
           )}

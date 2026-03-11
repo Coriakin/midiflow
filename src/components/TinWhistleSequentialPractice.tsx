@@ -1,28 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { midiNoteToName } from '../types/midi';
-
-const TIN_WHISTLE_FINGERINGS: Record<number, boolean[]> = {
-  62: [true, true, true, true, true, true],
-  63: [true, true, true, true, true, false],
-  64: [true, true, true, true, true, false],
-  65: [true, true, true, true, false, false],
-  66: [true, true, true, true, false, false],
-  67: [true, true, true, false, false, false],
-  68: [true, true, false, true, false, false],
-  69: [true, true, false, false, false, false],
-  70: [true, false, true, false, false, false],
-  71: [true, false, false, false, false, false],
-  72: [false, false, false, false, false, false],
-  73: [true, false, true, false, false, false],
-  74: [true, true, true, true, true, true],
-  76: [true, true, true, true, true, false],
-  77: [true, true, true, true, false, false],
-  78: [true, true, true, false, false, false],
-  79: [true, true, true, false, false, false],
-  81: [true, true, false, false, false, false],
-  83: [true, false, false, false, false, false],
-  84: [false, false, false, false, false, false]
-};
+import { getTinWhistleFingering } from '../lib/tinWhistle';
+import type { PracticeLoopRange, PracticeViewModel } from '../types/practice';
 
 const STAFF_LINE_SPACING = 8;
 const STAFF_TOP_PADDING = 4;
@@ -72,52 +51,38 @@ const StaffNoteDisplay: React.FC<{ note: number }> = ({ note }) => {
   );
 };
 
-interface NoteWithTiming {
-  note: number;
-  startTime: number;
-  duration: number;
-}
-
 interface SequentialPracticeProps {
-  sequence: NoteWithTiming[];
-  currentNoteIndex: number;
-  tempo: number;
-  lastPlayedNote?: number | null;
-  isCorrectNote?: boolean | null;
+  viewModel: PracticeViewModel;
   loopModeActive?: boolean;
-  loopRange?: { start: number; end: number } | null;
+  loopRange?: PracticeLoopRange | null;
   loopNotesPreview?: string[];
   onApplyLoopRange?: (startIndex: number, endIndex: number) => void;
   onClearLoopRange?: () => void;
-  timingPreset: 'easy' | 'normal' | 'hard';
-  timingWindowMs: number;
-  lastTimingDeviationMs: number | null;
-  flowStartTimestampMs: number | null;
-  flowPausedAtTimestampMs: number | null;
-  flowAccumulatedPauseMs: number;
-  notesAheadTarget: number;
   className?: string;
 }
 
 export const TinWhistleSequentialPractice: React.FC<SequentialPracticeProps> = ({
-  sequence,
-  currentNoteIndex,
-  tempo,
-  isCorrectNote,
+  viewModel,
   loopModeActive = false,
   loopRange = null,
   loopNotesPreview = [],
   onApplyLoopRange,
   onClearLoopRange,
-  timingPreset,
-  timingWindowMs,
-  lastTimingDeviationMs,
-  flowStartTimestampMs,
-  flowPausedAtTimestampMs,
-  flowAccumulatedPauseMs,
-  notesAheadTarget,
   className = ''
 }) => {
+  const {
+    sequence,
+    currentNoteIndex,
+    isCorrectNote,
+    tempo,
+    timingPreset,
+    timingWindowMs,
+    lastTimingDeviationMs,
+    flowStartTimestampMs,
+    flowPausedAtTimestampMs,
+    flowAccumulatedPauseMs,
+    notesAheadTarget
+  } = viewModel;
   const laneRef = useRef<HTMLDivElement>(null);
   const [laneWidth, setLaneWidth] = useState(960);
   const [playheadBeat, setPlayheadBeat] = useState(0);
@@ -283,7 +248,7 @@ export const TinWhistleSequentialPractice: React.FC<SequentialPracticeProps> = (
   };
 
   const renderFingeringChart = (note: number) => {
-    const fingering = TIN_WHISTLE_FINGERINGS[note] || [false, false, false, false, false, false];
+    const fingering = getTinWhistleFingering(note);
 
     return (
       <div className="w-12 h-16 bg-amber-700 rounded-lg border border-amber-500/65 flex flex-col justify-between p-1.5 shadow-md">
