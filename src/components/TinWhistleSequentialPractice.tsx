@@ -192,10 +192,52 @@ export const TinWhistleSequentialPractice: React.FC<SequentialPracticeProps> = (
     : 'No notes available';
 
   const hitLineX = 116;
+  const noteTopBase = 40;
+  const noteCardHeight = 176;
+  const noteRowSpacing = noteCardHeight + 8;
+  const overlapPaddingPx = 0;
+  const baseLaneMinHeight = 360;
   const isTimingEarly = (lastTimingDeviationMs ?? 0) < 0;
   const timingText = lastTimingDeviationMs === null
     ? `Window ±${timingWindowMs}ms`
     : `${isTimingEarly ? 'Early' : 'Late'} ${Math.abs(lastTimingDeviationMs).toFixed(0)}ms`;
+
+  const noteLayouts = useMemo(() => {
+    const rowRightEdges: number[] = [];
+    let maxRow = 0;
+
+    const positioned = sequence
+      .map((noteItem, index) => {
+        const noteLeft = hitLineX + (noteItem.startTime - playheadBeat) * pixelsPerBeat;
+        const noteWidth = Math.max(68, noteItem.duration * pixelsPerBeat);
+        const noteRight = noteLeft + noteWidth;
+
+        let row = 0;
+        while (row < rowRightEdges.length && noteLeft < rowRightEdges[row] + overlapPaddingPx) {
+          row += 1;
+        }
+
+        if (row === rowRightEdges.length) {
+          rowRightEdges.push(noteRight);
+        } else {
+          rowRightEdges[row] = noteRight;
+        }
+        maxRow = Math.max(maxRow, row);
+
+        return {
+          index,
+          noteItem,
+          noteLeft,
+          noteWidth,
+          top: noteTopBase + row * noteRowSpacing
+        };
+      })
+      .filter(({ noteLeft, noteWidth }) => !(noteLeft > laneWidth + 180 || noteLeft + noteWidth < -180));
+
+    return { positioned, maxRow };
+  }, [sequence, hitLineX, playheadBeat, pixelsPerBeat, laneWidth, noteTopBase, noteRowSpacing, overlapPaddingPx]);
+
+  const laneMinHeight = baseLaneMinHeight + noteLayouts.maxRow * noteRowSpacing;
 
   const handleNoteClick = (index: number, event: React.MouseEvent<HTMLDivElement>) => {
     if (sequence.length === 0 || !onApplyLoopRange) {
@@ -313,21 +355,15 @@ export const TinWhistleSequentialPractice: React.FC<SequentialPracticeProps> = (
         </div>
       )}
 
-      <div ref={laneRef} className="relative bg-gray-900/35 overflow-hidden" style={{ minHeight: '360px' }}>
+      <div ref={laneRef} className="relative bg-gray-900/35 overflow-hidden" style={{ minHeight: `${laneMinHeight}px` }}>
         <div className="absolute inset-y-0 w-px bg-yellow-300/80" style={{ left: hitLineX }} />
         <div className="absolute top-0 bottom-0 w-28 bg-gradient-to-r from-gray-900/55 to-transparent pointer-events-none" />
 
-        {sequence.map((noteItem, index) => {
+        {noteLayouts.positioned.map(({ index, noteItem, noteLeft, noteWidth, top }) => {
           const isCurrentNote = index === currentNoteIndex;
           const isPastNote = index < currentNoteIndex;
           const isSelectionAnchor = selectionAnchorIndex === index;
           const isInPreviewRange = previewRange !== null && index >= previewRange.start && index <= previewRange.end;
-          const noteLeft = hitLineX + (noteItem.startTime - playheadBeat) * pixelsPerBeat;
-          const noteWidth = Math.max(68, noteItem.duration * pixelsPerBeat);
-
-          if (noteLeft > laneWidth + 180 || noteLeft + noteWidth < -180) {
-            return null;
-          }
 
           return (
             <div
@@ -338,7 +374,7 @@ export const TinWhistleSequentialPractice: React.FC<SequentialPracticeProps> = (
               title="Click a note, then Shift-click another to loop a section"
               onClick={(event) => handleNoteClick(index, event)}
               onMouseEnter={(event) => handleNoteMouseEnter(index, event)}
-              className={`absolute top-10 p-3 rounded-lg transition-colors cursor-pointer ${
+              className={`absolute p-3 rounded-lg transition-colors cursor-pointer ${
                 isCurrentNote
                   ? isCorrectNote === false
                     ? 'bg-red-600/90 ring-2 ring-red-300'
@@ -351,7 +387,7 @@ export const TinWhistleSequentialPractice: React.FC<SequentialPracticeProps> = (
                         ? 'bg-gray-700/50 opacity-60'
                         : 'bg-gray-800/90'
               }`}
-              style={{ left: noteLeft, width: noteWidth }}
+              style={{ left: noteLeft, top, width: noteWidth }}
             >
               <div className="flex items-start gap-3">
                 {renderFingeringChart(noteItem.note)}
