@@ -1,6 +1,8 @@
 # MIDIFlow
 MIDIFlow is a web-based MIDI practice workspace with real-time visual feedback. You can build or import songs, connect a MIDI device, and practice note-by-note with live feedback on timing and pitch.
 
+Live app: https://coriakin.github.io/midiflow/
+
 Tin whistle is the current priority instrument. The most developed practice views, fingering visualizations, and practice flows are built around tin whistle first. Other instrument ranges can be selected in Settings, but the interface and modes are not yet equally specialized for them.
 
 ![MIDIFlow screenshot](./screenshot1.jpg)
@@ -40,6 +42,9 @@ To enable deployment:
 3. Under `Build and deployment`, choose `Source: GitHub Actions`.
 4. Push to `main` or run the `Deploy GitHub Pages` workflow manually from the `Actions` tab.
 5. After the workflow completes, open the published Pages URL shown in the deployment.
+
+Current deployment:
+- https://coriakin.github.io/midiflow/
 
 Notes:
 - The production build uses relative asset paths so it works from a repository subpath such as `https://username.github.io/midiflow/`.
