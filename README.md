@@ -29,6 +29,23 @@ I have always wanted to improve my tooting, but seldom find time and always look
 6. **Open Practice > Song Library** to choose a built-in song, create a manual song, or import a `.mid` file.
 7. **Switch to Practice > Practice Song** to rehearse the selected song with the available practice controls and visual modes.
 
+## GitHub Pages deployment
+MIDIFlow can be deployed as a static site on GitHub Pages. It does not require a backend service; songs and settings are stored in each user's browser via `localStorage`.
+
+The repository includes a GitHub Actions workflow at `.github/workflows/deploy-pages.yml` that builds the app and deploys `dist/` to GitHub Pages on every push to `main`.
+
+To enable deployment:
+1. Push this repository to GitHub.
+2. In GitHub, open `Settings > Pages`.
+3. Under `Build and deployment`, choose `Source: GitHub Actions`.
+4. Push to `main` or run the `Deploy GitHub Pages` workflow manually from the `Actions` tab.
+5. After the workflow completes, open the published Pages URL shown in the deployment.
+
+Notes:
+- The production build uses relative asset paths so it works from a repository subpath such as `https://username.github.io/midiflow/`.
+- WebMIDI still depends on browser support and HTTPS. GitHub Pages provides HTTPS, but Chrome/Chromium is still the practical target browser.
+- User-created songs are stored locally in the browser and are not synced between devices.
+
 ## Current feature set
 - **Song library workflow**: browse built-in songs, import MIDI files, rename saved songs, delete songs, and switch MIDI-derived songs between available tracks.
 - **Manual song entry with timing**: enter note names or MIDI numbers, with optional duration syntax like `C4@1 D4@0.5 E4@2` and rests like `R@0.5`.

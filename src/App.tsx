@@ -120,7 +120,7 @@ function App() {
   useEffect(() => {
     const loadAboutContent = async () => {
       try {
-        const content = await loadMarkdownFile('/about.md');
+        const content = await loadMarkdownFile('about.md');
         setAboutContent(content);
         setAboutError(null);
       } catch (error) {
